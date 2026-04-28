@@ -1,0 +1,63 @@
+import AppKit
+
+func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
+    textView.isEditable = false
+    textView.isSelectable = true
+    textView.isRichText = false
+    textView.usesRuler = false
+    textView.usesInspectorBar = false
+    textView.usesFontPanel = false
+    textView.drawsBackground = true
+    textView.backgroundColor = NSColor.textBackgroundColor
+    textView.textContainerInset = NSSize(width: 12, height: 12)
+    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    textView.usesFindBar = true
+    textView.isHorizontallyResizable = true
+    textView.isVerticallyResizable = true
+    textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    textView.minSize = NSSize(width: 0, height: 0)
+    textView.textContainer?.widthTracksTextView = false
+    textView.textContainer?.lineBreakMode = .byClipping
+    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+}
+
+func configureNameTextView(_ textView: NSTextView, fontSize: Double) {
+    textView.isEditable = false
+    textView.isSelectable = false
+    textView.isRichText = false
+    textView.usesRuler = false
+    textView.usesInspectorBar = false
+    textView.usesFontPanel = false
+    textView.drawsBackground = true
+    textView.backgroundColor = NSColor.textBackgroundColor
+    textView.textContainerInset = NSSize(width: 12, height: 12)
+    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    textView.isHorizontallyResizable = true
+    textView.isVerticallyResizable = true
+    textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    textView.minSize = NSSize(width: 0, height: 0)
+    textView.textContainer?.widthTracksTextView = false
+    textView.textContainer?.lineBreakMode = .byClipping
+    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+}
+
+func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
+    textView.isEditable = false
+    textView.isSelectable = false
+    textView.isRichText = false
+    textView.usesRuler = false
+    textView.usesInspectorBar = false
+    textView.usesFontPanel = false
+    textView.drawsBackground = true
+    textView.backgroundColor = NSColor.textBackgroundColor
+    textView.textContainerInset = NSSize(width: 12, height: 4)
+    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    textView.isHorizontallyResizable = true
+    textView.isVerticallyResizable = true
+    textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    textView.minSize = NSSize(width: 0, height: 0)
+    textView.textContainer?.widthTracksTextView = false
+    textView.textContainer?.heightTracksTextView = false
+    textView.textContainer?.lineBreakMode = .byClipping
+    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+}

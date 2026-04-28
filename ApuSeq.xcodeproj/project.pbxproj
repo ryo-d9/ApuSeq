@@ -6,8 +6,48 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */; };
+		2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */; };
+		2A19ABA32FA06FDC00545FAB /* AlignmentTextSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */; };
+		2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */; };
+		2A19ABA72FA08B7C00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
+		2A19ABA82FA08B7D00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
+		9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9A00000A2F9FAAAA00434619 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2AE5D2212F9F91EF00434619 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9A0000092F9FAAAA00434619;
+			remoteInfo = ApuSeqQuickLookExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9A0000052F9FAAAA00434619 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		2AE5D2292F9F91EF00434619 /* MSAviewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MSAviewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentCore.swift; sourceTree = "<group>"; };
+		2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentPanels.swift; sourceTree = "<group>"; };
+		2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextSystem.swift; sourceTree = "<group>"; };
+		2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextConfiguration.swift; sourceTree = "<group>"; };
+		2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextDecoding.swift; sourceTree = "<group>"; };
+		2AE5D2292F9F91EF00434619 /* ApuSeq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ApuSeq.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ApuSeqQuickLookExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -16,17 +56,32 @@
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 2AE5D2282F9F91EF00434619 /* MSAviewer */;
+			target = 2AE5D2282F9F91EF00434619 /* ApuSeq */;
+		};
+		9A0000032F9FAAAA00434619 /* Exceptions for "MSAviewerQuickLookExtension" folder in "MSAviewerQuickLookExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2AE5D22B2F9F91EF00434619 /* MSAviewer */ = {
+		2AE5D22B2F9F91EF00434619 /* ApuSeq */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				2AE5D2352F9F91F000434619 /* Exceptions for "MSAviewer" folder in "MSAviewer" target */,
 			);
-			path = MSAviewer;
+			path = ApuSeq;
+			sourceTree = "<group>";
+		};
+		9A0000042F9FAAAA00434619 /* ApuSeqQuickLookExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9A0000032F9FAAAA00434619 /* Exceptions for "MSAviewerQuickLookExtension" folder in "MSAviewerQuickLookExtension" target */,
+			);
+			path = ApuSeqQuickLookExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,21 +94,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9A0000062F9FAAAA00434619 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		2AE5D2202F9F91EF00434619 = {
 			isa = PBXGroup;
 			children = (
-				2AE5D22B2F9F91EF00434619 /* MSAviewer */,
+				2AE5D22B2F9F91EF00434619 /* ApuSeq */,
+				9A0000042F9FAAAA00434619 /* ApuSeqQuickLookExtension */,
 				2AE5D22A2F9F91EF00434619 /* Products */,
+				2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */,
+				2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */,
+				2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */,
+				2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */,
+				2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */,
 			);
 			sourceTree = "<group>";
 		};
 		2AE5D22A2F9F91EF00434619 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2AE5D2292F9F91EF00434619 /* MSAviewer.app */,
+				2AE5D2292F9F91EF00434619 /* ApuSeq.app */,
+				9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,27 +130,51 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2AE5D2282F9F91EF00434619 /* MSAviewer */ = {
+		2AE5D2282F9F91EF00434619 /* ApuSeq */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2AE5D2362F9F91F000434619 /* Build configuration list for PBXNativeTarget "MSAviewer" */;
+			buildConfigurationList = 2AE5D2362F9F91F000434619 /* Build configuration list for PBXNativeTarget "ApuSeq" */;
 			buildPhases = (
 				2AE5D2252F9F91EF00434619 /* Sources */,
 				2AE5D2262F9F91EF00434619 /* Frameworks */,
 				2AE5D2272F9F91EF00434619 /* Resources */,
+				9A0000052F9FAAAA00434619 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9A00000B2F9FAAAA00434619 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2AE5D22B2F9F91EF00434619 /* ApuSeq */,
+			);
+			name = ApuSeq;
+			packageProductDependencies = (
+			);
+			productName = ApuSeq;
+			productReference = 2AE5D2292F9F91EF00434619 /* ApuSeq.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9A00000C2F9FAAAA00434619 /* Build configuration list for PBXNativeTarget "ApuSeqQuickLookExtension" */;
+			buildPhases = (
+				9A0000082F9FAAAA00434619 /* Sources */,
+				9A0000062F9FAAAA00434619 /* Frameworks */,
+				9A0000072F9FAAAA00434619 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2AE5D22B2F9F91EF00434619 /* MSAviewer */,
+				9A0000042F9FAAAA00434619 /* ApuSeqQuickLookExtension */,
 			);
-			name = MSAviewer;
+			name = ApuSeqQuickLookExtension;
 			packageProductDependencies = (
 			);
-			productName = MSAviewer;
-			productReference = 2AE5D2292F9F91EF00434619 /* MSAviewer.app */;
-			productType = "com.apple.product-type.application";
+			productName = ApuSeqQuickLookExtension;
+			productReference = 9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -96,9 +189,12 @@
 					2AE5D2282F9F91EF00434619 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
+					9A0000092F9FAAAA00434619 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
 				};
 			};
-			buildConfigurationList = 2AE5D2242F9F91EF00434619 /* Build configuration list for PBXProject "MSAviewer" */;
+			buildConfigurationList = 2AE5D2242F9F91EF00434619 /* Build configuration list for PBXProject "ApuSeq" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -112,13 +208,21 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2AE5D2282F9F91EF00434619 /* MSAviewer */,
+				2AE5D2282F9F91EF00434619 /* ApuSeq */,
+				9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		2AE5D2272F9F91EF00434619 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9A0000072F9FAAAA00434619 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -132,10 +236,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2A19ABA32FA06FDC00545FAB /* AlignmentTextSystem.swift in Sources */,
+				2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */,
+				2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */,
+				2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */,
+				2A19ABA72FA08B7C00545FAB /* TextDecoding.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9A0000082F9FAAAA00434619 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A19ABA82FA08B7D00545FAB /* TextDecoding.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9A00000B2F9FAAAA00434619 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */;
+			targetProxy = 9A00000A2F9FAAAA00434619 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2AE5D2372F9F91F000434619 /* Debug */ = {
@@ -152,14 +277,14 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MSAviewer/Info.plist;
+				INFOPLIST_FILE = ApuSeq/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.MSAviewer";
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeq";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -185,14 +310,14 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MSAviewer/Info.plist;
+				INFOPLIST_FILE = ApuSeq/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.MSAviewer";
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeq";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -324,10 +449,57 @@
 			};
 			name = Release;
 		};
+		9A00000D2F9FAAAA00434619 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ApuSeqQuickLookExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeq.QuickLookExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9A00000E2F9FAAAA00434619 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ApuSeqQuickLookExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeq.QuickLookExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2AE5D2242F9F91EF00434619 /* Build configuration list for PBXProject "MSAviewer" */ = {
+		2AE5D2242F9F91EF00434619 /* Build configuration list for PBXProject "ApuSeq" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2AE5D2392F9F91F000434619 /* Debug */,
@@ -336,11 +508,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2AE5D2362F9F91F000434619 /* Build configuration list for PBXNativeTarget "MSAviewer" */ = {
+		2AE5D2362F9F91F000434619 /* Build configuration list for PBXNativeTarget "ApuSeq" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2AE5D2372F9F91F000434619 /* Debug */,
 				2AE5D2382F9F91F000434619 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9A00000C2F9FAAAA00434619 /* Build configuration list for PBXNativeTarget "ApuSeqQuickLookExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A00000D2F9FAAAA00434619 /* Debug */,
+				9A00000E2F9FAAAA00434619 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
