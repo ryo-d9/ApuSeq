@@ -395,6 +395,9 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private var cachedAuxiliarySequenceLength: Int = -1
     private var cachedAuxiliaryPlainSequence: NSAttributedString?
     private var cachedAuxiliaryColoredSequence: NSAttributedString?
+    private weak var observedWindow: NSWindow?
+    private var liveResizeObserverTokens: [NSObjectProtocol] = []
+    private var savedSequenceHorizontalOffsetDuringLiveResize: CGFloat?
 
     init(namesTextView: AlignmentNameTextView, sequenceTextView: AlignmentSequenceTextView) {
         self.namesTextView = namesTextView
@@ -481,8 +484,13 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         return nil
     }
 
+    deinit {
+        removeLiveResizeObservers()
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        installLiveResizeObserversIfNeeded()
         applyInitialFirstResponderIfNeeded()
     }
 
@@ -670,6 +678,53 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         destinationOrigin.x = sourceX
         destination.contentView.scroll(to: destinationOrigin)
         destination.reflectScrolledClipView(destination.contentView)
+    }
+
+    private func installLiveResizeObserversIfNeeded() {
+        guard observedWindow !== window else { return }
+        removeLiveResizeObservers()
+        guard let window else { return }
+
+        observedWindow = window
+
+        let willStartToken = NotificationCenter.default.addObserver(
+            forName: NSWindow.willStartLiveResizeNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.savedSequenceHorizontalOffsetDuringLiveResize =
+                self.sequenceScrollView.contentView.bounds.origin.x
+        }
+
+        let didEndToken = NotificationCenter.default.addObserver(
+            forName: NSWindow.didEndLiveResizeNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            guard let savedX = self.savedSequenceHorizontalOffsetDuringLiveResize else { return }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                var origin = self.sequenceScrollView.contentView.bounds.origin
+                origin.x = savedX
+                self.sequenceScrollView.contentView.scroll(to: origin)
+                self.sequenceScrollView.reflectScrolledClipView(self.sequenceScrollView.contentView)
+                self.syncAuxiliaryHorizontalOffsetToSequence()
+                self.syncRulerHorizontalOffsetToSequence()
+            }
+        }
+
+        liveResizeObserverTokens = [willStartToken, didEndToken]
+    }
+
+    private func removeLiveResizeObservers() {
+        for token in liveResizeObserverTokens {
+            NotificationCenter.default.removeObserver(token)
+        }
+        liveResizeObserverTokens.removeAll()
+        observedWindow = nil
     }
 
     private func setupLayout() {
