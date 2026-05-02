@@ -680,6 +680,18 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         destination.reflectScrolledClipView(destination.contentView)
     }
 
+    private func resetNamePanelsHorizontalOffsetToZero() {
+        var namesOrigin = namesScrollView.contentView.bounds.origin
+        namesOrigin.x = 0
+        namesScrollView.contentView.scroll(to: namesOrigin)
+        namesScrollView.reflectScrolledClipView(namesScrollView.contentView)
+
+        var auxiliaryNamesOrigin = auxiliaryNameScrollView.contentView.bounds.origin
+        auxiliaryNamesOrigin.x = 0
+        auxiliaryNameScrollView.contentView.scroll(to: auxiliaryNamesOrigin)
+        auxiliaryNameScrollView.reflectScrolledClipView(auxiliaryNameScrollView.contentView)
+    }
+
     private func installLiveResizeObserversIfNeeded() {
         guard observedWindow !== window else { return }
         removeLiveResizeObservers()
@@ -703,14 +715,16 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            guard let savedX = self.savedSequenceHorizontalOffsetDuringLiveResize else { return }
 
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                var origin = self.sequenceScrollView.contentView.bounds.origin
-                origin.x = savedX
-                self.sequenceScrollView.contentView.scroll(to: origin)
-                self.sequenceScrollView.reflectScrolledClipView(self.sequenceScrollView.contentView)
+                if let savedX = self.savedSequenceHorizontalOffsetDuringLiveResize {
+                    var origin = self.sequenceScrollView.contentView.bounds.origin
+                    origin.x = savedX
+                    self.sequenceScrollView.contentView.scroll(to: origin)
+                    self.sequenceScrollView.reflectScrolledClipView(self.sequenceScrollView.contentView)
+                }
+                self.resetNamePanelsHorizontalOffsetToZero()
                 self.syncAuxiliaryHorizontalOffsetToSequence()
                 self.syncRulerHorizontalOffsetToSequence()
             }
@@ -856,6 +870,21 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     func splitViewDidResizeSubviews(_ notification: Notification) {
         guard splitView.subviews.count >= 2 else { return }
         desiredNameWidth = splitView.subviews[0].frame.width
+        let savedSequenceX = sequenceScrollView.contentView.bounds.origin.x
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            var sequenceOrigin = self.sequenceScrollView.contentView.bounds.origin
+            sequenceOrigin.x = savedSequenceX
+            self.sequenceScrollView.contentView.scroll(to: sequenceOrigin)
+            self.sequenceScrollView.reflectScrolledClipView(self.sequenceScrollView.contentView)
+
+            self.resetNamePanelsHorizontalOffsetToZero()
+            self.syncAuxiliaryHorizontalOffsetToSequence()
+            self.syncRulerHorizontalOffsetToSequence()
+        }
+
         guard window?.inLiveResize != true else { return }
         guard abs(lastNotifiedNameWidth - desiredNameWidth) > 0.5 else { return }
         lastNotifiedNameWidth = desiredNameWidth
