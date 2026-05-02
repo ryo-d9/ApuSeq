@@ -398,6 +398,10 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private weak var observedWindow: NSWindow?
     private var liveResizeObserverTokens: [NSObjectProtocol] = []
     private var savedSequenceHorizontalOffsetDuringLiveResize: CGFloat?
+    private var pendingSplitResizeRestoreWorkItem: DispatchWorkItem?
+    private var splitResizeEnforcementToken: NSObjectProtocol?
+    private var splitResizeEnforcementDeadline: TimeInterval = 0
+    private var isApplyingSplitResizeRestore = false
 
     init(namesTextView: AlignmentNameTextView, sequenceTextView: AlignmentSequenceTextView) {
         self.namesTextView = namesTextView
@@ -485,11 +489,15 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     }
 
     deinit {
+        if let token = splitResizeEnforcementToken {
+            NotificationCenter.default.removeObserver(token)
+        }
         removeLiveResizeObservers()
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        installSplitResizeEnforcementIfNeeded()
         installLiveResizeObserversIfNeeded()
         applyInitialFirstResponderIfNeeded()
     }
@@ -678,6 +686,35 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         destinationOrigin.x = sourceX
         destination.contentView.scroll(to: destinationOrigin)
         destination.reflectScrolledClipView(destination.contentView)
+    }
+
+    private func applyFinalHorizontalRestore(sequenceX: CGFloat) {
+        var sequenceOrigin = sequenceScrollView.contentView.bounds.origin
+        sequenceOrigin.x = sequenceX
+        sequenceScrollView.contentView.scroll(to: sequenceOrigin)
+        sequenceScrollView.reflectScrolledClipView(sequenceScrollView.contentView)
+
+        resetNamePanelsHorizontalOffsetToZero()
+        syncAuxiliaryHorizontalOffsetToSequence()
+        syncRulerHorizontalOffsetToSequence()
+    }
+
+    private func installSplitResizeEnforcementIfNeeded() {
+        guard splitResizeEnforcementToken == nil else { return }
+        sequenceScrollView.contentView.postsBoundsChangedNotifications = true
+        splitResizeEnforcementToken = NotificationCenter.default.addObserver(
+            forName: NSView.boundsDidChangeNotification,
+            object: sequenceScrollView.contentView,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            guard !self.isApplyingSplitResizeRestore else { return }
+            guard Date.timeIntervalSinceReferenceDate < self.splitResizeEnforcementDeadline else { return }
+            let savedX = self.savedSequenceHorizontalOffsetDuringLiveResize ?? self.sequenceScrollView.contentView.bounds.origin.x
+            self.isApplyingSplitResizeRestore = true
+            self.applyFinalHorizontalRestore(sequenceX: savedX)
+            self.isApplyingSplitResizeRestore = false
+        }
     }
 
     private func resetNamePanelsHorizontalOffsetToZero() {
@@ -871,19 +908,19 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         guard splitView.subviews.count >= 2 else { return }
         desiredNameWidth = splitView.subviews[0].frame.width
         let savedSequenceX = sequenceScrollView.contentView.bounds.origin.x
+        savedSequenceHorizontalOffsetDuringLiveResize = savedSequenceX
+        splitResizeEnforcementDeadline = Date.timeIntervalSinceReferenceDate + 0.25
 
-        DispatchQueue.main.async { [weak self] in
+        pendingSplitResizeRestoreWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
             guard let self else { return }
-
-            var sequenceOrigin = self.sequenceScrollView.contentView.bounds.origin
-            sequenceOrigin.x = savedSequenceX
-            self.sequenceScrollView.contentView.scroll(to: sequenceOrigin)
-            self.sequenceScrollView.reflectScrolledClipView(self.sequenceScrollView.contentView)
-
-            self.resetNamePanelsHorizontalOffsetToZero()
-            self.syncAuxiliaryHorizontalOffsetToSequence()
-            self.syncRulerHorizontalOffsetToSequence()
+            self.applyFinalHorizontalRestore(sequenceX: savedSequenceX)
+            DispatchQueue.main.async { [weak self] in
+                self?.applyFinalHorizontalRestore(sequenceX: savedSequenceX)
+            }
         }
+        pendingSplitResizeRestoreWorkItem = workItem
+        DispatchQueue.main.async(execute: workItem)
 
         guard window?.inLiveResize != true else { return }
         guard abs(lastNotifiedNameWidth - desiredNameWidth) > 0.5 else { return }
