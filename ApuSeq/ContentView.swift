@@ -273,6 +273,13 @@ private final class AlignmentViewModel {
 }
 
 private struct RootView: View {
+    private enum ViewerMode: String, CaseIterable, Identifiable {
+        case view = "View"
+        case edit = "Edit"
+
+        var id: String { rawValue }
+    }
+
     @Binding var document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
 
@@ -291,6 +298,7 @@ private struct RootView: View {
     @AppStorage("showConservationPanel") private var showsConservationPanel = false
 
     @State private var selectedReferenceName: String?
+    @State private var viewerMode: ViewerMode = .view
 
     private var needsIdentityByColumn: Bool {
         showsIdentityShading || showsConservationPanel
@@ -365,6 +373,7 @@ private struct RootView: View {
             } else {
                 VStack(spacing: 0) {
                     AlignmentTextView(
+                        rawText: $document.rawText,
                         nameAttributedText: model.renderedAlignment.nameAttributedText,
                         sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
                         namesChecksum: model.renderedAlignment.namesChecksum,
@@ -381,6 +390,7 @@ private struct RootView: View {
                         auxiliarySequenceAttributedText: auxiliaryAttributedText(auxiliaryPanel.rightText),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
                         preferredUnsavedFilename: documentConfiguration?.fileURL == nil ? document.suggestedSaveFilename : nil,
+                        isEditMode: viewerMode == .edit,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition
@@ -407,7 +417,15 @@ private struct RootView: View {
         }
         .navigationTitle(documentTitle)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Picker("Mode", selection: $viewerMode) {
+                    ForEach(ViewerMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help("Switch between read-only view and edit mode")
+
                 Button {
                     showsInspector.toggle()
                 } label: {

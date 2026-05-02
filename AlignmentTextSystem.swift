@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct AlignmentTextView: NSViewRepresentable {
+    @Binding var rawText: String
     let nameAttributedText: NSAttributedString
     let sequenceAttributedText: NSAttributedString
     let namesChecksum: UInt64
@@ -18,6 +19,7 @@ struct AlignmentTextView: NSViewRepresentable {
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
     let preferredUnsavedFilename: String?
+    let isEditMode: Bool
     @Binding var selectedResidueCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
@@ -57,6 +59,7 @@ struct AlignmentTextView: NSViewRepresentable {
 
     func updateNSView(_ containerView: AlignmentContainerView, context: Context) {
         containerView.updateMode(nameColumnWidth: defaultNameColumnWidth)
+        containerView.updateEditMode(isEditable: isEditMode)
         containerView.onSetReference = onSetReference
         containerView.updateAuxiliaryPanel(
             nameText: auxiliaryNameAttributedText,
@@ -79,6 +82,11 @@ struct AlignmentTextView: NSViewRepresentable {
              context.coordinator.lastRenderedFingerprint != fingerprint) ||
             (context.coordinator.lastResidueColorMode != renderedShowsResidueColors)
 
+        context.coordinator.rawTextBinding = $rawText
+        context.coordinator.onDidEdit = {
+            containerView.markDocumentEdited()
+        }
+        context.coordinator.isProgrammaticTextUpdate = true
         if needsMainTextRefresh {
             containerView.namesTextView.textStorage?.setAttributedString(nameAttributedText)
             containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
@@ -94,6 +102,7 @@ struct AlignmentTextView: NSViewRepresentable {
         } else if context.coordinator.lastContentVersion != contentVersion {
             context.coordinator.lastContentVersion = contentVersion
         }
+        context.coordinator.isProgrammaticTextUpdate = false
 
         if context.coordinator.lastFontSize != fontSize {
             containerView.namesTextView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
@@ -130,6 +139,9 @@ struct AlignmentTextView: NSViewRepresentable {
         private var lastSelectionSignature: SelectionSignature?
         private var lastSequenceOrigin = CGPoint(x: -.greatestFiniteMagnitude, y: -.greatestFiniteMagnitude)
         private let scrollEpsilon: CGFloat = 0.5
+        var rawTextBinding: Binding<String>?
+        var onDidEdit: (() -> Void)?
+        var isProgrammaticTextUpdate = false
 
         init(
             selectedResidueCount: Binding<Int>,
@@ -220,6 +232,84 @@ struct AlignmentTextView: NSViewRepresentable {
             }
             pendingSelectionUpdate = workItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.016, execute: workItem)
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? AlignmentSequenceTextView else { return }
+            guard textView.isEditable else { return }
+            guard !isProgrammaticTextUpdate else { return }
+            guard rawTextBinding?.wrappedValue != textView.string else { return }
+            rawTextBinding?.wrappedValue = textView.string
+            onDidEdit?()
+        }
+
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            guard let sequenceView = textView as? AlignmentSequenceTextView else { return true }
+            guard sequenceView.isEditable else { return true }
+            let replacement = replacementString ?? ""
+            let replacementLength = (replacement as NSString).length
+
+            // Overwrite mode for single-character typing at insertion point.
+            if affectedCharRange.length == 0, replacementLength == 1 {
+                return overwriteCharacterIfPossible(in: sequenceView, at: affectedCharRange.location, with: replacement)
+            }
+
+            guard replacementLength == affectedCharRange.length else { return false }
+            return isValidReplacement(in: sequenceView.string, range: affectedCharRange, replacement: replacement)
+        }
+
+        private func overwriteCharacterIfPossible(
+            in textView: AlignmentSequenceTextView,
+            at location: Int,
+            with replacement: String
+        ) -> Bool {
+            let source = textView.string as NSString
+            guard location < source.length else { return false }
+            let originalCode = source.character(at: location)
+            let replacementCode = (replacement as NSString).character(at: 0)
+            if originalCode == 10 {
+                return false
+            }
+            guard isValidResidueCodeUnit(replacementCode) else { return false }
+            let overwriteRange = NSRange(location: location, length: 1)
+            guard textView.shouldChangeText(in: overwriteRange, replacementString: replacement) else { return false }
+            textView.textStorage?.replaceCharacters(in: overwriteRange, with: replacement)
+            textView.didChangeText()
+            textView.setSelectedRange(NSRange(location: location + 1, length: 0))
+            return false
+        }
+
+        private func isValidReplacement(in sourceText: String, range: NSRange, replacement: String) -> Bool {
+            let source = sourceText as NSString
+            let target = replacement as NSString
+            guard NSMaxRange(range) <= source.length else { return false }
+            guard target.length == range.length else { return false }
+            for offset in 0..<range.length {
+                let originalCode = source.character(at: range.location + offset)
+                let replacementCode = target.character(at: offset)
+                if originalCode == 10 {
+                    if replacementCode != 10 { return false }
+                } else {
+                    if replacementCode == 10 { return false }
+                    if !isValidResidueCodeUnit(replacementCode) { return false }
+                }
+            }
+            return true
+        }
+
+        private func isValidResidueCodeUnit(_ codeUnit: unichar) -> Bool {
+            switch codeUnit {
+            case 45, 46, 42: // -, ., *
+                return true
+            case 65...90, 97...122: // A-Z, a-z
+                return true
+            default:
+                return false
+            }
         }
 
         func updateSelectedResidueCount(in textView: NSTextView) {
@@ -507,6 +597,15 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         super.setFrameSize(newSize)
         guard abs(oldWidth - newSize.width) > 0.5 else { return }
         applySplitPosition()
+    }
+
+    func updateEditMode(isEditable: Bool) {
+        sequenceTextView.isEditable = isEditable
+        sequenceTextView.isSelectable = true
+    }
+
+    func markDocumentEdited() {
+        window?.windowController?.document?.updateChangeCount(.changeDone)
     }
 
     func updateMode(nameColumnWidth: CGFloat) {
