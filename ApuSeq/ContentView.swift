@@ -373,7 +373,6 @@ private struct RootView: View {
             } else {
                 VStack(spacing: 0) {
                     AlignmentTextView(
-                        rawText: $document.rawText,
                         nameAttributedText: model.renderedAlignment.nameAttributedText,
                         sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
                         namesChecksum: model.renderedAlignment.namesChecksum,
@@ -391,6 +390,7 @@ private struct RootView: View {
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
                         preferredUnsavedFilename: documentConfiguration?.fileURL == nil ? document.suggestedSaveFilename : nil,
                         isEditMode: viewerMode == .edit,
+                        onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition
@@ -474,6 +474,30 @@ private struct RootView: View {
             needsIdentityByColumn: needsIdentityByColumn,
             referenceName: selectedReferenceName
         )
+    }
+
+    private func applyEditedSequenceText(_ editedText: String) {
+        guard viewerMode == .edit else { return }
+        guard let rebuilt = rebuildFASTA(fromEditedSequenceText: editedText) else { return }
+        guard document.rawText != rebuilt else { return }
+        document.rawText = rebuilt
+    }
+
+    private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
+        let sequenceLines = editedText
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map(String.init)
+        guard sequenceLines.count == displayRows.count else { return nil }
+        var output = ""
+        output.reserveCapacity(editedText.count + (displayRows.count * 16))
+        for (row, sequence) in zip(displayRows, sequenceLines) {
+            output += ">"
+            output += row.name
+            output += "\n"
+            output += sequence
+            output += "\n"
+        }
+        return output
     }
 
     private func markTranslatedDocumentAsEditedIfNeeded() {

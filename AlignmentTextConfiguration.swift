@@ -3,6 +3,7 @@ import AppKit
 func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isEditable = false
     textView.isSelectable = true
+    textView.allowsUndo = true
     textView.isRichText = false
     textView.usesRuler = false
     textView.usesInspectorBar = false

@@ -36,6 +36,7 @@ struct ApuSeqApp: App {
             FindCommands()
             TranslationCommands()
             ViewPanelCommands()
+            ColumnSelectionCommands()
         }
 
         Settings {
@@ -62,6 +63,23 @@ private struct FindCommands: Commands {
                 FindActionDispatcher.perform(.previousMatch)
             }
             .keyboardShortcut("g", modifiers: [.command, .shift])
+        }
+    }
+}
+
+private struct ColumnSelectionCommands: Commands {
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Divider()
+            Button("Select Column Up") {
+                _ = NSApp.sendAction(Selector(("selectColumnUp:")), to: nil, from: nil)
+            }
+            .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
+
+            Button("Select Column Down") {
+                _ = NSApp.sendAction(Selector(("selectColumnDown:")), to: nil, from: nil)
+            }
+            .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
         }
     }
 }
