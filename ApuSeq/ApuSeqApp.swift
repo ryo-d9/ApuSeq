@@ -157,6 +157,7 @@ private struct TranslationCommands: Commands {
 
 private struct AppSettingsView: View {
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
+    @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
 
     var body: some View {
@@ -166,6 +167,15 @@ private struct AppSettingsView: View {
                 HStack {
                     Slider(value: $alignmentFontSize, in: 8...24, step: 1)
                     Text("\(Int(alignmentFontSize)) pt")
+                        .frame(width: 56, alignment: .trailing)
+                        .monospacedDigit()
+                }
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Identity Threshold")
+                HStack {
+                    Slider(value: $identityColorThreshold, in: 0.1...0.9, step: 0.01)
+                    Text("\(Int(identityColorThreshold * 100))%")
                         .frame(width: 56, alignment: .trailing)
                         .monospacedDigit()
                 }

@@ -9,6 +9,7 @@ struct AlignmentTextView: NSViewRepresentable {
     let alignmentLength: Int
     let identityByColumn: [Double]
     let showsIdentityShading: Bool
+    let identityColorThreshold: Double
     let renderedShowsResidueColors: Bool
     let fontSize: Double
     let contentVersion: Int
@@ -114,7 +115,8 @@ struct AlignmentTextView: NSViewRepresentable {
         containerView.updateIdentityShading(
             alignmentLength: alignmentLength,
             identityByColumn: identityByColumn,
-            isEnabled: showsIdentityShading
+            isEnabled: showsIdentityShading,
+            threshold: identityColorThreshold
         )
         containerView.updateRuler(alignmentLength: alignmentLength, fontSize: fontSize)
     }
@@ -731,10 +733,11 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         applySplitPosition()
     }
 
-    func updateIdentityShading(alignmentLength: Int, identityByColumn: [Double], isEnabled: Bool) {
+    func updateIdentityShading(alignmentLength: Int, identityByColumn: [Double], isEnabled: Bool, threshold: Double) {
         sequenceTextView.alignmentLength = alignmentLength
         sequenceTextView.identityByColumn = identityByColumn
         sequenceTextView.showsIdentityShading = isEnabled
+        sequenceTextView.identityColorThreshold = threshold
     }
 
     func updateRuler(alignmentLength: Int, fontSize: Double) {
@@ -1265,8 +1268,12 @@ final class AlignmentSequenceTextView: NSTextView {
     var showsIdentityShading: Bool = false {
         didSet { needsDisplay = true }
     }
+    var identityColorThreshold: Double = 0.5 {
+        didSet { needsDisplay = true }
+    }
     private var cachedIdentityColors: [NSColor] = []
     private var cachedIdentityChecksum: UInt64 = 0
+    private var cachedIdentityThreshold: Double = -1
 
     override func keyDown(with event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -1368,9 +1375,12 @@ final class AlignmentSequenceTextView: NSTextView {
         let checksum = identityByColumn.reduce(into: UInt64(1469598103934665603)) { partialResult, value in
             partialResult = (partialResult ^ UInt64(bitPattern: Int64(value.bitPattern))) &* 1099511628211
         }
-        guard checksum != cachedIdentityChecksum || cachedIdentityColors.count != identityByColumn.count else { return }
+        guard checksum != cachedIdentityChecksum ||
+                cachedIdentityColors.count != identityByColumn.count ||
+                abs(cachedIdentityThreshold - identityColorThreshold) > 0.0001 else { return }
         cachedIdentityChecksum = checksum
-        cachedIdentityColors = identityByColumn.map { IdentityPalette.backgroundColor(for: $0) }
+        cachedIdentityThreshold = identityColorThreshold
+        cachedIdentityColors = identityByColumn.map { IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold) }
     }
 }
 

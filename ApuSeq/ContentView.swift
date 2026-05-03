@@ -286,6 +286,7 @@ private struct RootView: View {
     @State private var model = AlignmentViewModel()
 
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
+    @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @State private var showsResidueColors = true
     @State private var showsIdentityShading = false
     @State private var showsInspector = false
@@ -380,6 +381,7 @@ private struct RootView: View {
                         alignmentLength: displayAlignment.length,
                         identityByColumn: model.renderedAlignment.identityByColumn,
                         showsIdentityShading: showsIdentityShading,
+                        identityColorThreshold: identityColorThreshold,
                         renderedShowsResidueColors: model.renderedShowsResidueColors,
                         fontSize: alignmentFontSize,
                         contentVersion: model.contentVersion,
@@ -451,6 +453,7 @@ private struct RootView: View {
         .onChange(of: showsIdentityShading) { _, _ in rerender() }
         .onChange(of: showsConservationPanel) { _, _ in rerender() }
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
+        .onChange(of: identityColorThreshold) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
     }
 
