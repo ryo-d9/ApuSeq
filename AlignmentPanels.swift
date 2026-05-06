@@ -25,24 +25,14 @@ struct FooterBar: View {
                 Text("Plain").tag(false)
             }
             .pickerStyle(.menu)
-            .labelsHidden()
-            .buttonStyle(.borderless)
-            .font(.footnote)
-            .foregroundStyle(.primary)
             Picker("Identity Shading", selection: $showsIdentityShading) {
                 Text("Identity").tag(true)
                 Text("Plain").tag(false)
             }
             .pickerStyle(.menu)
-            .labelsHidden()
-            .buttonStyle(.borderless)
-            .font(.footnote)
-            .foregroundStyle(.primary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .font(.footnote)
-        .foregroundStyle(.secondary)
     }
 }
 
