@@ -208,8 +208,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             let selectedRanges = sequenceView.columnSelectionRanges.isEmpty
                 ? sequenceView.selectedRanges.map(\.rangeValue)
                 : sequenceView.columnSelectionRanges
-            guard selectedRanges.count > 1 else { return true }
-            sequenceView.applyColumnReplacement(replacementString ?? "", to: selectedRanges)
+            sequenceView.applyAlignmentReplacement(replacementString ?? "", to: selectedRanges)
             return false
         }
 
@@ -220,8 +219,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         ) -> Bool {
             guard let sequenceView = textView as? AlignmentViewportSequenceTextView else { return true }
             guard sequenceView.isEditable else { return true }
-            guard affectedRanges.count > 1 else { return true }
-            sequenceView.applyColumnReplacement(
+            sequenceView.applyAlignmentReplacement(
                 replacementStrings?.first ?? "",
                 to: affectedRanges.map(\.rangeValue)
             )
@@ -685,6 +683,13 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         let columnSelectionRanges: [NSRange]
         let columnSelectionAnchor: Int?
         let columnSelectionWidth: Int
+        let alignmentLength: Int
+    }
+
+    private struct AlignmentEdit {
+        let row: Int
+        let column: Int
+        let length: Int
     }
 
     var onAddVerticalCursor: ((Int) -> Bool)?
@@ -698,23 +703,53 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     private var backgroundMode: AlignmentBackgroundMode = .residue
     private var identityColorThreshold = 0.5
 
-    func applyColumnReplacement(_ replacement: String, to ranges: [NSRange]) {
+    func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
         guard let textStorage else { return }
-        guard ranges.count > 1 else { return }
+        guard !ranges.isEmpty, alignmentLength > 0 else { return }
+        guard !replacement.contains("\n") else { return }
 
         let previousState = captureColumnEditState()
-        let sortedRanges = ranges.sorted { $0.location > $1.location }
-
-        textStorage.beginEditing()
-        for range in sortedRanges {
-            textStorage.replaceCharacters(in: range, with: replacement)
-        }
-        textStorage.endEditing()
+        var lines = sequenceLines()
+        guard !lines.isEmpty else { return }
+        let edits = normalizedEdits(from: ranges, rowCount: lines.count)
+        guard !edits.isEmpty else { return }
 
         let replacementLength = (replacement as NSString).length
-        let newSelections = sortedRanges
-            .reversed()
-            .map { NSRange(location: $0.location + replacementLength, length: 0) }
+        var editGroups: [String: (column: Int, length: Int, rows: Set<Int>)] = [:]
+        for edit in edits {
+            let key = "\(edit.column):\(edit.length)"
+            if editGroups[key] == nil {
+                editGroups[key] = (edit.column, edit.length, [])
+            }
+            editGroups[key]?.rows.insert(edit.row)
+        }
+
+        var nextAlignmentLength = alignmentLength
+        let groups = editGroups.values.sorted { lhs, rhs in
+            if lhs.column == rhs.column { return lhs.length > rhs.length }
+            return lhs.column > rhs.column
+        }
+        for group in groups {
+            let extraColumns = max(replacementLength - group.length, 0)
+            for row in lines.indices {
+                if group.rows.contains(row) {
+                    replaceCharacters(in: &lines[row], column: group.column, length: group.length, with: replacement)
+                    if replacementLength < group.length {
+                        lines[row] += String(repeating: "-", count: group.length - replacementLength)
+                    }
+                } else if extraColumns > 0 {
+                    insertCharacters(String(repeating: "-", count: extraColumns), in: &lines[row], column: group.column + group.length)
+                }
+            }
+            nextAlignmentLength += extraColumns
+        }
+
+        alignmentLength = nextAlignmentLength
+        textStorage.setAttributedString(attributedSequenceText(from: lines))
+        let newSelections = edits.map { edit in
+            let location = (edit.row * (nextAlignmentLength + 1)) + min(edit.column + replacementLength, nextAlignmentLength)
+            return NSRange(location: location, length: 0)
+        }
         setSelectedRanges(
             newSelections.map(NSValue.init(range:)),
             affinity: .downstream,
@@ -732,12 +767,14 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             selectedRanges: selectedRanges,
             columnSelectionRanges: columnSelectionRanges,
             columnSelectionAnchor: columnSelectionAnchor,
-            columnSelectionWidth: columnSelectionWidth
+            columnSelectionWidth: columnSelectionWidth,
+            alignmentLength: alignmentLength
         )
     }
 
     private func applyColumnEditState(_ state: ColumnEditState) {
         textStorage?.setAttributedString(state.attributedText)
+        alignmentLength = state.alignmentLength
         setSelectedRanges(state.selectedRanges, affinity: .downstream, stillSelecting: false)
         columnSelectionRanges = state.columnSelectionRanges
         columnSelectionAnchor = state.columnSelectionAnchor
@@ -753,6 +790,49 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             target.registerColumnUndo(toRestore: redoState)
         }
         undoManager.setActionName("Edit")
+    }
+
+    private func normalizedEdits(from ranges: [NSRange], rowCount: Int) -> [AlignmentEdit] {
+        let lineSpan = alignmentLength + 1
+        return ranges.compactMap { range in
+            guard range.location >= 0 else { return nil }
+            let row = range.location / lineSpan
+            let column = range.location % lineSpan
+            guard row >= 0, row < rowCount, column < alignmentLength else { return nil }
+            let length = min(max(range.length, 0), alignmentLength - column)
+            return AlignmentEdit(row: row, column: column, length: length)
+        }
+    }
+
+    private func sequenceLines() -> [String] {
+        var lines = string
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map(String.init)
+        if lines.last == "" {
+            lines.removeLast()
+        }
+        return lines
+    }
+
+    private func attributedSequenceText(from lines: [String]) -> NSAttributedString {
+        NSAttributedString(
+            string: lines.joined(separator: "\n") + "\n",
+            attributes: [
+                .font: font ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
+                .foregroundColor: NSColor.labelColor
+            ]
+        )
+    }
+
+    private func replaceCharacters(in line: inout String, column: Int, length: Int, with replacement: String) {
+        let start = line.index(line.startIndex, offsetBy: min(column, line.count))
+        let end = line.index(start, offsetBy: min(length, line.distance(from: start, to: line.endIndex)))
+        line.replaceSubrange(start..<end, with: replacement)
+    }
+
+    private func insertCharacters(_ insertion: String, in line: inout String, column: Int) {
+        let index = line.index(line.startIndex, offsetBy: min(max(column, 0), line.count))
+        line.insert(contentsOf: insertion, at: index)
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
@@ -775,7 +855,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             replacement = "\(insertString)"
         }
 
-        applyColumnReplacement(replacement, to: ranges)
+        applyAlignmentReplacement(replacement, to: ranges)
     }
 
     @objc func selectColumnUp(_ sender: Any?) {
