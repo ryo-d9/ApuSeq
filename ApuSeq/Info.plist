@@ -13,25 +13,26 @@
 			<string>Default</string>
 				<key>LSItemContentTypes</key>
 					<array>
-												<string>com.apuseq.fasta</string>
-						<string>org.clustal</string>
-						<string>public.plain-text</string>
+								<string>com.apuseq.fasta</string>
+							<string>org.fasta</string>
+							<string>org.clustal</string>
+							<string>public.plain-text</string>
 					</array>
 			<key>NSUbiquitousDocumentUserActivityType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).alignmentdocument</string>
-		</dict>
-	</array>
-	<key>UTImportedTypeDeclarations</key>
-	<array>
+			</dict>
+		</array>
+		<key>UTExportedTypeDeclarations</key>
+		<array>
 			<dict>
 				<key>UTTypeConformsTo</key>
 				<array>
 					<string>public.plain-text</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>FASTA Alignment</string>
-			<key>UTTypeIdentifier</key>
-			<string>com.apuseq.fasta</string>
+				</array>
+				<key>UTTypeDescription</key>
+				<string>FASTA Alignment</string>
+				<key>UTTypeIdentifier</key>
+				<string>com.apuseq.fasta</string>
 				<key>UTTypeTagSpecification</key>
 				<dict>
 					<key>public.filename-extension</key>
@@ -52,8 +53,11 @@
 					<string>text/x-fasta</string>
 				</dict>
 			</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
+		</array>
+		<key>UTImportedTypeDeclarations</key>
+		<array>
+			<dict>
+				<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.plain-text</string>
 			</array>

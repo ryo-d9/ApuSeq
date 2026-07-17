@@ -33,8 +33,6 @@
     <array>
         <string>com.apuseq.fasta</string>
         <string>org.fasta</string>
-        <string>org.clustal</string>
-        <string>public.plain-text</string>
     </array>
 </dict>
 </plist>
