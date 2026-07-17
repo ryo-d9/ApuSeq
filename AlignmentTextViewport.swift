@@ -42,8 +42,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
             return coordinator.addVerticalCursors(in: sequenceTextView, direction: direction)
         }
 
-        let auxiliaryNameTextView = NSTextView(usingTextLayoutManager: true)
-        configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize)
+        let auxiliaryNameColumnView = AlignmentViewportNameColumnView()
+        auxiliaryNameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
 
         let auxiliarySequenceTextView = NSTextView(usingTextLayoutManager: true)
         configureAuxiliaryTextView(auxiliarySequenceTextView, fontSize: fontSize)
@@ -51,7 +51,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         let containerView = AlignmentViewportContainerView(
             nameColumnView: nameColumnView,
             sequenceTextView: sequenceTextView,
-            auxiliaryNameTextView: auxiliaryNameTextView,
+            auxiliaryNameColumnView: auxiliaryNameColumnView,
             auxiliarySequenceTextView: auxiliarySequenceTextView
         )
         containerView.updateNameRows(
@@ -106,7 +106,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
             containerView.nameColumnView.font = font
             containerView.sequenceTextView.font = font
-            containerView.auxiliaryNameTextView.font = font
+            containerView.auxiliaryNameColumnView.font = font
             containerView.auxiliarySequenceTextView.font = font
             containerView.rulerView.update(length: alignmentLength, font: font, textInset: containerView.sequenceTextView.textContainerInset.width)
             context.coordinator.lastFontSize = fontSize
@@ -377,10 +377,9 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     let nameColumnView: AlignmentViewportNameColumnView
     let sequenceScrollView: NSScrollView
-    let auxiliaryNameScrollView: NSScrollView
+    let auxiliaryNameColumnView: AlignmentViewportNameColumnView
     let auxiliarySequenceScrollView: NSScrollView
     let sequenceTextView: AlignmentViewportSequenceTextView
-    let auxiliaryNameTextView: NSTextView
     let auxiliarySequenceTextView: NSTextView
     let rulerView: AlignmentViewportRulerView
 
@@ -399,12 +398,12 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     init(
         nameColumnView: AlignmentViewportNameColumnView,
         sequenceTextView: AlignmentViewportSequenceTextView,
-        auxiliaryNameTextView: NSTextView,
+        auxiliaryNameColumnView: AlignmentViewportNameColumnView,
         auxiliarySequenceTextView: NSTextView
     ) {
         self.nameColumnView = nameColumnView
         self.sequenceTextView = sequenceTextView
-        self.auxiliaryNameTextView = auxiliaryNameTextView
+        self.auxiliaryNameColumnView = auxiliaryNameColumnView
         self.auxiliarySequenceTextView = auxiliarySequenceTextView
 
         sequenceScrollView = NSScrollView()
@@ -413,13 +412,6 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         sequenceScrollView.hasHorizontalScroller = true
         sequenceScrollView.autohidesScrollers = true
         sequenceScrollView.borderType = .noBorder
-
-        auxiliaryNameScrollView = NSScrollView()
-        auxiliaryNameScrollView.documentView = auxiliaryNameTextView
-        auxiliaryNameScrollView.hasVerticalScroller = false
-        auxiliaryNameScrollView.hasHorizontalScroller = false
-        auxiliaryNameScrollView.autohidesScrollers = true
-        auxiliaryNameScrollView.borderType = .noBorder
 
         auxiliarySequenceScrollView = NSScrollView()
         auxiliarySequenceScrollView.documentView = auxiliarySequenceTextView
@@ -470,7 +462,9 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         lineCount: Int,
         fontSize: Double
     ) {
-        auxiliaryNameTextView.textStorage?.setAttributedString(nameText)
+        auxiliaryNameColumnView.rowNames = nameText.string
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map(String.init)
         auxiliarySequenceTextView.textStorage?.setAttributedString(sequenceText)
 
         let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
@@ -479,7 +473,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         let isVisible = lineCount > 0
         leftAuxHeightConstraint?.constant = height
         rightAuxHeightConstraint?.constant = height
-        auxiliaryNameScrollView.isHidden = !isVisible
+        auxiliaryNameColumnView.isHidden = !isVisible
         auxiliarySequenceScrollView.isHidden = !isVisible
         sequenceScrollView.hasHorizontalScroller = !isVisible
         auxiliarySequenceScrollView.hasHorizontalScroller = isVisible
@@ -523,18 +517,12 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             auxiliarySequenceScrollView.reflectScrolledClipView(auxiliarySequenceScrollView.contentView)
         }
 
-        var nameOrigin = auxiliaryNameScrollView.contentView.bounds.origin
-        if abs(nameOrigin.x) > 0.5 {
-            nameOrigin.x = 0
-            auxiliaryNameScrollView.contentView.scroll(to: nameOrigin)
-            auxiliaryNameScrollView.reflectScrolledClipView(auxiliaryNameScrollView.contentView)
-        }
     }
 
     private func setupLayout() {
         [
             splitView, leftPane, rightPane, leftStack, rightStack, leftHeaderSpacer,
-            nameColumnView, sequenceScrollView, auxiliaryNameScrollView, auxiliarySequenceScrollView, rulerView
+            nameColumnView, sequenceScrollView, auxiliaryNameColumnView, auxiliarySequenceScrollView, rulerView
         ].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -550,7 +538,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         leftStack.spacing = 0
         leftStack.addArrangedSubview(leftHeaderSpacer)
         leftStack.addArrangedSubview(nameColumnView)
-        leftStack.addArrangedSubview(auxiliaryNameScrollView)
+        leftStack.addArrangedSubview(auxiliaryNameColumnView)
 
         rightStack.orientation = .vertical
         rightStack.spacing = 0
@@ -558,11 +546,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         rightStack.addArrangedSubview(sequenceScrollView)
         rightStack.addArrangedSubview(auxiliarySequenceScrollView)
 
-        leftAuxHeightConstraint = auxiliaryNameScrollView.heightAnchor.constraint(equalToConstant: 0)
+        leftAuxHeightConstraint = auxiliaryNameColumnView.heightAnchor.constraint(equalToConstant: 0)
         rightAuxHeightConstraint = auxiliarySequenceScrollView.heightAnchor.constraint(equalToConstant: 0)
         leftAuxHeightConstraint?.isActive = true
         rightAuxHeightConstraint?.isActive = true
-        auxiliaryNameScrollView.isHidden = true
+        auxiliaryNameColumnView.isHidden = true
         auxiliarySequenceScrollView.isHidden = true
 
         NSLayoutConstraint.activate([
@@ -664,6 +652,7 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
+        guard onSetReference != nil else { return super.menu(for: event) }
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
         guard row >= 0, row < rowNames.count else { return super.menu(for: event) }
 
