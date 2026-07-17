@@ -320,27 +320,23 @@ enum AlignmentStatistics {
 }
 
 enum IdentityPalette {
-    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor {
+    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor? {
         let clamped = min(max(identity, 0), 1)
         let clampedThreshold = min(max(threshold, 0), 1)
         if clamped >= 1.0 {
-            return NSColor.systemBlue.withAlphaComponent(0.58)
+            return NSColor.systemBlue.withAlphaComponent(0.56)
         }
-        let highBand = clampedThreshold + ((1.0 - clampedThreshold) * 0.66)
-        let midBand = clampedThreshold + ((1.0 - clampedThreshold) * 0.33)
+        let highBand = clampedThreshold + ((1.0 - clampedThreshold) * 0.5)
         if clamped >= highBand {
-            return NSColor.systemBlue.withAlphaComponent(0.42)
-        }
-        if clamped >= midBand {
-            return NSColor.systemTeal.withAlphaComponent(0.34)
+            return NSColor.systemBlue.withAlphaComponent(0.40)
         }
         if clamped >= clampedThreshold {
-            return NSColor.systemGreen.withAlphaComponent(0.24)
+            return NSColor.systemBlue.withAlphaComponent(0.26)
         }
         if clamped >= clampedThreshold * 0.5 {
-            return NSColor.systemYellow.withAlphaComponent(0.22)
+            return NSColor.systemBlue.withAlphaComponent(0.14)
         }
-        return NSColor.systemRed.withAlphaComponent(0.16)
+        return nil
     }
 }
 

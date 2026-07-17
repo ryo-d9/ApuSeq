@@ -460,7 +460,7 @@ private struct RootView: View {
             guard normalizedResidue != majorityResidue else { return nil }
             return ResiduePalette.backgroundColor(for: normalizedResidue)
         case .identity:
-            return model.renderedAlignment.identityByColumn[safe: column].map {
+            return model.renderedAlignment.identityByColumn[safe: column].flatMap {
                 IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)
             }
         }

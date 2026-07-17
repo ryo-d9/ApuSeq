@@ -1016,7 +1016,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             guard residue != majorityResidue else { return nil }
             return ResiduePalette.backgroundColor(for: residue)
         case .identity:
-            return identityByColumn[safe: column].map {
+            return identityByColumn[safe: column].flatMap {
                 IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)
             }
         }
