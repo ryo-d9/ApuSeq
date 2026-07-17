@@ -323,6 +323,7 @@ private struct RootView: View {
 
     @ObservedObject var document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
+    @Environment(\.undoManager) private var undoManager
 
     @State private var model = AlignmentViewModel()
 
@@ -630,7 +631,45 @@ private struct RootView: View {
         if selectedReferenceName == rowToDelete.name, !rows.contains(where: { $0.name == rowToDelete.name }) {
             selectedReferenceName = nil
         }
-        document.rawText = rebuildFASTA(fromRows: rows)
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Delete Sequence")
+    }
+
+    private func applyDocumentRawText(_ newText: String, undoActionName: String) {
+        let currentText = document.rawText
+        guard currentText != newText else { return }
+        registerRawTextUndo(from: newText, to: currentText, actionName: undoActionName)
+        document.rawText = newText
+    }
+
+    private func registerRawTextUndo(from currentText: String, to restoredText: String, actionName: String) {
+        guard let undoManager else { return }
+        Self.registerRawTextUndo(
+            on: undoManager,
+            document: document,
+            from: currentText,
+            to: restoredText,
+            actionName: actionName
+        )
+    }
+
+    private static func registerRawTextUndo(
+        on undoManager: UndoManager,
+        document: ApuSeqDocument,
+        from currentText: String,
+        to restoredText: String,
+        actionName: String
+    ) {
+        undoManager.registerUndo(withTarget: document) { document in
+            registerRawTextUndo(
+                on: undoManager,
+                document: document,
+                from: restoredText,
+                to: currentText,
+                actionName: actionName
+            )
+            document.rawText = restoredText
+        }
+        undoManager.setActionName(actionName)
     }
 
     private func originalRowIndex(forDisplayedRowIndex displayedRowIndex: Int) -> Int? {
