@@ -25,10 +25,10 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let onSetReference: (String?) -> Void
 
     func makeNSView(context: Context) -> AlignmentViewportContainerView {
-        let namesTextView = AlignmentViewportNameTextView(usingTextLayoutManager: true)
-        configureNameTextView(namesTextView, fontSize: fontSize)
-        namesTextView.rowNames = displayedRowNames
-        namesTextView.onSetReference = onSetReference
+        let nameColumnView = AlignmentViewportNameColumnView()
+        nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        nameColumnView.rowNames = displayedRowNames
+        nameColumnView.onSetReference = onSetReference
 
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
         configureMainTextView(sequenceTextView, fontSize: fontSize)
@@ -41,7 +41,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         configureAuxiliaryTextView(auxiliarySequenceTextView, fontSize: fontSize)
 
         let containerView = AlignmentViewportContainerView(
-            namesTextView: namesTextView,
+            nameColumnView: nameColumnView,
             sequenceTextView: sequenceTextView,
             auxiliaryNameTextView: auxiliaryNameTextView,
             auxiliarySequenceTextView: auxiliarySequenceTextView
@@ -55,6 +55,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateNameColumnWidth(defaultNameColumnWidth)
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(displayedRowNames, onSetReference: onSetReference)
+        containerView.updateNameColumnVerticalOffset()
         containerView.updateAuxiliaryPanel(
             nameText: auxiliaryNameAttributedText,
             sequenceText: auxiliarySequenceAttributedText,
@@ -72,7 +73,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         if context.coordinator.lastContentVersion != contentVersion ||
             context.coordinator.lastRenderedFingerprint != fingerprint {
-            containerView.namesTextView.textStorage?.setAttributedString(nameAttributedText)
+            containerView.nameColumnView.rowNames = displayedRowNames
             containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
             context.coordinator.lastContentVersion = contentVersion
             context.coordinator.lastRenderedFingerprint = fingerprint
@@ -85,7 +86,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         if context.coordinator.lastFontSize != fontSize {
             let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-            containerView.namesTextView.font = font
+            containerView.nameColumnView.font = font
             containerView.sequenceTextView.font = font
             containerView.auxiliaryNameTextView.font = font
             containerView.auxiliarySequenceTextView.font = font
@@ -145,26 +146,16 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         func installScrollSync(for containerView: AlignmentViewportContainerView) {
             guard observerTokens.isEmpty else { return }
-            containerView.namesScrollView.contentView.postsBoundsChangedNotifications = true
             containerView.sequenceScrollView.contentView.postsBoundsChangedNotifications = true
             containerView.auxiliarySequenceScrollView.contentView.postsBoundsChangedNotifications = true
-
-            let namesToken = NotificationCenter.default.addObserver(
-                forName: NSView.boundsDidChangeNotification,
-                object: containerView.namesScrollView.contentView,
-                queue: .main
-            ) { [weak self, weak containerView] _ in
-                guard let self, let containerView else { return }
-                self.syncVerticalOffset(from: containerView.namesScrollView, to: containerView.sequenceScrollView)
-            }
 
             let sequenceToken = NotificationCenter.default.addObserver(
                 forName: NSView.boundsDidChangeNotification,
                 object: containerView.sequenceScrollView.contentView,
                 queue: .main
-            ) { [weak self, weak containerView] _ in
-                guard let self, let containerView else { return }
-                self.syncVerticalOffset(from: containerView.sequenceScrollView, to: containerView.namesScrollView)
+            ) { [weak containerView] _ in
+                guard let containerView else { return }
+                containerView.updateNameColumnVerticalOffset()
                 containerView.syncAuxiliaryHorizontalOffset()
                 containerView.rulerView.needsDisplay = true
             }
@@ -179,7 +170,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
                 containerView.rulerView.needsDisplay = true
             }
 
-            observerTokens = [namesToken, sequenceToken, auxiliarySequenceToken]
+            observerTokens = [sequenceToken, auxiliarySequenceToken]
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
@@ -230,17 +221,6 @@ struct AlignmentTextViewport: NSViewRepresentable {
             selectedEndPosition.wrappedValue = maxPosition
         }
 
-        private func syncVerticalOffset(from source: NSScrollView, to destination: NSScrollView) {
-            guard !isSyncingScroll else { return }
-            let sourceY = source.contentView.bounds.origin.y
-            var destinationOrigin = destination.contentView.bounds.origin
-            guard abs(destinationOrigin.y - sourceY) > 0.5 else { return }
-            isSyncingScroll = true
-            destinationOrigin.y = sourceY
-            destination.contentView.scroll(to: destinationOrigin)
-            destination.reflectScrolledClipView(destination.contentView)
-            isSyncingScroll = false
-        }
 
         private func syncHorizontalOffset(from source: NSScrollView, to destination: NSScrollView) {
             guard !isSyncingScroll else { return }
@@ -261,11 +241,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private static let minimumSequenceWidth: CGFloat = 160
     private static let splitViewAutosaveName = NSSplitView.AutosaveName("ApuSeqAlignmentViewportSplitView")
 
-    let namesScrollView: NSScrollView
+    let nameColumnView: AlignmentViewportNameColumnView
     let sequenceScrollView: NSScrollView
     let auxiliaryNameScrollView: NSScrollView
     let auxiliarySequenceScrollView: NSScrollView
-    let namesTextView: AlignmentViewportNameTextView
     let sequenceTextView: AlignmentViewportSequenceTextView
     let auxiliaryNameTextView: NSTextView
     let auxiliarySequenceTextView: NSTextView
@@ -283,22 +262,15 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private var hasInitializedNameWidth = false
 
     init(
-        namesTextView: AlignmentViewportNameTextView,
+        nameColumnView: AlignmentViewportNameColumnView,
         sequenceTextView: AlignmentViewportSequenceTextView,
         auxiliaryNameTextView: NSTextView,
         auxiliarySequenceTextView: NSTextView
     ) {
-        self.namesTextView = namesTextView
+        self.nameColumnView = nameColumnView
         self.sequenceTextView = sequenceTextView
         self.auxiliaryNameTextView = auxiliaryNameTextView
         self.auxiliarySequenceTextView = auxiliarySequenceTextView
-
-        namesScrollView = NSScrollView()
-        namesScrollView.documentView = namesTextView
-        namesScrollView.hasVerticalScroller = true
-        namesScrollView.hasHorizontalScroller = false
-        namesScrollView.autohidesScrollers = true
-        namesScrollView.borderType = .noBorder
 
         sequenceScrollView = NSScrollView()
         sequenceScrollView.documentView = sequenceTextView
@@ -344,8 +316,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 
     func updateNameRows(_ names: [String], onSetReference: @escaping (String?) -> Void) {
-        namesTextView.rowNames = names
-        namesTextView.onSetReference = onSetReference
+        nameColumnView.rowNames = names
+        nameColumnView.onSetReference = onSetReference
     }
 
     func updateAuxiliaryPanel(
@@ -381,7 +353,12 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     override func layout() {
         super.layout()
         applySplitPosition()
+        updateNameColumnVerticalOffset()
         syncAuxiliaryHorizontalOffset()
+    }
+
+    func updateNameColumnVerticalOffset() {
+        nameColumnView.verticalOffset = sequenceScrollView.contentView.bounds.origin.y
     }
 
     func syncAuxiliaryHorizontalOffset() {
@@ -404,7 +381,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private func setupLayout() {
         [
             splitView, leftPane, rightPane, leftStack, rightStack, leftHeaderSpacer,
-            namesScrollView, sequenceScrollView, auxiliaryNameScrollView, auxiliarySequenceScrollView, rulerView
+            nameColumnView, sequenceScrollView, auxiliaryNameScrollView, auxiliarySequenceScrollView, rulerView
         ].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -419,7 +396,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         leftStack.orientation = .vertical
         leftStack.spacing = 0
         leftStack.addArrangedSubview(leftHeaderSpacer)
-        leftStack.addArrangedSubview(namesScrollView)
+        leftStack.addArrangedSubview(nameColumnView)
         leftStack.addArrangedSubview(auxiliaryNameScrollView)
 
         rightStack.orientation = .vertical
@@ -481,9 +458,51 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 }
 
-final class AlignmentViewportNameTextView: NSTextView {
-    var rowNames: [String] = []
+final class AlignmentViewportNameColumnView: NSView {
+    var rowNames: [String] = [] {
+        didSet { needsDisplay = true }
+    }
+    var verticalOffset: CGFloat = 0 {
+        didSet { needsDisplay = true }
+    }
+    var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular) {
+        didSet { needsDisplay = true }
+    }
     var onSetReference: ((String?) -> Void)?
+
+    private let textInset = NSSize(width: 12, height: 12)
+
+    override var isFlipped: Bool { true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.textBackgroundColor.setFill()
+        dirtyRect.fill()
+        guard !rowNames.isEmpty else { return }
+
+        let lineHeight = max(self.lineHeight, 1)
+        let firstRow = max(Int(floor((dirtyRect.minY + verticalOffset - textInset.height) / lineHeight)), 0)
+        let lastRow = min(Int(ceil((dirtyRect.maxY + verticalOffset - textInset.height) / lineHeight)), rowNames.count - 1)
+        guard firstRow <= lastRow else { return }
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineBreakMode = .byTruncatingTail
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.secondaryLabelColor,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        for row in firstRow...lastRow {
+            let y = textInset.height + CGFloat(row) * lineHeight - verticalOffset
+            let rect = NSRect(
+                x: textInset.width,
+                y: y,
+                width: max(bounds.width - (textInset.width * 2), 0),
+                height: lineHeight
+            )
+            (rowNames[row] as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
+        }
+    }
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
@@ -502,14 +521,13 @@ final class AlignmentViewportNameTextView: NSTextView {
     }
 
     private func rowIndex(at point: NSPoint) -> Int {
-        let y = point.y - textContainerInset.height
+        let y = point.y + verticalOffset - textInset.height
         guard y >= 0 else { return -1 }
         return Int(floor(y / max(lineHeight, 1)))
     }
 
     private var lineHeight: CGFloat {
-        guard let font else { return 14 }
-        return ceil(font.ascender - font.descender + font.leading)
+        ceil(font.ascender - font.descender + font.leading)
     }
 
     @objc private func setReferenceFromMenu(_ sender: NSMenuItem) {
