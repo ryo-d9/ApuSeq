@@ -219,8 +219,7 @@ extension NSAttributedString.Key {
 
 enum ResiduePalette {
     static func backgroundColor(for residue: UInt16) -> NSColor? {
-        if residue == 45 || residue == 46 { return nil }
-        return color(for: residue)?.withAlphaComponent(0.22)
+        color(for: residue)?.withAlphaComponent(0.22)
     }
 
     static func color(for residue: UInt16) -> NSColor? {
@@ -240,8 +239,6 @@ enum ResiduePalette {
             return NSColor.systemOrange
         case "T", "U":
             return NSColor.systemRed
-        case "-", ".":
-            return NSColor.tertiaryLabelColor
         case "R", "K", "H":
             return NSColor.systemPurple
         case "D", "E":
