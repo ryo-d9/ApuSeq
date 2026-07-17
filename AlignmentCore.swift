@@ -36,7 +36,6 @@ struct RenderedFingerprint: Equatable {
 enum AlignmentRenderer {
     static func render(
         _ alignment: AlignmentData,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
         fontSize: Double
     ) -> RenderedAlignment {
@@ -76,14 +75,6 @@ enum AlignmentRenderer {
                 range: NSRange(location: sequenceLineStart, length: (row.sequence as NSString).length)
             )
 
-            if showsResidueColors {
-                applyResidueColors(
-                    sequence: row.sequence,
-                    to: sequenceAttributed,
-                    lineStart: sequenceLineStart
-                )
-            }
-
         }
 
         let nameColumnWidth = CGFloat(nameWidth + 2) * CGFloat(fontSize * 0.64) + 20
@@ -95,35 +86,6 @@ enum AlignmentRenderer {
             namesChecksum: UInt64(bitPattern: Int64(namesHasher.finalize())),
             sequenceChecksum: UInt64(bitPattern: Int64(sequenceHasher.finalize()))
         )
-    }
-
-    private static func applyResidueColors(sequence: String, to attributed: NSMutableAttributedString, lineStart: Int) {
-        let residues = sequence as NSString
-        guard residues.length > 0 else { return }
-        var runStart = 0
-        var currentColor = ResiduePalette.color(for: residues.character(at: 0))
-
-        for index in 1...residues.length {
-            let nextColor: NSColor?
-            if index < residues.length {
-                nextColor = ResiduePalette.color(for: residues.character(at: index))
-            } else {
-                nextColor = nil
-            }
-
-            if nextColor == currentColor { continue }
-
-            if let color = currentColor {
-                attributed.addAttribute(
-                    .foregroundColor,
-                    value: color,
-                    range: NSRange(location: lineStart + runStart, length: index - runStart)
-                )
-            }
-
-            runStart = index
-            currentColor = nextColor
-        }
     }
 
     private static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
@@ -256,6 +218,10 @@ extension NSAttributedString.Key {
 }
 
 enum ResiduePalette {
+    static func backgroundColor(for residue: UInt16) -> NSColor? {
+        color(for: residue)?.withAlphaComponent(0.22)
+    }
+
     static func color(for residue: UInt16) -> NSColor? {
         if let scalar = UnicodeScalar(residue) {
             return color(for: Character(scalar))

@@ -23,7 +23,6 @@ private final class AlignmentViewModel {
     var renderedAlignment: RenderedAlignment = .empty
     var parseErrorMessage: String?
     var contentVersion = 0
-    var renderedShowsResidueColors = true
 
     private var alignmentVersion = 0
     private var parseTask: Task<Void, Never>?
@@ -31,8 +30,7 @@ private final class AlignmentViewModel {
     private var cachedRenderVersion = -1
     private var cachedRenderFontSize = -1.0
     private var cachedRenderIdentityMode = false
-    private var cachedPlainAlignment: RenderedAlignment?
-    private var cachedColoredAlignment: RenderedAlignment?
+    private var cachedAlignment: RenderedAlignment?
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
@@ -41,7 +39,6 @@ private final class AlignmentViewModel {
     func parseAndRender(
         rawText: String,
         fontSize: Double,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
         referenceName: String?
     ) {
@@ -70,7 +67,6 @@ private final class AlignmentViewModel {
                     clearCache()
                     rerender(
                         fontSize: fontSize,
-                        showsResidueColors: showsResidueColors,
                         needsIdentityByColumn: needsIdentityByColumn,
                         referenceName: referenceName
                     )
@@ -91,7 +87,6 @@ private final class AlignmentViewModel {
 
     func rerender(
         fontSize: Double,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
         referenceName: String?
     ) {
@@ -106,16 +101,11 @@ private final class AlignmentViewModel {
             cachedRenderVersion = alignmentVersion
             cachedRenderFontSize = fontSize
             cachedRenderIdentityMode = needsIdentityByColumn
-            cachedPlainAlignment = nil
-            cachedColoredAlignment = nil
+            cachedAlignment = nil
         }
 
-        if showsResidueColors, let colored = cachedColoredAlignment {
-            apply(colored, showsResidueColors: true)
-            return
-        }
-        if !showsResidueColors, let plain = cachedPlainAlignment {
-            apply(plain, showsResidueColors: false)
+        if let cachedAlignment {
+            apply(cachedAlignment)
             return
         }
 
@@ -131,7 +121,6 @@ private final class AlignmentViewModel {
             let rendered: RenderedAlignment = await runOnBackground {
                 AlignmentRenderer.render(
                     displayAlignment,
-                    showsResidueColors: showsResidueColors,
                     needsIdentityByColumn: needsIdentityByColumn,
                     fontSize: fontSize
                 )
@@ -139,12 +128,8 @@ private final class AlignmentViewModel {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentVersion == alignmentVersion else { return }
-                if showsResidueColors {
-                    cachedColoredAlignment = rendered
-                } else {
-                    cachedPlainAlignment = rendered
-                }
-                apply(rendered, showsResidueColors: showsResidueColors)
+                cachedAlignment = rendered
+                apply(rendered)
             }
         }
     }
@@ -207,15 +192,13 @@ private final class AlignmentViewModel {
         return alignment.rows.contains(where: { $0.name == name })
     }
 
-    private func apply(_ rendered: RenderedAlignment, showsResidueColors: Bool) {
+    private func apply(_ rendered: RenderedAlignment) {
         renderedAlignment = rendered
-        renderedShowsResidueColors = showsResidueColors
         contentVersion += 1
     }
 
     private func clearCache() {
-        cachedPlainAlignment = nil
-        cachedColoredAlignment = nil
+        cachedAlignment = nil
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
@@ -272,6 +255,14 @@ private final class AlignmentViewModel {
     }
 }
 
+enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
+    case residue = "Residue"
+    case identity = "Identity"
+    case none = "None"
+
+    var id: String { rawValue }
+}
+
 private struct RootView: View {
     private enum ViewerMode: String, CaseIterable, Identifiable {
         case view = "View"
@@ -287,8 +278,7 @@ private struct RootView: View {
 
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
     @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
-    @State private var showsResidueColors = true
-    @State private var showsIdentityShading = false
+    @State private var backgroundMode: AlignmentBackgroundMode = .residue
     @State private var showsInspector = false
     @State private var selectedResidueCount = 0
     @State private var selectedStartPosition: Int?
@@ -302,7 +292,7 @@ private struct RootView: View {
     @State private var viewerMode: ViewerMode = .view
 
     private var needsIdentityByColumn: Bool {
-        showsIdentityShading || showsConservationPanel
+        backgroundMode == .identity || showsConservationPanel
     }
 
     private var displayRows: [AlignmentRow] {
@@ -380,7 +370,7 @@ private struct RootView: View {
                         sequenceChecksum: model.renderedAlignment.sequenceChecksum,
                         alignmentLength: displayAlignment.length,
                         identityByColumn: model.renderedAlignment.identityByColumn,
-                        showsIdentityShading: showsIdentityShading,
+                        backgroundMode: backgroundMode,
                         identityColorThreshold: identityColorThreshold,
                         fontSize: alignmentFontSize,
                         contentVersion: model.contentVersion,
@@ -409,8 +399,7 @@ private struct RootView: View {
                         selectedResidueCount: selectedResidueCount,
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
-                        showsResidueColors: $showsResidueColors,
-                        showsIdentityShading: $showsIdentityShading
+                        backgroundMode: $backgroundMode
                     )
                 }
             }
@@ -447,11 +436,13 @@ private struct RootView: View {
             parseAndRender()
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
-        .onChange(of: showsResidueColors) { _, _ in rerender() }
-        .onChange(of: showsIdentityShading) { _, _ in rerender() }
+        .onChange(of: backgroundMode) { _, newValue in
+            if newValue == .identity {
+                rerender()
+            }
+        }
         .onChange(of: showsConservationPanel) { _, _ in rerender() }
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
-        .onChange(of: identityColorThreshold) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
     }
 
@@ -462,7 +453,6 @@ private struct RootView: View {
         model.parseAndRender(
             rawText: document.rawText,
             fontSize: alignmentFontSize,
-            showsResidueColors: showsResidueColors,
             needsIdentityByColumn: needsIdentityByColumn,
             referenceName: selectedReferenceName
         )
@@ -471,7 +461,6 @@ private struct RootView: View {
     private func rerender() {
         model.rerender(
             fontSize: alignmentFontSize,
-            showsResidueColors: showsResidueColors,
             needsIdentityByColumn: needsIdentityByColumn,
             referenceName: selectedReferenceName
         )

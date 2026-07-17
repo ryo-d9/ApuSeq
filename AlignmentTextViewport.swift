@@ -8,7 +8,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let sequenceChecksum: UInt64
     let alignmentLength: Int
     let identityByColumn: [Double]
-    let showsIdentityShading: Bool
+    let backgroundMode: AlignmentBackgroundMode
     let identityColorThreshold: Double
     let fontSize: Double
     let contentVersion: Int
@@ -101,7 +101,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.sequenceTextView.updateAlignmentDisplay(
             alignmentLength: alignmentLength,
             identityByColumn: identityByColumn,
-            showsIdentityShading: showsIdentityShading,
+            backgroundMode: backgroundMode,
             identityColorThreshold: identityColorThreshold
         )
         containerView.rulerView.update(
@@ -159,9 +159,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
                 queue: .main
             ) { [weak containerView] _ in
                 guard let containerView else { return }
-                containerView.updateNameColumnVerticalOffset()
-                containerView.syncAuxiliaryHorizontalOffset()
-                containerView.rulerView.needsDisplay = true
+                containerView.handleSequenceBoundsChange()
             }
 
             let auxiliarySequenceToken = NotificationCenter.default.addObserver(
@@ -383,6 +381,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = 180
     private var hasInitializedNameWidth = false
+    private var lastSequenceHorizontalOffset = CGFloat.greatestFiniteMagnitude
 
     init(
         nameColumnView: AlignmentViewportNameColumnView,
@@ -439,7 +438,9 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 
     func updateNameRows(_ names: [String], onSetReference: @escaping (String?) -> Void) {
-        nameColumnView.rowNames = names
+        if nameColumnView.rowNames != names {
+            nameColumnView.rowNames = names
+        }
         nameColumnView.onSetReference = onSetReference
     }
 
@@ -482,6 +483,15 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func updateNameColumnVerticalOffset() {
         nameColumnView.verticalOffset = sequenceScrollView.contentView.bounds.origin.y
+    }
+
+    func handleSequenceBoundsChange() {
+        let origin = sequenceScrollView.contentView.bounds.origin
+        updateNameColumnVerticalOffset()
+        guard abs(origin.x - lastSequenceHorizontalOffset) > 0.5 else { return }
+        lastSequenceHorizontalOffset = origin.x
+        syncAuxiliaryHorizontalOffset()
+        rulerView.needsDisplay = true
     }
 
     func syncAuxiliaryHorizontalOffset() {
@@ -586,7 +596,11 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var verticalOffset: CGFloat = 0 {
-        didSet { needsDisplay = true }
+        didSet {
+            if abs(verticalOffset - oldValue) > 0.5 {
+                needsDisplay = true
+            }
+        }
     }
     var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular) {
         didSet { needsDisplay = true }
@@ -676,11 +690,9 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
 
-    var alignmentLength = 0 {
-        didSet { needsDisplay = true }
-    }
+    var alignmentLength = 0
     private var identityByColumn: [Double] = []
-    private var showsIdentityShading = false
+    private var backgroundMode: AlignmentBackgroundMode = .residue
     private var identityColorThreshold = 0.5
 
     func applyColumnReplacement(_ replacement: String, to ranges: [NSRange]) {
@@ -796,26 +808,34 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     func updateAlignmentDisplay(
         alignmentLength: Int,
         identityByColumn: [Double],
-        showsIdentityShading: Bool,
+        backgroundMode: AlignmentBackgroundMode,
         identityColorThreshold: Double
     ) {
+        let needsRedraw =
+            self.alignmentLength != alignmentLength ||
+            self.identityByColumn.count != identityByColumn.count ||
+            self.backgroundMode != backgroundMode ||
+            abs(self.identityColorThreshold - identityColorThreshold) > 0.001
         self.alignmentLength = alignmentLength
         self.identityByColumn = identityByColumn
-        self.showsIdentityShading = showsIdentityShading
+        self.backgroundMode = backgroundMode
         self.identityColorThreshold = identityColorThreshold
-        needsDisplay = true
+        if needsRedraw {
+            needsDisplay = true
+        }
     }
 
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
-        guard showsIdentityShading, alignmentLength > 0, !identityByColumn.isEmpty else { return }
+        guard backgroundMode != .none, alignmentLength > 0 else { return }
         guard let font else { return }
 
         let charWidth = max(("M" as NSString).size(withAttributes: [.font: font]).width, 1)
         let lineHeight = max(ceil(font.ascender - font.descender + font.leading), 1)
         let inset = textContainerInset
         let lineSpan = alignmentLength + 1
-        let textLength = (string as NSString).length
+        let text = string as NSString
+        let textLength = text.length
         guard textLength > 0 else { return }
 
         let visibleMinY = max(rect.minY - inset.height, 0)
@@ -846,7 +866,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
             for column in firstColumn...lastColumn {
                 guard rowStart + column < textLength else { break }
-                guard let color = identityByColumn[safe: column].map({ IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold) }) else {
+                guard let color = backgroundColor(in: text, at: rowStart + column, column: column) else {
                     flushRun(endColumn: column)
                     runStart = nil
                     runColor = nil
@@ -862,6 +882,19 @@ final class AlignmentViewportSequenceTextView: NSTextView {
                 }
             }
             flushRun(endColumn: lastColumn + 1)
+        }
+    }
+
+    private func backgroundColor(in text: NSString, at textIndex: Int, column: Int) -> NSColor? {
+        switch backgroundMode {
+        case .none:
+            return nil
+        case .residue:
+            return ResiduePalette.backgroundColor(for: text.character(at: textIndex))
+        case .identity:
+            return identityByColumn[safe: column].map {
+                IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)
+            }
         }
     }
 }

@@ -7,8 +7,7 @@ struct FooterBar: View {
     let selectedResidueCount: Int
     let selectedStartPosition: Int?
     let selectedEndPosition: Int?
-    @Binding var showsResidueColors: Bool
-    @Binding var showsIdentityShading: Bool
+    @Binding var backgroundMode: AlignmentBackgroundMode
 
     var body: some View {
         HStack(spacing: 12) {
@@ -20,14 +19,10 @@ struct FooterBar: View {
                 Label("pos \(selectedStartPosition)-\(selectedEndPosition)", systemImage: "arrow.left.and.right")
             }
             Spacer()
-            Picker("Residue Color", selection: $showsResidueColors) {
-                Text("Residue").tag(true)
-                Text("Plain").tag(false)
-            }
-            .pickerStyle(.menu)
-            Picker("Identity Shading", selection: $showsIdentityShading) {
-                Text("Identity").tag(true)
-                Text("Plain").tag(false)
+            Picker("Background", selection: $backgroundMode) {
+                ForEach(AlignmentBackgroundMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
             }
             .pickerStyle(.menu)
         }
