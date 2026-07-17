@@ -9,10 +9,10 @@ import Observation
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: ApuSeqDocument
+    @ObservedObject var document: ApuSeqDocument
 
     var body: some View {
-        RootView(document: $document)
+        RootView(document: document)
     }
 }
 
@@ -280,7 +280,7 @@ private struct RootView: View {
         var id: String { rawValue }
     }
 
-    @Binding var document: ApuSeqDocument
+    @ObservedObject var document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
 
     @State private var model = AlignmentViewModel()
@@ -563,5 +563,5 @@ private enum AuxiliaryPanelBuilder {
 }
 
 #Preview {
-    ContentView(document: .constant(ApuSeqDocument()))
+    ContentView(document: ApuSeqDocument())
 }

@@ -29,8 +29,8 @@ extension FocusedValues {
 @main
 struct ApuSeqApp: App {
     var body: some Scene {
-        DocumentGroup(newDocument: ApuSeqDocument()) { file in
-            ContentView(document: file.$document)
+        DocumentGroup(newDocument: { ApuSeqDocument() }) { file in
+            ContentView(document: file.document)
         }
         .commands {
             FindCommands()
@@ -140,13 +140,13 @@ private struct TranslationCommands: Commands {
                     codonTable: codonTable
                 )
                 await MainActor.run {
-                    newDocument(
+                    newDocument {
                         ApuSeqDocument(
                             rawText: translated,
                             suggestedSaveFilename: "\(context.fileBaseName)_translated",
                             markEditedOnFirstDisplay: true
                         )
-                    )
+                    }
                 }
             } catch {
                 NSSound.beep()
