@@ -21,6 +21,8 @@ struct ContentView: View {
 private final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
+    var displayedRows: [AlignmentRow] = []
+    var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
 
@@ -31,7 +33,9 @@ private final class AlignmentViewModel {
     private var cachedRenderFontSize = -1.0
     private var cachedRenderIdentityMode = false
     private var cachedRenderMajorityMode = false
+    private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
     private var cachedAlignment: RenderedAlignment?
+    private var cachedDisplayedRows: [AlignmentRow] = []
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
@@ -42,6 +46,7 @@ private final class AlignmentViewModel {
         fontSize: Double,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
         referenceName: String?
     ) {
         parseTask?.cancel()
@@ -50,6 +55,8 @@ private final class AlignmentViewModel {
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alignment = .empty
             renderedAlignment = .empty
+            displayedRows = []
+            renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
             clearCache()
@@ -71,6 +78,7 @@ private final class AlignmentViewModel {
                         fontSize: fontSize,
                         needsIdentityByColumn: needsIdentityByColumn,
                         needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                        displayOrderMode: displayOrderMode,
                         referenceName: referenceName
                     )
                 }
@@ -80,6 +88,8 @@ private final class AlignmentViewModel {
                 await MainActor.run {
                     alignment = .empty
                     renderedAlignment = .empty
+                    displayedRows = []
+                    renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
                     contentVersion += 1
@@ -92,6 +102,7 @@ private final class AlignmentViewModel {
         fontSize: Double,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
         referenceName: String?
     ) {
         renderTask?.cancel()
@@ -100,43 +111,55 @@ private final class AlignmentViewModel {
             cachedRenderVersion == alignmentVersion &&
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
             cachedRenderIdentityMode == needsIdentityByColumn &&
-            cachedRenderMajorityMode == needsMajorityResidueByColumn
+            cachedRenderMajorityMode == needsMajorityResidueByColumn &&
+            cachedRenderOrderMode == displayOrderMode
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
             cachedRenderFontSize = fontSize
             cachedRenderIdentityMode = needsIdentityByColumn
             cachedRenderMajorityMode = needsMajorityResidueByColumn
+            cachedRenderOrderMode = displayOrderMode
             cachedAlignment = nil
+            cachedDisplayedRows = []
         }
 
         if let cachedAlignment {
-            apply(cachedAlignment)
+            apply(cachedAlignment, displayedRows: cachedDisplayedRows, displayOrderMode: displayOrderMode)
             return
         }
 
-        let displayAlignment = AlignmentData(
-            format: alignment.format,
-            rows: rowsExcludingReference(referenceName),
-            length: alignment.length,
-            sequenceKind: alignment.sequenceKind
-        )
+        let baseRows = rowsExcludingReference(referenceName)
+        let format = alignment.format
+        let length = alignment.length
+        let sequenceKind = alignment.sequenceKind
         let currentVersion = alignmentVersion
 
         renderTask = Task(priority: .userInitiated) {
-            let rendered: RenderedAlignment = await runOnBackground {
-                AlignmentRenderer.render(
+            let renderResult: (RenderedAlignment, [AlignmentRow]) = await runOnBackground {
+                let orderedRows = displayOrderMode == .upgma
+                    ? AlignmentClusterer.upgmaOrderedRows(baseRows)
+                    : baseRows
+                let displayAlignment = AlignmentData(
+                    format: format,
+                    rows: orderedRows,
+                    length: length,
+                    sequenceKind: sequenceKind
+                )
+                let rendered = AlignmentRenderer.render(
                     displayAlignment,
                     needsIdentityByColumn: needsIdentityByColumn,
                     needsMajorityResidueByColumn: needsMajorityResidueByColumn,
                     fontSize: fontSize
                 )
+                return (rendered, orderedRows)
             }
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentVersion == alignmentVersion else { return }
-                cachedAlignment = rendered
-                apply(rendered)
+                cachedAlignment = renderResult.0
+                cachedDisplayedRows = renderResult.1
+                apply(renderResult.0, displayedRows: renderResult.1, displayOrderMode: displayOrderMode)
             }
         }
     }
@@ -199,17 +222,25 @@ private final class AlignmentViewModel {
         return alignment.rows.contains(where: { $0.name == name })
     }
 
-    private func apply(_ rendered: RenderedAlignment) {
+    private func apply(
+        _ rendered: RenderedAlignment,
+        displayedRows: [AlignmentRow],
+        displayOrderMode: AlignmentDisplayOrderMode
+    ) {
         renderedAlignment = rendered
+        self.displayedRows = displayedRows
+        renderedDisplayOrderMode = displayOrderMode
         contentVersion += 1
     }
 
     private func clearCache() {
         cachedAlignment = nil
+        cachedDisplayedRows = []
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
         cachedRenderMajorityMode = false
+        cachedRenderOrderMode = .original
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
@@ -271,6 +302,13 @@ enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum AlignmentDisplayOrderMode: String, CaseIterable, Identifiable {
+    case original = "Original"
+    case upgma = "UPGMA"
+
+    var id: String { rawValue }
+}
+
 private struct RootView: View {
     private enum ViewerMode: String, CaseIterable, Identifiable {
         case view = "View"
@@ -287,6 +325,7 @@ private struct RootView: View {
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
     @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @State private var backgroundMode: AlignmentBackgroundMode = .residue
+    @State private var displayOrderMode: AlignmentDisplayOrderMode = .original
     @State private var showsInspector = false
     @State private var selectedResidueCount = 0
     @State private var selectedStartPosition: Int?
@@ -308,7 +347,15 @@ private struct RootView: View {
     }
 
     private var displayRows: [AlignmentRow] {
-        model.rowsExcludingReference(selectedReferenceName)
+        model.displayedRows.isEmpty ? model.rowsExcludingReference(selectedReferenceName) : model.displayedRows
+    }
+
+    private var effectiveDisplayOrderMode: AlignmentDisplayOrderMode {
+        viewerMode == .view ? displayOrderMode : .original
+    }
+
+    private var canEditRenderedRows: Bool {
+        viewerMode == .edit && model.renderedDisplayOrderMode == .original
     }
 
     private var displayAlignment: AlignmentData {
@@ -457,7 +504,7 @@ private struct RootView: View {
                         auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
                         auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
-                        isEditMode: viewerMode == .edit,
+                        isEditMode: canEditRenderedRows,
                         onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
@@ -493,6 +540,15 @@ private struct RootView: View {
                 .pickerStyle(.menu)
                 .help("Switch between read-only view and edit mode")
 
+                Picker("Order", selection: $displayOrderMode) {
+                    ForEach(AlignmentDisplayOrderMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(viewerMode == .edit)
+                .help("Change sequence display order in view mode")
+
                 Button {
                     showsInspector.toggle()
                 } label: {
@@ -521,6 +577,8 @@ private struct RootView: View {
         }
         .onChange(of: showsConservationPanel) { _, _ in rerender() }
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
+        .onChange(of: displayOrderMode) { _, _ in rerender() }
+        .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
     }
 
@@ -533,6 +591,7 @@ private struct RootView: View {
             fontSize: alignmentFontSize,
             needsIdentityByColumn: needsIdentityByColumn,
             needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
     }
@@ -542,6 +601,7 @@ private struct RootView: View {
             fontSize: alignmentFontSize,
             needsIdentityByColumn: needsIdentityByColumn,
             needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
     }
