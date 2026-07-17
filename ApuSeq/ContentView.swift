@@ -373,7 +373,7 @@ private struct RootView: View {
                 )
             } else {
                 VStack(spacing: 0) {
-                    AlignmentTextView(
+                    AlignmentTextViewport(
                         nameAttributedText: model.renderedAlignment.nameAttributedText,
                         sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
                         namesChecksum: model.renderedAlignment.namesChecksum,
@@ -382,7 +382,6 @@ private struct RootView: View {
                         identityByColumn: model.renderedAlignment.identityByColumn,
                         showsIdentityShading: showsIdentityShading,
                         identityColorThreshold: identityColorThreshold,
-                        renderedShowsResidueColors: model.renderedShowsResidueColors,
                         fontSize: alignmentFontSize,
                         contentVersion: model.contentVersion,
                         defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
@@ -390,7 +389,6 @@ private struct RootView: View {
                         auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
                         auxiliarySequenceAttributedText: auxiliaryAttributedText(auxiliaryPanel.rightText),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
-                        preferredUnsavedFilename: documentConfiguration?.fileURL == nil ? document.suggestedSaveFilename : nil,
                         isEditMode: viewerMode == .edit,
                         onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
