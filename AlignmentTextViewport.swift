@@ -23,12 +23,15 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var selectedResidueCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
+    let onDeleteSequence: (Int) -> Void
     let onSetReference: (String?) -> Void
 
     func makeNSView(context: Context) -> AlignmentViewportContainerView {
         let nameColumnView = AlignmentViewportNameColumnView()
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
+        nameColumnView.isEditMode = isEditMode
+        nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
 
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
@@ -51,7 +54,12 @@ struct AlignmentTextViewport: NSViewRepresentable {
             auxiliaryNameTextView: auxiliaryNameTextView,
             auxiliarySequenceTextView: auxiliarySequenceTextView
         )
-        containerView.updateNameRows(displayedRowNames, onSetReference: onSetReference)
+        containerView.updateNameRows(
+            displayedRowNames,
+            isEditMode: isEditMode,
+            onDeleteSequence: onDeleteSequence,
+            onSetReference: onSetReference
+        )
         context.coordinator.installScrollSync(for: containerView)
         return containerView
     }
@@ -59,7 +67,12 @@ struct AlignmentTextViewport: NSViewRepresentable {
     func updateNSView(_ containerView: AlignmentViewportContainerView, context: Context) {
         containerView.updateNameColumnWidth(defaultNameColumnWidth)
         containerView.updateEditMode(isEditable: isEditMode)
-        containerView.updateNameRows(displayedRowNames, onSetReference: onSetReference)
+        containerView.updateNameRows(
+            displayedRowNames,
+            isEditMode: isEditMode,
+            onDeleteSequence: onDeleteSequence,
+            onSetReference: onSetReference
+        )
         containerView.updateNameColumnVerticalOffset()
         containerView.updateAuxiliaryPanel(
             nameText: auxiliaryNameAttributedText,
@@ -437,10 +450,17 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         sequenceTextView.isSelectable = true
     }
 
-    func updateNameRows(_ names: [String], onSetReference: @escaping (String?) -> Void) {
+    func updateNameRows(
+        _ names: [String],
+        isEditMode: Bool,
+        onDeleteSequence: @escaping (Int) -> Void,
+        onSetReference: @escaping (String?) -> Void
+    ) {
         if nameColumnView.rowNames != names {
             nameColumnView.rowNames = names
         }
+        nameColumnView.isEditMode = isEditMode
+        nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
     }
 
@@ -605,6 +625,8 @@ final class AlignmentViewportNameColumnView: NSView {
     var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular) {
         didSet { needsDisplay = true }
     }
+    var isEditMode = false
+    var onDeleteSequence: ((Int) -> Void)?
     var onSetReference: ((String?) -> Void)?
 
     private let textInset = NSSize(width: 12, height: 12)
@@ -654,6 +676,14 @@ final class AlignmentViewportNameColumnView: NSView {
         let clearItem = NSMenuItem(title: "Clear Reference", action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
         clearItem.target = self
         menu.addItem(clearItem)
+
+        if isEditMode {
+            menu.addItem(.separator())
+            let deleteItem = NSMenuItem(title: "Delete Sequence", action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
+            deleteItem.target = self
+            deleteItem.representedObject = row
+            menu.addItem(deleteItem)
+        }
         return menu
     }
 
@@ -673,6 +703,11 @@ final class AlignmentViewportNameColumnView: NSView {
 
     @objc private func clearReferenceFromMenu(_ sender: NSMenuItem) {
         onSetReference?(nil)
+    }
+
+    @objc private func deleteSequenceFromMenu(_ sender: NSMenuItem) {
+        guard let row = sender.representedObject as? Int else { return }
+        onDeleteSequence?(row)
     }
 }
 

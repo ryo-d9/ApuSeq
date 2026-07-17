@@ -512,7 +512,8 @@ private struct RootView: View {
                         onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
-                        selectedEndPosition: $selectedEndPosition
+                        selectedEndPosition: $selectedEndPosition,
+                        onDeleteSequence: deleteDisplayedSequence
                     ) { selectedName in
                         selectedReferenceName = selectedName
                         if selectedName != nil {
@@ -617,6 +618,39 @@ private struct RootView: View {
         document.rawText = rebuilt
     }
 
+    private func deleteDisplayedSequence(at displayedRowIndex: Int) {
+        guard viewerMode == .edit else { return }
+        guard model.alignment.rows.count > 1 else { return }
+        guard let originalRowIndex = originalRowIndex(forDisplayedRowIndex: displayedRowIndex) else { return }
+
+        let rowToDelete = model.alignment.rows[originalRowIndex]
+        var rows = model.alignment.rows
+        rows.remove(at: originalRowIndex)
+
+        if selectedReferenceName == rowToDelete.name, !rows.contains(where: { $0.name == rowToDelete.name }) {
+            selectedReferenceName = nil
+        }
+        document.rawText = rebuildFASTA(fromRows: rows)
+    }
+
+    private func originalRowIndex(forDisplayedRowIndex displayedRowIndex: Int) -> Int? {
+        guard displayedRowIndex >= 0 else { return nil }
+        var displayedIndex = 0
+        var skippedReference = false
+
+        for (originalIndex, row) in model.alignment.rows.enumerated() {
+            if !skippedReference, row.name == selectedReferenceName {
+                skippedReference = true
+                continue
+            }
+            if displayedIndex == displayedRowIndex {
+                return originalIndex
+            }
+            displayedIndex += 1
+        }
+        return nil
+    }
+
     private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
         var sequenceLines = editedText
             .split(separator: "\n", omittingEmptySubsequences: false)
@@ -625,13 +659,21 @@ private struct RootView: View {
             sequenceLines.removeLast()
         }
         guard sequenceLines.count == displayRows.count else { return nil }
+        let rows = zip(displayRows, sequenceLines).map { row, sequence in
+            AlignmentRow(name: row.name, sequence: sequence)
+        }
+        return rebuildFASTA(fromRows: rows)
+    }
+
+    private func rebuildFASTA(fromRows rows: [AlignmentRow]) -> String {
         var output = ""
-        output.reserveCapacity(editedText.count + (displayRows.count * 16))
-        for (row, sequence) in zip(displayRows, sequenceLines) {
+        let sequenceLength = rows.reduce(0) { $0 + $1.sequence.count }
+        output.reserveCapacity(sequenceLength + (rows.count * 16))
+        for row in rows {
             output += ">"
             output += row.name
             output += "\n"
-            output += sequence
+            output += row.sequence
             output += "\n"
         }
         return output
