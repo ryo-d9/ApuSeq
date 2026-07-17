@@ -13,7 +13,7 @@
 		2A19ABA72FA08B7C00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
 		2A19ABA82FA08B7D00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
 		2AD641623009F90B00C187F5 /* AlignmentTextViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD641613009F90B00C187F5 /* AlignmentTextViewport.swift */; };
-		9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */; };
+		9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,15 +27,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		9A0000052F9FAAAA00434619 /* Embed App Extensions */ = {
+		9A0000052F9FAAAA00434619 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed App Extensions */,
+				9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -137,7 +137,7 @@
 				2AE5D2252F9F91EF00434619 /* Sources */,
 				2AE5D2262F9F91EF00434619 /* Frameworks */,
 				2AE5D2272F9F91EF00434619 /* Resources */,
-				9A0000052F9FAAAA00434619 /* Embed App Extensions */,
+				9A0000052F9FAAAA00434619 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -184,7 +184,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					2AE5D2282F9F91EF00434619 = {
 						CreatedOnToolsVersion = 26.4.1;
@@ -271,6 +271,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -305,6 +306,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -365,6 +367,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -390,6 +393,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -429,6 +433,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -447,6 +452,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -457,7 +463,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ApuSeqQuickLookExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -480,7 +490,11 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ApuSeqQuickLookExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
