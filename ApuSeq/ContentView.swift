@@ -409,12 +409,13 @@ private struct RootView: View {
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
         )
-        guard let consensusRange = content.consensusRange else { return attributed }
-        applyConsensusBackground(to: attributed, in: consensusRange)
+        for range in content.coloredRanges {
+            applyAuxiliaryBackground(to: attributed, in: range)
+        }
         return attributed
     }
 
-    private func applyConsensusBackground(to attributed: NSMutableAttributedString, in range: NSRange) {
+    private func applyAuxiliaryBackground(to attributed: NSMutableAttributedString, in range: NSRange) {
         guard range.length > 0 else { return }
         let text = attributed.string as NSString
         var runStart: Int?
@@ -431,7 +432,7 @@ private struct RootView: View {
 
         for offset in 0..<range.length {
             let location = range.location + offset
-            let color = consensusBackgroundColor(for: text.character(at: location), column: offset)
+            let color = auxiliaryBackgroundColor(for: text.character(at: location), column: offset)
             guard let color else {
                 flushRun(endOffset: offset)
                 runStart = nil
@@ -450,7 +451,7 @@ private struct RootView: View {
         flushRun(endOffset: range.length)
     }
 
-    private func consensusBackgroundColor(for residue: UInt16, column: Int) -> NSColor? {
+    private func auxiliaryBackgroundColor(for residue: UInt16, column: Int) -> NSColor? {
         switch backgroundMode {
         case .residue:
             return ResiduePalette.backgroundColor(for: residue)
@@ -755,9 +756,9 @@ private struct AuxiliaryPanelContent {
     let leftText: String
     let rightText: String
     let lineCount: Int
-    let consensusRange: NSRange?
+    let coloredRanges: [NSRange]
 
-    static let empty = AuxiliaryPanelContent(leftText: "", rightText: "", lineCount: 0, consensusRange: nil)
+    static let empty = AuxiliaryPanelContent(leftText: "", rightText: "", lineCount: 0, coloredRanges: [])
 }
 
 private enum AuxiliaryPanelBuilder {
@@ -770,14 +771,14 @@ private enum AuxiliaryPanelBuilder {
         var left: [String] = []
         var right: [String] = []
         var rightUTF16Length = 0
-        var consensusRange: NSRange?
+        var coloredRanges: [NSRange] = []
 
-        func appendLine(label: String, sequence: String, isConsensus: Bool = false) {
+        func appendLine(label: String, sequence: String, appliesColor: Bool = false) {
             if !right.isEmpty {
                 rightUTF16Length += 1
             }
-            if isConsensus {
-                consensusRange = NSRange(location: rightUTF16Length, length: (sequence as NSString).length)
+            if appliesColor {
+                coloredRanges.append(NSRange(location: rightUTF16Length, length: (sequence as NSString).length))
             }
             left.append(label)
             right.append(sequence)
@@ -785,10 +786,10 @@ private enum AuxiliaryPanelBuilder {
         }
 
         if referenceSequence != nil {
-            appendLine(label: referenceLabel ?? "Ref:", sequence: referenceSequence ?? "")
+            appendLine(label: referenceLabel ?? "Ref:", sequence: referenceSequence ?? "", appliesColor: true)
         }
         if let consensusSequence {
-            appendLine(label: "Consensus", sequence: consensusSequence, isConsensus: true)
+            appendLine(label: "Consensus", sequence: consensusSequence, appliesColor: true)
         }
         if let conservation {
             appendLine(label: "Identity", sequence: conservationBars(from: conservation))
@@ -798,7 +799,7 @@ private enum AuxiliaryPanelBuilder {
             leftText: left.joined(separator: "\n"),
             rightText: right.joined(separator: "\n"),
             lineCount: max(left.count, right.count),
-            consensusRange: consensusRange
+            coloredRanges: coloredRanges
         )
     }
 
