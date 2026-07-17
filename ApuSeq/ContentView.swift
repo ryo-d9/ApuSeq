@@ -614,9 +614,12 @@ private struct RootView: View {
     }
 
     private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
-        let sequenceLines = editedText
+        var sequenceLines = editedText
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
+        if sequenceLines.last == "" {
+            sequenceLines.removeLast()
+        }
         guard sequenceLines.count == displayRows.count else { return nil }
         var output = ""
         output.reserveCapacity(editedText.count + (displayRows.count * 16))
