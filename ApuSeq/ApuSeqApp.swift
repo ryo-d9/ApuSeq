@@ -36,6 +36,7 @@ struct ApuSeqApp: App {
             FindCommands()
             TranslationCommands()
             ViewPanelCommands()
+            ColumnSelectionCommands()
         }
 
         Settings {
@@ -62,6 +63,23 @@ private struct FindCommands: Commands {
                 FindActionDispatcher.perform(.previousMatch)
             }
             .keyboardShortcut("g", modifiers: [.command, .shift])
+        }
+    }
+}
+
+private struct ColumnSelectionCommands: Commands {
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Divider()
+            Button("Select Column Up") {
+                _ = NSApp.sendAction(Selector(("selectColumnUp:")), to: nil, from: nil)
+            }
+            .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
+
+            Button("Select Column Down") {
+                _ = NSApp.sendAction(Selector(("selectColumnDown:")), to: nil, from: nil)
+            }
+            .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
         }
     }
 }
@@ -139,6 +157,7 @@ private struct TranslationCommands: Commands {
 
 private struct AppSettingsView: View {
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
+    @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
 
     var body: some View {
@@ -148,6 +167,15 @@ private struct AppSettingsView: View {
                 HStack {
                     Slider(value: $alignmentFontSize, in: 8...24, step: 1)
                     Text("\(Int(alignmentFontSize)) pt")
+                        .frame(width: 56, alignment: .trailing)
+                        .monospacedDigit()
+                }
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Identity Threshold")
+                HStack {
+                    Slider(value: $identityColorThreshold, in: 0.1...0.9, step: 0.01)
+                    Text("\(Int(identityColorThreshold * 100))%")
                         .frame(width: 56, alignment: .trailing)
                         .monospacedDigit()
                 }

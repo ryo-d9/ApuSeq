@@ -273,12 +273,20 @@ private final class AlignmentViewModel {
 }
 
 private struct RootView: View {
+    private enum ViewerMode: String, CaseIterable, Identifiable {
+        case view = "View"
+        case edit = "Edit"
+
+        var id: String { rawValue }
+    }
+
     @Binding var document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
 
     @State private var model = AlignmentViewModel()
 
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
+    @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @State private var showsResidueColors = true
     @State private var showsIdentityShading = false
     @State private var showsInspector = false
@@ -291,6 +299,7 @@ private struct RootView: View {
     @AppStorage("showConservationPanel") private var showsConservationPanel = false
 
     @State private var selectedReferenceName: String?
+    @State private var viewerMode: ViewerMode = .view
 
     private var needsIdentityByColumn: Bool {
         showsIdentityShading || showsConservationPanel
@@ -372,6 +381,7 @@ private struct RootView: View {
                         alignmentLength: displayAlignment.length,
                         identityByColumn: model.renderedAlignment.identityByColumn,
                         showsIdentityShading: showsIdentityShading,
+                        identityColorThreshold: identityColorThreshold,
                         renderedShowsResidueColors: model.renderedShowsResidueColors,
                         fontSize: alignmentFontSize,
                         contentVersion: model.contentVersion,
@@ -381,6 +391,8 @@ private struct RootView: View {
                         auxiliarySequenceAttributedText: auxiliaryAttributedText(auxiliaryPanel.rightText),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
                         preferredUnsavedFilename: documentConfiguration?.fileURL == nil ? document.suggestedSaveFilename : nil,
+                        isEditMode: viewerMode == .edit,
+                        onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition
@@ -407,7 +419,15 @@ private struct RootView: View {
         }
         .navigationTitle(documentTitle)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Picker("Mode", selection: $viewerMode) {
+                    ForEach(ViewerMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help("Switch between read-only view and edit mode")
+
                 Button {
                     showsInspector.toggle()
                 } label: {
@@ -433,6 +453,7 @@ private struct RootView: View {
         .onChange(of: showsIdentityShading) { _, _ in rerender() }
         .onChange(of: showsConservationPanel) { _, _ in rerender() }
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
+        .onChange(of: identityColorThreshold) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
     }
 
@@ -456,6 +477,30 @@ private struct RootView: View {
             needsIdentityByColumn: needsIdentityByColumn,
             referenceName: selectedReferenceName
         )
+    }
+
+    private func applyEditedSequenceText(_ editedText: String) {
+        guard viewerMode == .edit else { return }
+        guard let rebuilt = rebuildFASTA(fromEditedSequenceText: editedText) else { return }
+        guard document.rawText != rebuilt else { return }
+        document.rawText = rebuilt
+    }
+
+    private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
+        let sequenceLines = editedText
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map(String.init)
+        guard sequenceLines.count == displayRows.count else { return nil }
+        var output = ""
+        output.reserveCapacity(editedText.count + (displayRows.count * 16))
+        for (row, sequence) in zip(displayRows, sequenceLines) {
+            output += ">"
+            output += row.name
+            output += "\n"
+            output += sequence
+            output += "\n"
+        }
+        return output
     }
 
     private func markTranslatedDocumentAsEditedIfNeeded() {

@@ -9,6 +9,7 @@ struct AlignmentTextView: NSViewRepresentable {
     let alignmentLength: Int
     let identityByColumn: [Double]
     let showsIdentityShading: Bool
+    let identityColorThreshold: Double
     let renderedShowsResidueColors: Bool
     let fontSize: Double
     let contentVersion: Int
@@ -18,6 +19,8 @@ struct AlignmentTextView: NSViewRepresentable {
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
     let preferredUnsavedFilename: String?
+    let isEditMode: Bool
+    let onSequenceEdited: (String) -> Void
     @Binding var selectedResidueCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
@@ -43,6 +46,10 @@ struct AlignmentTextView: NSViewRepresentable {
         let sequenceTextView = AlignmentSequenceTextView(frame: .zero, textContainer: sequenceContainer)
         configureMainTextView(sequenceTextView, fontSize: fontSize)
         sequenceTextView.delegate = context.coordinator
+        sequenceTextView.onAddVerticalCursor = { [weak coordinator = context.coordinator, weak sequenceTextView] direction in
+            guard let coordinator, let sequenceTextView else { return false }
+            return coordinator.addVerticalCursors(in: sequenceTextView, direction: direction)
+        }
 
         let containerView = AlignmentContainerView(
             namesTextView: namesTextView,
@@ -57,6 +64,7 @@ struct AlignmentTextView: NSViewRepresentable {
 
     func updateNSView(_ containerView: AlignmentContainerView, context: Context) {
         containerView.updateMode(nameColumnWidth: defaultNameColumnWidth)
+        containerView.updateEditMode(isEditable: isEditMode)
         containerView.onSetReference = onSetReference
         containerView.updateAuxiliaryPanel(
             nameText: auxiliaryNameAttributedText,
@@ -79,6 +87,9 @@ struct AlignmentTextView: NSViewRepresentable {
              context.coordinator.lastRenderedFingerprint != fingerprint) ||
             (context.coordinator.lastResidueColorMode != renderedShowsResidueColors)
 
+        context.coordinator.onSequenceEdited = onSequenceEdited
+        context.coordinator.onDidEdit = { containerView.markDocumentEdited() }
+        context.coordinator.isProgrammaticTextUpdate = true
         if needsMainTextRefresh {
             containerView.namesTextView.textStorage?.setAttributedString(nameAttributedText)
             containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
@@ -94,6 +105,7 @@ struct AlignmentTextView: NSViewRepresentable {
         } else if context.coordinator.lastContentVersion != contentVersion {
             context.coordinator.lastContentVersion = contentVersion
         }
+        context.coordinator.isProgrammaticTextUpdate = false
 
         if context.coordinator.lastFontSize != fontSize {
             containerView.namesTextView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
@@ -103,7 +115,8 @@ struct AlignmentTextView: NSViewRepresentable {
         containerView.updateIdentityShading(
             alignmentLength: alignmentLength,
             identityByColumn: identityByColumn,
-            isEnabled: showsIdentityShading
+            isEnabled: showsIdentityShading,
+            threshold: identityColorThreshold
         )
         containerView.updateRuler(alignmentLength: alignmentLength, fontSize: fontSize)
     }
@@ -130,6 +143,9 @@ struct AlignmentTextView: NSViewRepresentable {
         private var lastSelectionSignature: SelectionSignature?
         private var lastSequenceOrigin = CGPoint(x: -.greatestFiniteMagnitude, y: -.greatestFiniteMagnitude)
         private let scrollEpsilon: CGFloat = 0.5
+        var onSequenceEdited: ((String) -> Void)?
+        var onDidEdit: (() -> Void)?
+        var isProgrammaticTextUpdate = false
 
         init(
             selectedResidueCount: Binding<Int>,
@@ -206,6 +222,15 @@ struct AlignmentTextView: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            if let sequenceView = textView as? AlignmentSequenceTextView {
+                let ranges = sequenceView.selectedRanges.map(\.rangeValue)
+                if ranges.count > 1 {
+                    sequenceView.columnSelectionRanges = ranges
+                } else {
+                    sequenceView.columnSelectionRanges = []
+                    sequenceView.columnSelectionAnchor = nil
+                }
+            }
             let signature = SelectionSignature(
                 stringLength: textView.string.utf16.count,
                 ranges: textView.selectedRanges.map { $0.rangeValue }
@@ -220,6 +245,180 @@ struct AlignmentTextView: NSViewRepresentable {
             }
             pendingSelectionUpdate = workItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.016, execute: workItem)
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? AlignmentSequenceTextView else { return }
+            guard textView.isEditable else { return }
+            guard !isProgrammaticTextUpdate else { return }
+            onSequenceEdited?(textView.string)
+            onDidEdit?()
+        }
+
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            guard let sequenceView = textView as? AlignmentSequenceTextView else { return true }
+            guard sequenceView.isEditable else { return true }
+            let selectedRanges = sequenceView.columnSelectionRanges.isEmpty
+                ? sequenceView.selectedRanges.map(\.rangeValue)
+                : sequenceView.columnSelectionRanges
+            if selectedRanges.count > 1 {
+                let replacement = replacementString ?? ""
+                sequenceView.applyColumnReplacement(replacement, to: selectedRanges)
+                return false
+            }
+            // In edit mode, allow standard NSTextView behavior (insert/delete/paste).
+            return true
+        }
+
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextInRanges affectedRanges: [NSValue],
+            replacementStrings: [String]?
+        ) -> Bool {
+            guard let sequenceView = textView as? AlignmentSequenceTextView else { return true }
+            guard sequenceView.isEditable else { return true }
+            guard affectedRanges.count > 1 else { return true }
+
+            // For column multi-selection, apply the first replacement to all ranges.
+            let replacement = replacementStrings?.first ?? ""
+            sequenceView.applyColumnReplacement(replacement, to: affectedRanges.map(\.rangeValue))
+            return false
+        }
+
+        private func overwriteCharacterIfPossible(
+            in textView: AlignmentSequenceTextView,
+            at location: Int,
+            with replacement: String
+        ) -> Bool {
+            let source = textView.string as NSString
+            guard location < source.length else { return false }
+            let originalCode = source.character(at: location)
+            let replacementCode = (replacement as NSString).character(at: 0)
+            if originalCode == 10 {
+                return false
+            }
+            guard isValidResidueCodeUnit(replacementCode) else { return false }
+            let overwriteRange = NSRange(location: location, length: 1)
+            guard textView.shouldChangeText(in: overwriteRange, replacementString: replacement) else { return false }
+            textView.textStorage?.replaceCharacters(in: overwriteRange, with: replacement)
+            textView.didChangeText()
+            textView.setSelectedRange(NSRange(location: location + 1, length: 0))
+            return false
+        }
+
+        private func isValidReplacement(in sourceText: String, range: NSRange, replacement: String) -> Bool {
+            let source = sourceText as NSString
+            let target = replacement as NSString
+            guard NSMaxRange(range) <= source.length else { return false }
+            guard target.length == range.length else { return false }
+            for offset in 0..<range.length {
+                let originalCode = source.character(at: range.location + offset)
+                let replacementCode = target.character(at: offset)
+                if originalCode == 10 {
+                    if replacementCode != 10 { return false }
+                } else {
+                    if replacementCode == 10 { return false }
+                    if !isValidResidueCodeUnit(replacementCode) { return false }
+                }
+            }
+            return true
+        }
+
+        private func isValidResidueCodeUnit(_ codeUnit: unichar) -> Bool {
+            switch codeUnit {
+            case 45, 46, 42: // -, ., *
+                return true
+            case 65...90, 97...122: // A-Z, a-z
+                return true
+            default:
+                return false
+            }
+        }
+
+        func addVerticalCursors(in textView: AlignmentSequenceTextView, direction: Int) -> Bool {
+            guard direction == -1 || direction == 1 else { return false }
+            let lineSpan = textView.alignmentLength + 1
+            guard lineSpan > 1 else { return false }
+            let text = textView.string as NSString
+            let textLength = text.length
+            guard textLength > 0 else { return false }
+
+            let currentRanges = textView.selectedRanges.map(\.rangeValue)
+            guard !currentRanges.isEmpty else { return false }
+
+            // Keep a stable anchor so up/down keeps adding from the original selection.
+            let anchorLocation: Int
+            let baseWidth: Int
+            if currentRanges.count <= 1 {
+                let selection = textView.selectedRange()
+                anchorLocation = selection.location
+                baseWidth = max(selection.length, 1)
+                textView.columnSelectionAnchor = anchorLocation
+                textView.columnSelectionWidth = baseWidth
+            } else if let savedAnchor = textView.columnSelectionAnchor {
+                anchorLocation = savedAnchor
+                baseWidth = max(textView.columnSelectionWidth, 1)
+            } else {
+                let selection = textView.selectedRange()
+                anchorLocation = selection.location
+                baseWidth = max(selection.length, 1)
+                textView.columnSelectionAnchor = anchorLocation
+                textView.columnSelectionWidth = baseWidth
+            }
+            guard anchorLocation >= 0, anchorLocation < textLength else { return false }
+
+            let anchorColumn = anchorLocation % lineSpan
+            let clampedWidth = min(baseWidth, max(textView.alignmentLength - anchorColumn, 1))
+
+            let normalizedRanges: [NSRange] = currentRanges.compactMap { range in
+                let location = range.location
+                guard location >= 0, location < textLength else { return nil }
+                guard text.character(at: location) != 10 else { return nil }
+                return NSRange(location: location, length: clampedWidth)
+            }
+
+            var minDelta = 0
+            var maxDelta = 0
+            for range in normalizedRanges {
+                let deltaLocation = range.location - anchorLocation
+                guard deltaLocation % lineSpan == 0 else { continue }
+                let delta = deltaLocation / lineSpan
+                minDelta = min(minDelta, delta)
+                maxDelta = max(maxDelta, delta)
+            }
+
+            let nextDelta = (direction < 0) ? (minDelta - 1) : (maxDelta + 1)
+            let target = anchorLocation + (nextDelta * lineSpan)
+            guard target >= 0, target < textLength else { return false }
+            guard text.character(at: target) != 10 else { return false } // skip newline column
+
+            if normalizedRanges.contains(where: { $0.location == target && $0.length == clampedWidth }) {
+                return false
+            }
+
+            var mergedRanges = normalizedRanges
+            mergedRanges.append(NSRange(location: target, length: clampedWidth))
+
+            let anchorRange = NSRange(location: anchorLocation, length: clampedWidth)
+            let otherRanges = mergedRanges
+                .filter { !NSEqualRanges($0, anchorRange) }
+                .sorted { lhs, rhs in
+                    if lhs.location == rhs.location { return lhs.length < rhs.length }
+                    return lhs.location < rhs.location
+                }
+            let finalRanges = [anchorRange] + otherRanges
+
+            textView.setSelectedRanges(
+                finalRanges.map(NSValue.init(range:)),
+                affinity: .downstream,
+                stillSelecting: false
+            )
+            textView.columnSelectionRanges = finalRanges
+            return true
         }
 
         func updateSelectedResidueCount(in textView: NSTextView) {
@@ -354,7 +553,7 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private static let minimumNameWidth: CGFloat = 90
     private static let minimumSequenceWidth: CGFloat = 140
     private static let defaultNameWidth: CGFloat = 180
-    private static let nameWidthDefaultsKey = "alignmentNameColumnWidth"
+    private static let splitViewAutosaveName = NSSplitView.AutosaveName("ApuSeqAlignmentSplitView")
     private static let scrollSyncEpsilon: CGFloat = 0.5
 
     let namesScrollView: NSScrollView
@@ -386,7 +585,6 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = AlignmentContainerView.defaultNameWidth
     private var lastAppliedNameWidth: CGFloat = -1
-    private var lastNotifiedNameWidth: CGFloat = -1
     private var hasInitializedNameWidth = false
     private var lastAuxiliaryFingerprint = AuxiliaryFingerprint.empty
     private var didSetInitialFirstResponder = false
@@ -453,6 +651,7 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         let splitView = NSSplitView()
         splitView.isVertical = true
         splitView.dividerStyle = .thin
+        splitView.autosaveName = Self.splitViewAutosaveName
         splitView.translatesAutoresizingMaskIntoConstraints = false
         self.splitView = splitView
 
@@ -509,12 +708,21 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         applySplitPosition()
     }
 
+    func updateEditMode(isEditable: Bool) {
+        sequenceTextView.isEditable = isEditable
+        sequenceTextView.isSelectable = true
+    }
+
+    func markDocumentEdited() {
+        window?.windowController?.document?.updateChangeCount(.changeDone)
+    }
+
     func updateMode(nameColumnWidth: CGFloat) {
-        let persisted = UserDefaults.standard.double(forKey: Self.nameWidthDefaultsKey)
         let baseWidth: CGFloat
         if !hasInitializedNameWidth {
             hasInitializedNameWidth = true
-            baseWidth = persisted > 0 ? CGFloat(persisted) : nameColumnWidth
+            let restoredWidth = splitView.subviews.first?.frame.width ?? 0
+            baseWidth = restoredWidth > 0 ? restoredWidth : nameColumnWidth
         } else {
             baseWidth = desiredNameWidth
         }
@@ -525,10 +733,11 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         applySplitPosition()
     }
 
-    func updateIdentityShading(alignmentLength: Int, identityByColumn: [Double], isEnabled: Bool) {
+    func updateIdentityShading(alignmentLength: Int, identityByColumn: [Double], isEnabled: Bool, threshold: Double) {
         sequenceTextView.alignmentLength = alignmentLength
         sequenceTextView.identityByColumn = identityByColumn
         sequenceTextView.showsIdentityShading = isEnabled
+        sequenceTextView.identityColorThreshold = threshold
     }
 
     func updateRuler(alignmentLength: Int, fontSize: Double) {
@@ -922,10 +1131,6 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         pendingSplitResizeRestoreWorkItem = workItem
         DispatchQueue.main.async(execute: workItem)
 
-        guard window?.inLiveResize != true else { return }
-        guard abs(lastNotifiedNameWidth - desiredNameWidth) > 0.5 else { return }
-        lastNotifiedNameWidth = desiredNameWidth
-        UserDefaults.standard.set(Double(desiredNameWidth), forKey: Self.nameWidthDefaultsKey)
     }
 
     func splitView(_ splitView: NSSplitView, shouldAdjustSizeOfSubview view: NSView) -> Bool {
@@ -950,6 +1155,106 @@ private struct AuxiliaryFingerprint: Equatable {
 }
 
 final class AlignmentSequenceTextView: NSTextView {
+    private struct ColumnEditState {
+        let attributedText: NSAttributedString
+        let selectedRanges: [NSValue]
+        let columnSelectionRanges: [NSRange]
+        let columnSelectionAnchor: Int?
+        let columnSelectionWidth: Int
+    }
+
+    var onAddVerticalCursor: ((Int) -> Bool)?
+    var columnSelectionAnchor: Int?
+    var columnSelectionWidth: Int = 1
+    var columnSelectionRanges: [NSRange] = []
+
+    func applyColumnReplacement(_ replacement: String, to ranges: [NSRange]) {
+        guard let textStorage else { return }
+        guard ranges.count > 1 else { return }
+
+        let previousState = captureColumnEditState()
+        let sortedRanges = ranges.sorted { $0.location > $1.location }
+
+        textStorage.beginEditing()
+        for range in sortedRanges {
+            textStorage.replaceCharacters(in: range, with: replacement)
+        }
+        textStorage.endEditing()
+
+        let replacementLength = (replacement as NSString).length
+        let newSelections = sortedRanges
+            .reversed()
+            .map { NSRange(location: $0.location + replacementLength, length: 0) }
+        setSelectedRanges(
+            newSelections.map(NSValue.init(range:)),
+            affinity: .downstream,
+            stillSelecting: false
+        )
+        columnSelectionRanges = newSelections
+        registerColumnUndo(toRestore: previousState)
+        didChangeText()
+    }
+
+    private func captureColumnEditState() -> ColumnEditState {
+        let textSnapshot = textStorage?.copy() as? NSAttributedString ?? NSAttributedString(string: string)
+        return ColumnEditState(
+            attributedText: textSnapshot,
+            selectedRanges: selectedRanges,
+            columnSelectionRanges: columnSelectionRanges,
+            columnSelectionAnchor: columnSelectionAnchor,
+            columnSelectionWidth: columnSelectionWidth
+        )
+    }
+
+    private func applyColumnEditState(_ state: ColumnEditState) {
+        textStorage?.setAttributedString(state.attributedText)
+        setSelectedRanges(state.selectedRanges, affinity: .downstream, stillSelecting: false)
+        columnSelectionRanges = state.columnSelectionRanges
+        columnSelectionAnchor = state.columnSelectionAnchor
+        columnSelectionWidth = state.columnSelectionWidth
+        didChangeText()
+    }
+
+    private func registerColumnUndo(toRestore restoreState: ColumnEditState) {
+        guard allowsUndo, let undoManager else { return }
+        undoManager.registerUndo(withTarget: self) { target in
+            let redoState = target.captureColumnEditState()
+            target.applyColumnEditState(restoreState)
+            target.registerColumnUndo(toRestore: redoState)
+        }
+        undoManager.setActionName("Edit")
+    }
+
+    override func insertText(_ insertString: Any, replacementRange: NSRange) {
+        guard isEditable else {
+            super.insertText(insertString, replacementRange: replacementRange)
+            return
+        }
+        let ranges = columnSelectionRanges
+        guard ranges.count > 1 else {
+            super.insertText(insertString, replacementRange: replacementRange)
+            return
+        }
+
+        let replacement: String
+        if let attributed = insertString as? NSAttributedString {
+            replacement = attributed.string
+        } else if let string = insertString as? String {
+            replacement = string
+        } else {
+            replacement = "\(insertString)"
+        }
+
+        applyColumnReplacement(replacement, to: ranges)
+    }
+
+    @objc func selectColumnUp(_ sender: Any?) {
+        _ = onAddVerticalCursor?(-1)
+    }
+
+    @objc func selectColumnDown(_ sender: Any?) {
+        _ = onAddVerticalCursor?(1)
+    }
     var alignmentLength: Int = 0 {
         didSet { needsDisplay = true }
     }
@@ -959,8 +1264,34 @@ final class AlignmentSequenceTextView: NSTextView {
     var showsIdentityShading: Bool = false {
         didSet { needsDisplay = true }
     }
+    var identityColorThreshold: Double = 0.5 {
+        didSet { needsDisplay = true }
+    }
     private var cachedIdentityColors: [NSColor] = []
     private var cachedIdentityChecksum: UInt64 = 0
+    private var cachedIdentityThreshold: Double = -1
+
+    override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let isControlShift = flags.contains([.control, .shift]) && !flags.contains(.command) && !flags.contains(.option)
+        if isControlShift {
+            if event.keyCode == 126, onAddVerticalCursor?(-1) == true { return } // up arrow
+            if event.keyCode == 125, onAddVerticalCursor?(1) == true { return }  // down arrow
+        }
+        super.keyDown(with: event)
+    }
+
+    override func doCommand(by selector: Selector) {
+        let flags = NSApp.currentEvent?.modifierFlags.intersection(.deviceIndependentFlagsMask) ?? []
+        let isControlShift = flags.contains([.control, .shift]) && !flags.contains(.command) && !flags.contains(.option)
+        if isControlShift {
+            if selector == #selector(moveUp(_:)), onAddVerticalCursor?(-1) == true { return }
+            if selector == #selector(moveDown(_:)), onAddVerticalCursor?(1) == true { return }
+            if selector == #selector(moveUpAndModifySelection(_:)), onAddVerticalCursor?(-1) == true { return }
+            if selector == #selector(moveDownAndModifySelection(_:)), onAddVerticalCursor?(1) == true { return }
+        }
+        super.doCommand(by: selector)
+    }
 
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
@@ -1040,9 +1371,12 @@ final class AlignmentSequenceTextView: NSTextView {
         let checksum = identityByColumn.reduce(into: UInt64(1469598103934665603)) { partialResult, value in
             partialResult = (partialResult ^ UInt64(bitPattern: Int64(value.bitPattern))) &* 1099511628211
         }
-        guard checksum != cachedIdentityChecksum || cachedIdentityColors.count != identityByColumn.count else { return }
+        guard checksum != cachedIdentityChecksum ||
+                cachedIdentityColors.count != identityByColumn.count ||
+                abs(cachedIdentityThreshold - identityColorThreshold) > 0.0001 else { return }
         cachedIdentityChecksum = checksum
-        cachedIdentityColors = identityByColumn.map { IdentityPalette.backgroundColor(for: $0) }
+        cachedIdentityThreshold = identityColorThreshold
+        cachedIdentityColors = identityByColumn.map { IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold) }
     }
 }
 
