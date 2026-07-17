@@ -34,7 +34,6 @@ private final class AlignmentViewModel {
     private var cachedRenderIdentityMode = false
     private var cachedRenderMajorityMode = false
     private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
-    private var cachedRenderReferenceName = ""
     private var cachedAlignment: RenderedAlignment?
     private var cachedDisplayedRows: [AlignmentRow] = []
     private var cachedConsensusKey: ConsensusKey?
@@ -113,8 +112,7 @@ private final class AlignmentViewModel {
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
             cachedRenderIdentityMode == needsIdentityByColumn &&
             cachedRenderMajorityMode == needsMajorityResidueByColumn &&
-            cachedRenderOrderMode == displayOrderMode &&
-            cachedRenderReferenceName == (referenceName ?? "")
+            cachedRenderOrderMode == displayOrderMode
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
@@ -122,7 +120,6 @@ private final class AlignmentViewModel {
             cachedRenderIdentityMode = needsIdentityByColumn
             cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedRenderOrderMode = displayOrderMode
-            cachedRenderReferenceName = referenceName ?? ""
             cachedAlignment = nil
             cachedDisplayedRows = []
         }
@@ -132,7 +129,7 @@ private final class AlignmentViewModel {
             return
         }
 
-        let baseRows = rowsExcludingReference(referenceName)
+        let baseRows = alignment.rows
         let format = alignment.format
         let length = alignment.length
         let sequenceKind = alignment.sequenceKind
@@ -193,9 +190,9 @@ private final class AlignmentViewModel {
             return cachedAuxiliaryContent
         }
 
-        let rows = rowsExcludingReference(referenceName)
+        let rows = alignment.rows
         let referenceText = showsReferencePanel ? (row(named: referenceName)?.sequence ?? "") : nil
-        let consensus = showsConsensusPanel ? cachedConsensusSequence(referenceName: referenceName, rows: rows) : nil
+        let consensus = showsConsensusPanel ? cachedConsensusSequence(rows: rows) : nil
         let conservation = showsConservationPanel ? renderedAlignment.identityByColumn : nil
         let built = AuxiliaryPanelBuilder.build(
             referenceLabel: showsReferencePanel ? "Ref: \(referenceName ?? "")" : nil,
@@ -206,18 +203,6 @@ private final class AlignmentViewModel {
         cachedAuxiliaryKey = key
         cachedAuxiliaryContent = built
         return built
-    }
-
-    func rowsExcludingReference(_ referenceName: String?) -> [AlignmentRow] {
-        guard let referenceName else { return alignment.rows }
-        var removed = false
-        return alignment.rows.filter { row in
-            if !removed, row.name == referenceName {
-                removed = true
-                return false
-            }
-            return true
-        }
     }
 
     func containsRow(named name: String?) -> Bool {
@@ -244,15 +229,14 @@ private final class AlignmentViewModel {
         cachedRenderIdentityMode = false
         cachedRenderMajorityMode = false
         cachedRenderOrderMode = .original
-        cachedRenderReferenceName = ""
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
         cachedAuxiliaryContent = .empty
     }
 
-    private func cachedConsensusSequence(referenceName: String?, rows: [AlignmentRow]) -> String {
-        let key = ConsensusKey(alignmentVersion: alignmentVersion, referenceName: referenceName ?? "")
+    private func cachedConsensusSequence(rows: [AlignmentRow]) -> String {
+        let key = ConsensusKey(alignmentVersion: alignmentVersion)
         if key == cachedConsensusKey {
             return cachedConsensus
         }
@@ -284,7 +268,6 @@ private final class AlignmentViewModel {
 
     private struct ConsensusKey: Equatable {
         let alignmentVersion: Int
-        let referenceName: String
     }
 
     private struct AuxiliaryKey: Equatable {
@@ -352,7 +335,7 @@ private struct RootView: View {
     }
 
     private var displayRows: [AlignmentRow] {
-        model.displayedRows.isEmpty ? model.rowsExcludingReference(selectedReferenceName) : model.displayedRows
+        model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
     }
 
     private var effectiveDisplayOrderMode: AlignmentDisplayOrderMode {
@@ -527,7 +510,6 @@ private struct RootView: View {
                         if selectedName != nil {
                             showsReferencePanel = true
                         }
-                        rerender()
                     }
                     Divider()
                     FooterBar(
@@ -630,13 +612,13 @@ private struct RootView: View {
     private func deleteDisplayedSequence(at displayedRowIndex: Int) {
         guard viewerMode == .edit else { return }
         guard model.alignment.rows.count > 1 else { return }
-        guard let originalRowIndex = originalRowIndex(forDisplayedRowIndex: displayedRowIndex) else { return }
+        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
 
-        let rowToDelete = model.alignment.rows[originalRowIndex]
+        let rowToDelete = model.alignment.rows[displayedRowIndex]
         var rows = model.alignment.rows
-        rows.remove(at: originalRowIndex)
+        rows.remove(at: displayedRowIndex)
 
-        if selectedReferenceName == rowToDelete.name, !rows.contains(where: { $0.name == rowToDelete.name }) {
+        if selectedReferenceName == rowToDelete.name {
             selectedReferenceName = nil
         }
         applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Delete Sequence")
@@ -731,24 +713,6 @@ private struct RootView: View {
             document.rawText = restoredText
         }
         undoManager.setActionName(actionName)
-    }
-
-    private func originalRowIndex(forDisplayedRowIndex displayedRowIndex: Int) -> Int? {
-        guard displayedRowIndex >= 0 else { return nil }
-        var displayedIndex = 0
-        var skippedReference = false
-
-        for (originalIndex, row) in model.alignment.rows.enumerated() {
-            if !skippedReference, row.name == selectedReferenceName {
-                skippedReference = true
-                continue
-            }
-            if displayedIndex == displayedRowIndex {
-                return originalIndex
-            }
-            displayedIndex += 1
-        }
-        return nil
     }
 
     private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
