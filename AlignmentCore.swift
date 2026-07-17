@@ -170,10 +170,16 @@ enum AlignmentRenderer {
     }
 
     private static func residueBucketIndex(_ residue: UInt16) -> Int? {
-        let normalized: UInt16 = residue == 46 ? 45 : residue
+        let normalized = normalizedResidueCode(residue)
         guard normalized < 128 else { return nil }
         return Int(normalized)
     }
+}
+
+private func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
+    if residue == 46 { return 45 }
+    if residue >= 97 && residue <= 122 { return residue - 32 }
+    return residue
 }
 
 enum AlignmentStatistics {
@@ -194,8 +200,8 @@ enum AlignmentStatistics {
 
             for sequence in sequences {
                 guard column < sequence.length else { continue }
-                let residue = sequence.character(at: column)
-                if residue == 45 || residue == 46 { continue }
+                let residue = normalizedResidueCode(sequence.character(at: column))
+                if residue == 45 { continue }
                 guard residue < 128 else { continue }
                 let bucket = Int(residue)
                 if counts[bucket] == 0 {
@@ -343,7 +349,7 @@ enum AlignmentParser {
 
         func commitCurrent() {
             guard let currentName else { return }
-            let sequence = currentSequenceParts.joined().uppercased()
+            let sequence = currentSequenceParts.joined()
             rows.append(AlignmentRow(name: currentName, sequence: sequence))
         }
 
@@ -384,7 +390,7 @@ enum AlignmentParser {
             let columns = line.split(whereSeparator: \.isWhitespace)
             guard columns.count >= 2 else { continue }
             let name = String(columns[0])
-            let chunk = String(columns[1]).uppercased()
+            let chunk = String(columns[1])
 
             if sequencesByName[name] == nil {
                 order.append(name)
@@ -407,7 +413,7 @@ enum AlignmentParser {
         let rows = lines.enumerated().map { index, line in
             AlignmentRow(
                 name: "Sequence \(index + 1)",
-                sequence: line.replacingOccurrences(of: " ", with: "").uppercased()
+                sequence: line.replacingOccurrences(of: " ", with: "")
             )
         }
 
