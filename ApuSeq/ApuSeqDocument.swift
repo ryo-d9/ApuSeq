@@ -55,6 +55,9 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
     static let readableContentTypes: [UTType] = [
         .apuSeqFASTA,
         .fasta,
+        .aliviewFA,
+        .aliviewFAS,
+        .aliviewFASTA,
         .clustal,
         .plainText,
         .text
@@ -63,6 +66,9 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
     static let writableContentTypes: [UTType] = [
         .apuSeqFASTA,
         .fasta,
+        .aliviewFA,
+        .aliviewFAS,
+        .aliviewFASTA,
         .clustal,
         .plainText
     ]
@@ -106,5 +112,8 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
 private extension UTType {
     static let apuSeqFASTA = UTType("com.apuseq.fasta") ?? UTType(exportedAs: "com.apuseq.fasta")
     static let fasta = UTType("org.fasta") ?? UTType(importedAs: "org.fasta")
+    static let aliviewFA = UTType("aliview.fa") ?? UTType(importedAs: "aliview.fa")
+    static let aliviewFAS = UTType("aliview.fas") ?? UTType(importedAs: "aliview.fas")
+    static let aliviewFASTA = UTType("aliview.fasta") ?? UTType(importedAs: "aliview.fasta")
     static let clustal = UTType("org.clustal") ?? UTType(importedAs: "org.clustal")
 }

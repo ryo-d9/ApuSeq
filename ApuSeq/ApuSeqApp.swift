@@ -87,12 +87,12 @@ private struct ColumnSelectionCommands: Commands {
         CommandGroup(after: .textEditing) {
             Divider()
             Button("Select Column Up") {
-                _ = NSApp.sendAction(Selector(("selectColumnUp:")), to: nil, from: nil)
+                _ = NSApp.sendAction(NSSelectorFromString("selectColumnUp:"), to: nil, from: nil)
             }
             .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
 
             Button("Select Column Down") {
-                _ = NSApp.sendAction(Selector(("selectColumnDown:")), to: nil, from: nil)
+                _ = NSApp.sendAction(NSSelectorFromString("selectColumnDown:"), to: nil, from: nil)
             }
             .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
         }
