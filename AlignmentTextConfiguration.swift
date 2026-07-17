@@ -13,6 +13,7 @@ func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.textContainerInset = NSSize(width: 12, height: 12)
     textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
     textView.usesFindBar = true
+    textView.isIncrementalSearchingEnabled = true
     textView.isHorizontallyResizable = true
     textView.isVerticallyResizable = true
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)

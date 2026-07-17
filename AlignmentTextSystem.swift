@@ -553,7 +553,7 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private static let minimumNameWidth: CGFloat = 90
     private static let minimumSequenceWidth: CGFloat = 140
     private static let defaultNameWidth: CGFloat = 180
-    private static let nameWidthDefaultsKey = "alignmentNameColumnWidth"
+    private static let splitViewAutosaveName = NSSplitView.AutosaveName("ApuSeqAlignmentSplitView")
     private static let scrollSyncEpsilon: CGFloat = 0.5
 
     let namesScrollView: NSScrollView
@@ -585,7 +585,6 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = AlignmentContainerView.defaultNameWidth
     private var lastAppliedNameWidth: CGFloat = -1
-    private var lastNotifiedNameWidth: CGFloat = -1
     private var hasInitializedNameWidth = false
     private var lastAuxiliaryFingerprint = AuxiliaryFingerprint.empty
     private var didSetInitialFirstResponder = false
@@ -652,6 +651,7 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         let splitView = NSSplitView()
         splitView.isVertical = true
         splitView.dividerStyle = .thin
+        splitView.autosaveName = Self.splitViewAutosaveName
         splitView.translatesAutoresizingMaskIntoConstraints = false
         self.splitView = splitView
 
@@ -718,11 +718,11 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
     }
 
     func updateMode(nameColumnWidth: CGFloat) {
-        let persisted = UserDefaults.standard.double(forKey: Self.nameWidthDefaultsKey)
         let baseWidth: CGFloat
         if !hasInitializedNameWidth {
             hasInitializedNameWidth = true
-            baseWidth = persisted > 0 ? CGFloat(persisted) : nameColumnWidth
+            let restoredWidth = splitView.subviews.first?.frame.width ?? 0
+            baseWidth = restoredWidth > 0 ? restoredWidth : nameColumnWidth
         } else {
             baseWidth = desiredNameWidth
         }
@@ -1131,10 +1131,6 @@ final class AlignmentContainerView: NSView, NSSplitViewDelegate {
         pendingSplitResizeRestoreWorkItem = workItem
         DispatchQueue.main.async(execute: workItem)
 
-        guard window?.inLiveResize != true else { return }
-        guard abs(lastNotifiedNameWidth - desiredNameWidth) > 0.5 else { return }
-        lastNotifiedNameWidth = desiredNameWidth
-        UserDefaults.standard.set(Double(desiredNameWidth), forKey: Self.nameWidthDefaultsKey)
     }
 
     func splitView(_ splitView: NSSplitView, shouldAdjustSizeOfSubview view: NSView) -> Bool {
