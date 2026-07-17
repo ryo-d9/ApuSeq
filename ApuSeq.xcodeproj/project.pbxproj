@@ -9,10 +9,10 @@
 /* Begin PBXBuildFile section */
 		2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */; };
 		2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */; };
-		2A19ABA32FA06FDC00545FAB /* AlignmentTextSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */; };
 		2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */; };
 		2A19ABA72FA08B7C00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
 		2A19ABA82FA08B7D00545FAB /* TextDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */; };
+		2AD641623009F90B00C187F5 /* AlignmentTextViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD641613009F90B00C187F5 /* AlignmentTextViewport.swift */; };
 		9A0000012F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */; };
 /* End PBXBuildFile section */
 
@@ -43,22 +43,22 @@
 /* Begin PBXFileReference section */
 		2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentCore.swift; sourceTree = "<group>"; };
 		2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentPanels.swift; sourceTree = "<group>"; };
-		2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextSystem.swift; sourceTree = "<group>"; };
 		2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextConfiguration.swift; sourceTree = "<group>"; };
 		2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextDecoding.swift; sourceTree = "<group>"; };
+		2AD641613009F90B00C187F5 /* AlignmentTextViewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextViewport.swift; sourceTree = "<group>"; };
 		2AE5D2292F9F91EF00434619 /* ApuSeq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ApuSeq.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ApuSeqQuickLookExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2AE5D2352F9F91F000434619 /* Exceptions for "MSAviewer" folder in "MSAviewer" target */ = {
+		2AE5D2352F9F91F000434619 /* Exceptions for "ApuSeq" folder in "ApuSeq" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 2AE5D2282F9F91EF00434619 /* ApuSeq */;
 		};
-		9A0000032F9FAAAA00434619 /* Exceptions for "MSAviewerQuickLookExtension" folder in "MSAviewerQuickLookExtension" target */ = {
+		9A0000032F9FAAAA00434619 /* Exceptions for "ApuSeqQuickLookExtension" folder in "ApuSeqQuickLookExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -71,7 +71,7 @@
 		2AE5D22B2F9F91EF00434619 /* ApuSeq */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2AE5D2352F9F91F000434619 /* Exceptions for "MSAviewer" folder in "MSAviewer" target */,
+				2AE5D2352F9F91F000434619 /* Exceptions for "ApuSeq" folder in "ApuSeq" target */,
 			);
 			path = ApuSeq;
 			sourceTree = "<group>";
@@ -79,7 +79,7 @@
 		9A0000042F9FAAAA00434619 /* ApuSeqQuickLookExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				9A0000032F9FAAAA00434619 /* Exceptions for "MSAviewerQuickLookExtension" folder in "MSAviewerQuickLookExtension" target */,
+				9A0000032F9FAAAA00434619 /* Exceptions for "ApuSeqQuickLookExtension" folder in "ApuSeqQuickLookExtension" target */,
 			);
 			path = ApuSeqQuickLookExtension;
 			sourceTree = "<group>";
@@ -112,9 +112,9 @@
 				2AE5D22A2F9F91EF00434619 /* Products */,
 				2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */,
 				2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */,
-				2A19ABA22FA06FDC00545FAB /* AlignmentTextSystem.swift */,
 				2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */,
 				2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */,
+				2AD641613009F90B00C187F5 /* AlignmentTextViewport.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -236,7 +236,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2A19ABA32FA06FDC00545FAB /* AlignmentTextSystem.swift in Sources */,
+				2AD641623009F90B00C187F5 /* AlignmentTextViewport.swift in Sources */,
 				2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */,
 				2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */,
 				2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */,

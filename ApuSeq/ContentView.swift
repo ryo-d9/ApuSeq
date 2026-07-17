@@ -9,10 +9,10 @@ import Observation
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: ApuSeqDocument
+    @ObservedObject var document: ApuSeqDocument
 
     var body: some View {
-        RootView(document: $document)
+        RootView(document: document)
     }
 }
 
@@ -21,9 +21,10 @@ struct ContentView: View {
 private final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
+    var displayedRows: [AlignmentRow] = []
+    var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
-    var renderedShowsResidueColors = true
 
     private var alignmentVersion = 0
     private var parseTask: Task<Void, Never>?
@@ -31,8 +32,10 @@ private final class AlignmentViewModel {
     private var cachedRenderVersion = -1
     private var cachedRenderFontSize = -1.0
     private var cachedRenderIdentityMode = false
-    private var cachedPlainAlignment: RenderedAlignment?
-    private var cachedColoredAlignment: RenderedAlignment?
+    private var cachedRenderMajorityMode = false
+    private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
+    private var cachedAlignment: RenderedAlignment?
+    private var cachedDisplayedRows: [AlignmentRow] = []
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
@@ -41,8 +44,9 @@ private final class AlignmentViewModel {
     func parseAndRender(
         rawText: String,
         fontSize: Double,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
         referenceName: String?
     ) {
         parseTask?.cancel()
@@ -51,6 +55,8 @@ private final class AlignmentViewModel {
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alignment = .empty
             renderedAlignment = .empty
+            displayedRows = []
+            renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
             clearCache()
@@ -70,8 +76,9 @@ private final class AlignmentViewModel {
                     clearCache()
                     rerender(
                         fontSize: fontSize,
-                        showsResidueColors: showsResidueColors,
                         needsIdentityByColumn: needsIdentityByColumn,
+                        needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                        displayOrderMode: displayOrderMode,
                         referenceName: referenceName
                     )
                 }
@@ -81,6 +88,8 @@ private final class AlignmentViewModel {
                 await MainActor.run {
                     alignment = .empty
                     renderedAlignment = .empty
+                    displayedRows = []
+                    renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
                     contentVersion += 1
@@ -91,8 +100,9 @@ private final class AlignmentViewModel {
 
     func rerender(
         fontSize: Double,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
         referenceName: String?
     ) {
         renderTask?.cancel()
@@ -100,51 +110,56 @@ private final class AlignmentViewModel {
         let cacheKeyMatches =
             cachedRenderVersion == alignmentVersion &&
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
-            cachedRenderIdentityMode == needsIdentityByColumn
+            cachedRenderIdentityMode == needsIdentityByColumn &&
+            cachedRenderMajorityMode == needsMajorityResidueByColumn &&
+            cachedRenderOrderMode == displayOrderMode
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
             cachedRenderFontSize = fontSize
             cachedRenderIdentityMode = needsIdentityByColumn
-            cachedPlainAlignment = nil
-            cachedColoredAlignment = nil
+            cachedRenderMajorityMode = needsMajorityResidueByColumn
+            cachedRenderOrderMode = displayOrderMode
+            cachedAlignment = nil
+            cachedDisplayedRows = []
         }
 
-        if showsResidueColors, let colored = cachedColoredAlignment {
-            apply(colored, showsResidueColors: true)
-            return
-        }
-        if !showsResidueColors, let plain = cachedPlainAlignment {
-            apply(plain, showsResidueColors: false)
+        if let cachedAlignment {
+            apply(cachedAlignment, displayedRows: cachedDisplayedRows, displayOrderMode: displayOrderMode)
             return
         }
 
-        let displayAlignment = AlignmentData(
-            format: alignment.format,
-            rows: rowsExcludingReference(referenceName),
-            length: alignment.length,
-            sequenceKind: alignment.sequenceKind
-        )
+        let baseRows = alignment.rows
+        let format = alignment.format
+        let length = alignment.length
+        let sequenceKind = alignment.sequenceKind
         let currentVersion = alignmentVersion
 
         renderTask = Task(priority: .userInitiated) {
-            let rendered: RenderedAlignment = await runOnBackground {
-                AlignmentRenderer.render(
+            let renderResult: (RenderedAlignment, [AlignmentRow]) = await runOnBackground {
+                let orderedRows = displayOrderMode == .upgma
+                    ? AlignmentClusterer.upgmaOrderedRows(baseRows)
+                    : baseRows
+                let displayAlignment = AlignmentData(
+                    format: format,
+                    rows: orderedRows,
+                    length: length,
+                    sequenceKind: sequenceKind
+                )
+                let rendered = AlignmentRenderer.render(
                     displayAlignment,
-                    showsResidueColors: showsResidueColors,
                     needsIdentityByColumn: needsIdentityByColumn,
+                    needsMajorityResidueByColumn: needsMajorityResidueByColumn,
                     fontSize: fontSize
                 )
+                return (rendered, orderedRows)
             }
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentVersion == alignmentVersion else { return }
-                if showsResidueColors {
-                    cachedColoredAlignment = rendered
-                } else {
-                    cachedPlainAlignment = rendered
-                }
-                apply(rendered, showsResidueColors: showsResidueColors)
+                cachedAlignment = renderResult.0
+                cachedDisplayedRows = renderResult.1
+                apply(renderResult.0, displayedRows: renderResult.1, displayOrderMode: displayOrderMode)
             }
         }
     }
@@ -175,9 +190,9 @@ private final class AlignmentViewModel {
             return cachedAuxiliaryContent
         }
 
-        let rows = rowsExcludingReference(referenceName)
+        let rows = alignment.rows
         let referenceText = showsReferencePanel ? (row(named: referenceName)?.sequence ?? "") : nil
-        let consensus = showsConsensusPanel ? cachedConsensusSequence(referenceName: referenceName, rows: rows) : nil
+        let consensus = showsConsensusPanel ? cachedConsensusSequence(rows: rows) : nil
         let conservation = showsConservationPanel ? renderedAlignment.identityByColumn : nil
         let built = AuxiliaryPanelBuilder.build(
             referenceLabel: showsReferencePanel ? "Ref: \(referenceName ?? "")" : nil,
@@ -190,43 +205,38 @@ private final class AlignmentViewModel {
         return built
     }
 
-    func rowsExcludingReference(_ referenceName: String?) -> [AlignmentRow] {
-        guard let referenceName else { return alignment.rows }
-        var removed = false
-        return alignment.rows.filter { row in
-            if !removed, row.name == referenceName {
-                removed = true
-                return false
-            }
-            return true
-        }
-    }
-
     func containsRow(named name: String?) -> Bool {
         guard let name else { return false }
         return alignment.rows.contains(where: { $0.name == name })
     }
 
-    private func apply(_ rendered: RenderedAlignment, showsResidueColors: Bool) {
+    private func apply(
+        _ rendered: RenderedAlignment,
+        displayedRows: [AlignmentRow],
+        displayOrderMode: AlignmentDisplayOrderMode
+    ) {
         renderedAlignment = rendered
-        renderedShowsResidueColors = showsResidueColors
+        self.displayedRows = displayedRows
+        renderedDisplayOrderMode = displayOrderMode
         contentVersion += 1
     }
 
     private func clearCache() {
-        cachedPlainAlignment = nil
-        cachedColoredAlignment = nil
+        cachedAlignment = nil
+        cachedDisplayedRows = []
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
+        cachedRenderMajorityMode = false
+        cachedRenderOrderMode = .original
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
         cachedAuxiliaryContent = .empty
     }
 
-    private func cachedConsensusSequence(referenceName: String?, rows: [AlignmentRow]) -> String {
-        let key = ConsensusKey(alignmentVersion: alignmentVersion, referenceName: referenceName ?? "")
+    private func cachedConsensusSequence(rows: [AlignmentRow]) -> String {
+        let key = ConsensusKey(alignmentVersion: alignmentVersion)
         if key == cachedConsensusKey {
             return cachedConsensus
         }
@@ -258,7 +268,6 @@ private final class AlignmentViewModel {
 
     private struct ConsensusKey: Equatable {
         let alignmentVersion: Int
-        let referenceName: String
     }
 
     private struct AuxiliaryKey: Equatable {
@@ -272,6 +281,21 @@ private final class AlignmentViewModel {
     }
 }
 
+enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
+    case residue = "Residue"
+    case different = "Different"
+    case identity = "Identity"
+
+    var id: String { rawValue }
+}
+
+enum AlignmentDisplayOrderMode: String, CaseIterable, Identifiable {
+    case original = "Original"
+    case upgma = "UPGMA"
+
+    var id: String { rawValue }
+}
+
 private struct RootView: View {
     private enum ViewerMode: String, CaseIterable, Identifiable {
         case view = "View"
@@ -280,15 +304,16 @@ private struct RootView: View {
         var id: String { rawValue }
     }
 
-    @Binding var document: ApuSeqDocument
+    @ObservedObject var document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
+    @Environment(\.undoManager) private var undoManager
 
     @State private var model = AlignmentViewModel()
 
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
     @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
-    @State private var showsResidueColors = true
-    @State private var showsIdentityShading = false
+    @State private var backgroundMode: AlignmentBackgroundMode = .residue
+    @State private var displayOrderMode: AlignmentDisplayOrderMode = .original
     @State private var showsInspector = false
     @State private var selectedResidueCount = 0
     @State private var selectedStartPosition: Int?
@@ -302,11 +327,23 @@ private struct RootView: View {
     @State private var viewerMode: ViewerMode = .view
 
     private var needsIdentityByColumn: Bool {
-        showsIdentityShading || showsConservationPanel
+        backgroundMode == .identity || showsConservationPanel
+    }
+
+    private var needsMajorityResidueByColumn: Bool {
+        backgroundMode == .different
     }
 
     private var displayRows: [AlignmentRow] {
-        model.rowsExcludingReference(selectedReferenceName)
+        model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
+    }
+
+    private var effectiveDisplayOrderMode: AlignmentDisplayOrderMode {
+        viewerMode == .view ? displayOrderMode : .original
+    }
+
+    private var canEditRenderedRows: Bool {
+        viewerMode == .edit && model.renderedDisplayOrderMode == .original
     }
 
     private var displayAlignment: AlignmentData {
@@ -347,6 +384,13 @@ private struct RootView: View {
         )
     }
 
+    private var alignmentEditActions: AlignmentEditActions {
+        AlignmentEditActions(
+            canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
+            removeAllGapColumns: removeAllGapColumns
+        )
+    }
+
     private func auxiliaryAttributedText(_ text: String) -> NSAttributedString {
         NSAttributedString(
             string: text,
@@ -355,6 +399,72 @@ private struct RootView: View {
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
         )
+    }
+
+    private func auxiliarySequenceAttributedText(_ content: AuxiliaryPanelContent) -> NSAttributedString {
+        let attributed = NSMutableAttributedString(
+            string: content.rightText,
+            attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: alignmentFontSize, weight: .regular),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+        )
+        for range in content.coloredRanges {
+            applyAuxiliaryBackground(to: attributed, in: range)
+        }
+        return attributed
+    }
+
+    private func applyAuxiliaryBackground(to attributed: NSMutableAttributedString, in range: NSRange) {
+        guard range.length > 0 else { return }
+        let text = attributed.string as NSString
+        var runStart: Int?
+        var runColor: NSColor?
+
+        func flushRun(endOffset: Int) {
+            guard let start = runStart, let color = runColor, endOffset > start else { return }
+            attributed.addAttribute(
+                .backgroundColor,
+                value: color,
+                range: NSRange(location: range.location + start, length: endOffset - start)
+            )
+        }
+
+        for offset in 0..<range.length {
+            let location = range.location + offset
+            let color = auxiliaryBackgroundColor(for: text.character(at: location), column: offset)
+            guard let color else {
+                flushRun(endOffset: offset)
+                runStart = nil
+                runColor = nil
+                continue
+            }
+            if runStart == nil {
+                runStart = offset
+                runColor = color
+            } else if color != runColor {
+                flushRun(endOffset: offset)
+                runStart = offset
+                runColor = color
+            }
+        }
+        flushRun(endOffset: range.length)
+    }
+
+    private func auxiliaryBackgroundColor(for residue: UInt16, column: Int) -> NSColor? {
+        switch backgroundMode {
+        case .residue:
+            return ResiduePalette.backgroundColor(for: residue)
+        case .different:
+            let normalizedResidue = normalizedResidueCode(residue)
+            guard let majorityResidue = model.renderedAlignment.majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
+            guard normalizedResidue != majorityResidue else { return nil }
+            return ResiduePalette.backgroundColor(for: normalizedResidue)
+        case .identity:
+            return model.renderedAlignment.identityByColumn[safe: column].flatMap {
+                IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)
+            }
+        }
     }
 
     var body: some View {
@@ -373,35 +483,34 @@ private struct RootView: View {
                 )
             } else {
                 VStack(spacing: 0) {
-                    AlignmentTextView(
+                    AlignmentTextViewport(
                         nameAttributedText: model.renderedAlignment.nameAttributedText,
                         sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
                         namesChecksum: model.renderedAlignment.namesChecksum,
                         sequenceChecksum: model.renderedAlignment.sequenceChecksum,
                         alignmentLength: displayAlignment.length,
                         identityByColumn: model.renderedAlignment.identityByColumn,
-                        showsIdentityShading: showsIdentityShading,
+                        majorityResidueByColumn: model.renderedAlignment.majorityResidueByColumn,
+                        backgroundMode: backgroundMode,
                         identityColorThreshold: identityColorThreshold,
-                        renderedShowsResidueColors: model.renderedShowsResidueColors,
                         fontSize: alignmentFontSize,
                         contentVersion: model.contentVersion,
                         defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
                         displayedRowNames: displayRows.map(\.name),
                         auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
-                        auxiliarySequenceAttributedText: auxiliaryAttributedText(auxiliaryPanel.rightText),
+                        auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
-                        preferredUnsavedFilename: documentConfiguration?.fileURL == nil ? document.suggestedSaveFilename : nil,
-                        isEditMode: viewerMode == .edit,
+                        isEditMode: canEditRenderedRows,
                         onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
                         selectedStartPosition: $selectedStartPosition,
-                        selectedEndPosition: $selectedEndPosition
+                        selectedEndPosition: $selectedEndPosition,
+                        onDeleteSequence: deleteDisplayedSequence
                     ) { selectedName in
                         selectedReferenceName = selectedName
                         if selectedName != nil {
                             showsReferencePanel = true
                         }
-                        rerender()
                     }
                     Divider()
                     FooterBar(
@@ -411,8 +520,7 @@ private struct RootView: View {
                         selectedResidueCount: selectedResidueCount,
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
-                        showsResidueColors: $showsResidueColors,
-                        showsIdentityShading: $showsIdentityShading
+                        backgroundMode: $backgroundMode
                     )
                 }
             }
@@ -427,6 +535,15 @@ private struct RootView: View {
                 }
                 .pickerStyle(.menu)
                 .help("Switch between read-only view and edit mode")
+
+                Picker("Order", selection: $displayOrderMode) {
+                    ForEach(AlignmentDisplayOrderMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(viewerMode == .edit)
+                .help("Change sequence display order in view mode")
 
                 Button {
                     showsInspector.toggle()
@@ -449,12 +566,17 @@ private struct RootView: View {
             parseAndRender()
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
-        .onChange(of: showsResidueColors) { _, _ in rerender() }
-        .onChange(of: showsIdentityShading) { _, _ in rerender() }
+        .onChange(of: backgroundMode) { _, newValue in
+            if newValue == .identity || newValue == .different {
+                rerender()
+            }
+        }
         .onChange(of: showsConservationPanel) { _, _ in rerender() }
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
-        .onChange(of: identityColorThreshold) { _, _ in rerender() }
+        .onChange(of: displayOrderMode) { _, _ in rerender() }
+        .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
+        .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
     }
 
     private func parseAndRender() {
@@ -464,8 +586,9 @@ private struct RootView: View {
         model.parseAndRender(
             rawText: document.rawText,
             fontSize: alignmentFontSize,
-            showsResidueColors: showsResidueColors,
             needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
     }
@@ -473,8 +596,9 @@ private struct RootView: View {
     private func rerender() {
         model.rerender(
             fontSize: alignmentFontSize,
-            showsResidueColors: showsResidueColors,
             needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
     }
@@ -486,18 +610,135 @@ private struct RootView: View {
         document.rawText = rebuilt
     }
 
+    private func deleteDisplayedSequence(at displayedRowIndex: Int) {
+        guard viewerMode == .edit else { return }
+        guard model.alignment.rows.count > 1 else { return }
+        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+
+        let rowToDelete = model.alignment.rows[displayedRowIndex]
+        var rows = model.alignment.rows
+        rows.remove(at: displayedRowIndex)
+
+        if selectedReferenceName == rowToDelete.name {
+            selectedReferenceName = nil
+        }
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Delete Sequence")
+    }
+
+    private func removeAllGapColumns() {
+        guard viewerMode == .edit else { return }
+        guard let keepColumns = removableAllGapColumnMask() else { return }
+        let keptColumnCount = keepColumns.filter(\.self).count
+
+        let rows = model.alignment.rows.map { row in
+            AlignmentRow(
+                name: row.name,
+                sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
+            )
+        }
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Remove All-Gap Columns")
+    }
+
+    private func removableAllGapColumnMask() -> [Bool]? {
+        let rows = model.alignment.rows
+        let length = model.alignment.length
+        guard !rows.isEmpty, length > 0 else { return nil }
+
+        let sequences = rows.map { $0.sequence as NSString }
+        var keepColumns = Array(repeating: true, count: length)
+        var removedCount = 0
+
+        for column in 0..<length {
+            let isAllGap = sequences.allSatisfy { sequence in
+                guard column < sequence.length else { return true }
+                return Self.isGap(sequence.character(at: column))
+            }
+            if isAllGap {
+                keepColumns[column] = false
+                removedCount += 1
+            }
+        }
+
+        guard removedCount > 0, removedCount < length else { return nil }
+        return keepColumns
+    }
+
+    private func sequence(_ sequence: String, keepingColumns keepColumns: [Bool], keptColumnCount: Int) -> String {
+        let source = sequence as NSString
+        var result = ""
+        result.reserveCapacity(keptColumnCount)
+        for (column, shouldKeep) in keepColumns.enumerated() where shouldKeep {
+            guard column < source.length else { continue }
+            result += source.substring(with: NSRange(location: column, length: 1))
+        }
+        return result
+    }
+
+    private static func isGap(_ residue: UInt16) -> Bool {
+        residue == 45 || residue == 46
+    }
+
+    private func applyDocumentRawText(_ newText: String, undoActionName: String) {
+        let currentText = document.rawText
+        guard currentText != newText else { return }
+        registerRawTextUndo(from: newText, to: currentText, actionName: undoActionName)
+        document.rawText = newText
+    }
+
+    private func registerRawTextUndo(from currentText: String, to restoredText: String, actionName: String) {
+        guard let undoManager else { return }
+        Self.registerRawTextUndo(
+            on: undoManager,
+            document: document,
+            from: currentText,
+            to: restoredText,
+            actionName: actionName
+        )
+    }
+
+    private static func registerRawTextUndo(
+        on undoManager: UndoManager,
+        document: ApuSeqDocument,
+        from currentText: String,
+        to restoredText: String,
+        actionName: String
+    ) {
+        undoManager.registerUndo(withTarget: document) { document in
+            registerRawTextUndo(
+                on: undoManager,
+                document: document,
+                from: restoredText,
+                to: currentText,
+                actionName: actionName
+            )
+            document.rawText = restoredText
+        }
+        undoManager.setActionName(actionName)
+    }
+
     private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
-        let sequenceLines = editedText
+        var sequenceLines = editedText
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
+        if sequenceLines.last == "" {
+            sequenceLines.removeLast()
+        }
         guard sequenceLines.count == displayRows.count else { return nil }
+        let rows = zip(displayRows, sequenceLines).map { row, sequence in
+            AlignmentRow(name: row.name, sequence: sequence)
+        }
+        return rebuildFASTA(fromRows: rows)
+    }
+
+    private func rebuildFASTA(fromRows rows: [AlignmentRow]) -> String {
         var output = ""
-        output.reserveCapacity(editedText.count + (displayRows.count * 16))
-        for (row, sequence) in zip(displayRows, sequenceLines) {
+        let sequenceLength = rows.reduce(0) { $0 + $1.sequence.count }
+        output.reserveCapacity(sequenceLength + (rows.count * 16))
+        for row in rows {
             output += ">"
             output += row.name
             output += "\n"
-            output += sequence
+            output += row.sequence
             output += "\n"
         }
         return output
@@ -515,8 +756,9 @@ private struct AuxiliaryPanelContent {
     let leftText: String
     let rightText: String
     let lineCount: Int
+    let coloredRanges: [NSRange]
 
-    static let empty = AuxiliaryPanelContent(leftText: "", rightText: "", lineCount: 0)
+    static let empty = AuxiliaryPanelContent(leftText: "", rightText: "", lineCount: 0, coloredRanges: [])
 }
 
 private enum AuxiliaryPanelBuilder {
@@ -528,24 +770,36 @@ private enum AuxiliaryPanelBuilder {
     ) -> AuxiliaryPanelContent {
         var left: [String] = []
         var right: [String] = []
+        var rightUTF16Length = 0
+        var coloredRanges: [NSRange] = []
+
+        func appendLine(label: String, sequence: String, appliesColor: Bool = false) {
+            if !right.isEmpty {
+                rightUTF16Length += 1
+            }
+            if appliesColor {
+                coloredRanges.append(NSRange(location: rightUTF16Length, length: (sequence as NSString).length))
+            }
+            left.append(label)
+            right.append(sequence)
+            rightUTF16Length += (sequence as NSString).length
+        }
 
         if referenceSequence != nil {
-            left.append(referenceLabel ?? "Ref:")
-            right.append(referenceSequence ?? "")
+            appendLine(label: referenceLabel ?? "Ref:", sequence: referenceSequence ?? "", appliesColor: true)
         }
         if let consensusSequence {
-            left.append("Consensus")
-            right.append(consensusSequence)
+            appendLine(label: "Consensus", sequence: consensusSequence, appliesColor: true)
         }
         if let conservation {
-            left.append("Identity")
-            right.append(conservationBars(from: conservation))
+            appendLine(label: "Identity", sequence: conservationBars(from: conservation))
         }
 
         return AuxiliaryPanelContent(
             leftText: left.joined(separator: "\n"),
             rightText: right.joined(separator: "\n"),
-            lineCount: max(left.count, right.count)
+            lineCount: max(left.count, right.count),
+            coloredRanges: coloredRanges
         )
     }
 
@@ -563,5 +817,5 @@ private enum AuxiliaryPanelBuilder {
 }
 
 #Preview {
-    ContentView(document: .constant(ApuSeqDocument()))
+    ContentView(document: ApuSeqDocument())
 }

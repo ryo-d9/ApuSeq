@@ -6,6 +6,7 @@ struct RenderedAlignment {
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
     let identityByColumn: [Double]
+    let majorityResidueByColumn: [UInt16]
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
 
@@ -14,6 +15,7 @@ struct RenderedAlignment {
         nameAttributedText: NSAttributedString(string: ""),
         nameColumnWidth: 120,
         identityByColumn: [],
+        majorityResidueByColumn: [],
         namesChecksum: 0,
         sequenceChecksum: 0
     )
@@ -36,8 +38,8 @@ struct RenderedFingerprint: Equatable {
 enum AlignmentRenderer {
     static func render(
         _ alignment: AlignmentData,
-        showsResidueColors: Bool,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
@@ -55,6 +57,7 @@ enum AlignmentRenderer {
         let namesAttributed = NSMutableAttributedString()
         let sequenceAttributed = NSMutableAttributedString()
         let identityByColumn = needsIdentityByColumn ? columnIdentity(rows: alignment.rows) : []
+        let majorityResidueByColumn = needsMajorityResidueByColumn ? majorityResidues(rows: alignment.rows) : []
         var namesHasher = Hasher()
         var sequenceHasher = Hasher()
 
@@ -76,14 +79,6 @@ enum AlignmentRenderer {
                 range: NSRange(location: sequenceLineStart, length: (row.sequence as NSString).length)
             )
 
-            if showsResidueColors {
-                applyResidueColors(
-                    sequence: row.sequence,
-                    to: sequenceAttributed,
-                    lineStart: sequenceLineStart
-                )
-            }
-
         }
 
         let nameColumnWidth = CGFloat(nameWidth + 2) * CGFloat(fontSize * 0.64) + 20
@@ -92,38 +87,10 @@ enum AlignmentRenderer {
             nameAttributedText: namesAttributed,
             nameColumnWidth: nameColumnWidth,
             identityByColumn: identityByColumn,
+            majorityResidueByColumn: majorityResidueByColumn,
             namesChecksum: UInt64(bitPattern: Int64(namesHasher.finalize())),
             sequenceChecksum: UInt64(bitPattern: Int64(sequenceHasher.finalize()))
         )
-    }
-
-    private static func applyResidueColors(sequence: String, to attributed: NSMutableAttributedString, lineStart: Int) {
-        let residues = sequence as NSString
-        guard residues.length > 0 else { return }
-        var runStart = 0
-        var currentColor = ResiduePalette.color(for: residues.character(at: 0))
-
-        for index in 1...residues.length {
-            let nextColor: NSColor?
-            if index < residues.length {
-                nextColor = ResiduePalette.color(for: residues.character(at: index))
-            } else {
-                nextColor = nil
-            }
-
-            if nextColor == currentColor { continue }
-
-            if let color = currentColor {
-                attributed.addAttribute(
-                    .foregroundColor,
-                    value: color,
-                    range: NSRange(location: lineStart + runStart, length: index - runStart)
-                )
-            }
-
-            runStart = index
-            currentColor = nextColor
-        }
     }
 
     private static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
@@ -170,10 +137,138 @@ enum AlignmentRenderer {
     }
 
     private static func residueBucketIndex(_ residue: UInt16) -> Int? {
-        let normalized: UInt16 = residue == 46 ? 45 : residue
+        let normalized = normalizedResidueCode(residue)
         guard normalized < 128 else { return nil }
         return Int(normalized)
     }
+
+    private static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+        guard let length = rows.first?.sequence.count, length > 0 else { return [] }
+        let sequences = rows.map { $0.sequence as NSString }
+        var majority: [UInt16] = Array(repeating: 0, count: length)
+        var counts: [Int] = Array(repeating: 0, count: 128)
+        var touched: [Int] = []
+        touched.reserveCapacity(16)
+
+        for column in 0..<length {
+            var bestBucket = 0
+            var bestCount = 0
+
+            for sequence in sequences {
+                guard column < sequence.length else { continue }
+                let residue = normalizedResidueCode(sequence.character(at: column))
+                guard residue < 128, ResiduePalette.isDefined(residue) else { continue }
+                let bucket = Int(residue)
+                if counts[bucket] == 0 {
+                    touched.append(bucket)
+                }
+                counts[bucket] += 1
+                if counts[bucket] > bestCount {
+                    bestCount = counts[bucket]
+                    bestBucket = bucket
+                }
+            }
+
+            majority[column] = UInt16(bestBucket)
+            for bucket in touched {
+                counts[bucket] = 0
+            }
+            touched.removeAll(keepingCapacity: true)
+        }
+
+        return majority
+    }
+}
+
+enum AlignmentClusterer {
+    private static let maximumUPGMARowCount = 400
+
+    static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
+        guard rows.count > 2 else { return rows }
+        guard rows.count <= maximumUPGMARowCount else { return rows }
+
+        let count = rows.count
+        let sequences = rows.map { $0.sequence as NSString }
+        var distances = Array(repeating: 0.0, count: count * count)
+        var members = rows.indices.map { [$0] }
+        var sizes = Array(repeating: 1, count: count)
+        var isActive = Array(repeating: true, count: count)
+        var activeCount = count
+
+        for row in 0..<count {
+            for column in (row + 1)..<count {
+                let distance = sequenceDistance(sequences[row], sequences[column])
+                distances[(row * count) + column] = distance
+                distances[(column * count) + row] = distance
+            }
+        }
+
+        while activeCount > 1 {
+            var bestLeft = -1
+            var bestRight = -1
+            var bestDistance = Double.greatestFiniteMagnitude
+
+            for left in 0..<count where isActive[left] {
+                for right in (left + 1)..<count where isActive[right] {
+                    let distance = distances[(left * count) + right]
+                    if distance < bestDistance {
+                        bestDistance = distance
+                        bestLeft = left
+                        bestRight = right
+                    }
+                }
+            }
+
+            guard bestLeft >= 0, bestRight >= 0 else { break }
+            let leftSize = sizes[bestLeft]
+            let rightSize = sizes[bestRight]
+            let mergedSize = leftSize + rightSize
+
+            for index in 0..<count where isActive[index] && index != bestLeft && index != bestRight {
+                let leftDistance = distances[(bestLeft * count) + index]
+                let rightDistance = distances[(bestRight * count) + index]
+                let mergedDistance = ((leftDistance * Double(leftSize)) + (rightDistance * Double(rightSize))) / Double(mergedSize)
+                distances[(bestLeft * count) + index] = mergedDistance
+                distances[(index * count) + bestLeft] = mergedDistance
+            }
+
+            members[bestLeft].append(contentsOf: members[bestRight])
+            members[bestRight].removeAll(keepingCapacity: false)
+            sizes[bestLeft] = mergedSize
+            sizes[bestRight] = 0
+            isActive[bestRight] = false
+            activeCount -= 1
+        }
+
+        guard let root = isActive.firstIndex(of: true) else { return rows }
+        return members[root].map { rows[$0] }
+    }
+
+    private static func sequenceDistance(_ first: NSString, _ second: NSString) -> Double {
+        let length = min(first.length, second.length)
+        guard length > 0 else { return 1 }
+
+        var comparable = 0
+        var mismatches = 0
+        for index in 0..<length {
+            let left = normalizedResidueCode(first.character(at: index))
+            let right = normalizedResidueCode(second.character(at: index))
+            guard ResiduePalette.isDefined(left), ResiduePalette.isDefined(right) else { continue }
+            comparable += 1
+            if left != right {
+                mismatches += 1
+            }
+        }
+
+        guard comparable > 0 else { return 1 }
+        return Double(mismatches) / Double(comparable)
+    }
+}
+
+func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
+    if residue == 46 { return 45 }
+    if residue >= 97 && residue <= 122 { return residue - 32 }
+    return residue
 }
 
 enum AlignmentStatistics {
@@ -194,8 +289,8 @@ enum AlignmentStatistics {
 
             for sequence in sequences {
                 guard column < sequence.length else { continue }
-                let residue = sequence.character(at: column)
-                if residue == 45 || residue == 46 { continue }
+                let residue = normalizedResidueCode(sequence.character(at: column))
+                if residue == 45 { continue }
                 guard residue < 128 else { continue }
                 let bucket = Int(residue)
                 if counts[bucket] == 0 {
@@ -225,16 +320,23 @@ enum AlignmentStatistics {
 }
 
 enum IdentityPalette {
-    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor {
+    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor? {
         let clamped = min(max(identity, 0), 1)
         let clampedThreshold = min(max(threshold, 0), 1)
         if clamped >= 1.0 {
-            return NSColor.systemBlue.withAlphaComponent(0.60)
+            return NSColor.systemBlue.withAlphaComponent(0.56)
+        }
+        let highBand = clampedThreshold + ((1.0 - clampedThreshold) * 0.5)
+        if clamped >= highBand {
+            return NSColor.systemBlue.withAlphaComponent(0.40)
         }
         if clamped >= clampedThreshold {
-            return NSColor.systemBlue.withAlphaComponent(0.32)
+            return NSColor.systemBlue.withAlphaComponent(0.26)
         }
-        return NSColor.systemBlue.withAlphaComponent(0.12)
+        if clamped >= clampedThreshold * 0.5 {
+            return NSColor.systemBlue.withAlphaComponent(0.14)
+        }
+        return nil
     }
 }
 
@@ -250,6 +352,14 @@ extension NSAttributedString.Key {
 }
 
 enum ResiduePalette {
+    static func isDefined(_ residue: UInt16) -> Bool {
+        color(for: residue) != nil
+    }
+
+    static func backgroundColor(for residue: UInt16) -> NSColor? {
+        color(for: residue)?.withAlphaComponent(0.22)
+    }
+
     static func color(for residue: UInt16) -> NSColor? {
         if let scalar = UnicodeScalar(residue) {
             return color(for: Character(scalar))
@@ -267,8 +377,6 @@ enum ResiduePalette {
             return NSColor.systemOrange
         case "T", "U":
             return NSColor.systemRed
-        case "-", ".":
-            return NSColor.tertiaryLabelColor
         case "R", "K", "H":
             return NSColor.systemPurple
         case "D", "E":
@@ -343,7 +451,7 @@ enum AlignmentParser {
 
         func commitCurrent() {
             guard let currentName else { return }
-            let sequence = currentSequenceParts.joined().uppercased()
+            let sequence = currentSequenceParts.joined()
             rows.append(AlignmentRow(name: currentName, sequence: sequence))
         }
 
@@ -384,7 +492,7 @@ enum AlignmentParser {
             let columns = line.split(whereSeparator: \.isWhitespace)
             guard columns.count >= 2 else { continue }
             let name = String(columns[0])
-            let chunk = String(columns[1]).uppercased()
+            let chunk = String(columns[1])
 
             if sequencesByName[name] == nil {
                 order.append(name)
@@ -407,7 +515,7 @@ enum AlignmentParser {
         let rows = lines.enumerated().map { index, line in
             AlignmentRow(
                 name: "Sequence \(index + 1)",
-                sequence: line.replacingOccurrences(of: " ", with: "").uppercased()
+                sequence: line.replacingOccurrences(of: " ", with: "")
             )
         }
 

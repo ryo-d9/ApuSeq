@@ -15,8 +15,17 @@ struct TranslationContext {
     let sourceDirectoryURL: URL?
 }
 
+struct AlignmentEditActions {
+    let canRemoveAllGapColumns: Bool
+    let removeAllGapColumns: () -> Void
+}
+
 private struct TranslationContextKey: FocusedValueKey {
     typealias Value = TranslationContext
+}
+
+private struct AlignmentEditActionsKey: FocusedValueKey {
+    typealias Value = AlignmentEditActions
 }
 
 extension FocusedValues {
@@ -24,19 +33,25 @@ extension FocusedValues {
         get { self[TranslationContextKey.self] }
         set { self[TranslationContextKey.self] = newValue }
     }
+
+    var alignmentEditActions: AlignmentEditActions? {
+        get { self[AlignmentEditActionsKey.self] }
+        set { self[AlignmentEditActionsKey.self] = newValue }
+    }
 }
 
 @main
 struct ApuSeqApp: App {
     var body: some Scene {
-        DocumentGroup(newDocument: ApuSeqDocument()) { file in
-            ContentView(document: file.$document)
+        DocumentGroup(newDocument: { ApuSeqDocument() }) { file in
+            ContentView(document: file.document)
         }
         .commands {
             FindCommands()
             TranslationCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
+            AlignmentEditCommands()
         }
 
         Settings {
@@ -72,14 +87,27 @@ private struct ColumnSelectionCommands: Commands {
         CommandGroup(after: .textEditing) {
             Divider()
             Button("Select Column Up") {
-                _ = NSApp.sendAction(Selector(("selectColumnUp:")), to: nil, from: nil)
+                _ = NSApp.sendAction(NSSelectorFromString("selectColumnUp:"), to: nil, from: nil)
             }
             .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
 
             Button("Select Column Down") {
-                _ = NSApp.sendAction(Selector(("selectColumnDown:")), to: nil, from: nil)
+                _ = NSApp.sendAction(NSSelectorFromString("selectColumnDown:"), to: nil, from: nil)
             }
             .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
+        }
+    }
+}
+
+private struct AlignmentEditCommands: Commands {
+    @FocusedValue(\.alignmentEditActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button("Remove All-Gap Columns") {
+                actions?.removeAllGapColumns()
+            }
+            .disabled(actions?.canRemoveAllGapColumns != true)
         }
     }
 }
@@ -140,13 +168,13 @@ private struct TranslationCommands: Commands {
                     codonTable: codonTable
                 )
                 await MainActor.run {
-                    newDocument(
+                    newDocument {
                         ApuSeqDocument(
                             rawText: translated,
                             suggestedSaveFilename: "\(context.fileBaseName)_translated",
                             markEditedOnFirstDisplay: true
                         )
-                    )
+                    }
                 }
             } catch {
                 NSSound.beep()
