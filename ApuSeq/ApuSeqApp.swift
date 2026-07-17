@@ -15,14 +15,28 @@ struct TranslationContext {
     let sourceDirectoryURL: URL?
 }
 
+struct AlignmentEditActions {
+    let canRemoveAllGapColumns: Bool
+    let removeAllGapColumns: () -> Void
+}
+
 private struct TranslationContextKey: FocusedValueKey {
     typealias Value = TranslationContext
+}
+
+private struct AlignmentEditActionsKey: FocusedValueKey {
+    typealias Value = AlignmentEditActions
 }
 
 extension FocusedValues {
     var translationContext: TranslationContext? {
         get { self[TranslationContextKey.self] }
         set { self[TranslationContextKey.self] = newValue }
+    }
+
+    var alignmentEditActions: AlignmentEditActions? {
+        get { self[AlignmentEditActionsKey.self] }
+        set { self[AlignmentEditActionsKey.self] = newValue }
     }
 }
 
@@ -37,6 +51,7 @@ struct ApuSeqApp: App {
             TranslationCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
+            AlignmentEditCommands()
         }
 
         Settings {
@@ -80,6 +95,19 @@ private struct ColumnSelectionCommands: Commands {
                 _ = NSApp.sendAction(Selector(("selectColumnDown:")), to: nil, from: nil)
             }
             .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
+        }
+    }
+}
+
+private struct AlignmentEditCommands: Commands {
+    @FocusedValue(\.alignmentEditActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button("Remove All-Gap Columns") {
+                actions?.removeAllGapColumns()
+            }
+            .disabled(actions?.canRemoveAllGapColumns != true)
         }
     }
 }

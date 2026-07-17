@@ -401,6 +401,13 @@ private struct RootView: View {
         )
     }
 
+    private var alignmentEditActions: AlignmentEditActions {
+        AlignmentEditActions(
+            canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
+            removeAllGapColumns: removeAllGapColumns
+        )
+    }
+
     private func auxiliaryAttributedText(_ text: String) -> NSAttributedString {
         NSAttributedString(
             string: text,
@@ -586,6 +593,7 @@ private struct RootView: View {
         .onChange(of: displayOrderMode) { _, _ in rerender() }
         .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
+        .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
     }
 
     private func parseAndRender() {
@@ -632,6 +640,59 @@ private struct RootView: View {
             selectedReferenceName = nil
         }
         applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Delete Sequence")
+    }
+
+    private func removeAllGapColumns() {
+        guard viewerMode == .edit else { return }
+        guard let keepColumns = removableAllGapColumnMask() else { return }
+        let keptColumnCount = keepColumns.filter(\.self).count
+
+        let rows = model.alignment.rows.map { row in
+            AlignmentRow(
+                name: row.name,
+                sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
+            )
+        }
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Remove All-Gap Columns")
+    }
+
+    private func removableAllGapColumnMask() -> [Bool]? {
+        let rows = model.alignment.rows
+        let length = model.alignment.length
+        guard !rows.isEmpty, length > 0 else { return nil }
+
+        let sequences = rows.map { $0.sequence as NSString }
+        var keepColumns = Array(repeating: true, count: length)
+        var removedCount = 0
+
+        for column in 0..<length {
+            let isAllGap = sequences.allSatisfy { sequence in
+                guard column < sequence.length else { return true }
+                return Self.isGap(sequence.character(at: column))
+            }
+            if isAllGap {
+                keepColumns[column] = false
+                removedCount += 1
+            }
+        }
+
+        guard removedCount > 0, removedCount < length else { return nil }
+        return keepColumns
+    }
+
+    private func sequence(_ sequence: String, keepingColumns keepColumns: [Bool], keptColumnCount: Int) -> String {
+        let source = sequence as NSString
+        var result = ""
+        result.reserveCapacity(keptColumnCount)
+        for (column, shouldKeep) in keepColumns.enumerated() where shouldKeep {
+            guard column < source.length else { continue }
+            result += source.substring(with: NSRange(location: column, length: 1))
+        }
+        return result
+    }
+
+    private static func isGap(_ residue: UInt16) -> Bool {
+        residue == 45 || residue == 46
     }
 
     private func applyDocumentRawText(_ newText: String, undoActionName: String) {
