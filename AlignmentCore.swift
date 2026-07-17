@@ -6,6 +6,7 @@ struct RenderedAlignment {
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
     let identityByColumn: [Double]
+    let majorityResidueByColumn: [UInt16]
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
 
@@ -14,6 +15,7 @@ struct RenderedAlignment {
         nameAttributedText: NSAttributedString(string: ""),
         nameColumnWidth: 120,
         identityByColumn: [],
+        majorityResidueByColumn: [],
         namesChecksum: 0,
         sequenceChecksum: 0
     )
@@ -37,6 +39,7 @@ enum AlignmentRenderer {
     static func render(
         _ alignment: AlignmentData,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
@@ -54,6 +57,7 @@ enum AlignmentRenderer {
         let namesAttributed = NSMutableAttributedString()
         let sequenceAttributed = NSMutableAttributedString()
         let identityByColumn = needsIdentityByColumn ? columnIdentity(rows: alignment.rows) : []
+        let majorityResidueByColumn = needsMajorityResidueByColumn ? majorityResidues(rows: alignment.rows) : []
         var namesHasher = Hasher()
         var sequenceHasher = Hasher()
 
@@ -83,6 +87,7 @@ enum AlignmentRenderer {
             nameAttributedText: namesAttributed,
             nameColumnWidth: nameColumnWidth,
             identityByColumn: identityByColumn,
+            majorityResidueByColumn: majorityResidueByColumn,
             namesChecksum: UInt64(bitPattern: Int64(namesHasher.finalize())),
             sequenceChecksum: UInt64(bitPattern: Int64(sequenceHasher.finalize()))
         )
@@ -136,9 +141,46 @@ enum AlignmentRenderer {
         guard normalized < 128 else { return nil }
         return Int(normalized)
     }
+
+    private static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+        guard let length = rows.first?.sequence.count, length > 0 else { return [] }
+        let sequences = rows.map { $0.sequence as NSString }
+        var majority: [UInt16] = Array(repeating: 0, count: length)
+        var counts: [Int] = Array(repeating: 0, count: 128)
+        var touched: [Int] = []
+        touched.reserveCapacity(16)
+
+        for column in 0..<length {
+            var bestBucket = 0
+            var bestCount = 0
+
+            for sequence in sequences {
+                guard column < sequence.length else { continue }
+                let residue = normalizedResidueCode(sequence.character(at: column))
+                guard residue < 128, ResiduePalette.isDefined(residue) else { continue }
+                let bucket = Int(residue)
+                if counts[bucket] == 0 {
+                    touched.append(bucket)
+                }
+                counts[bucket] += 1
+                if counts[bucket] > bestCount {
+                    bestCount = counts[bucket]
+                    bestBucket = bucket
+                }
+            }
+
+            majority[column] = UInt16(bestBucket)
+            for bucket in touched {
+                counts[bucket] = 0
+            }
+            touched.removeAll(keepingCapacity: true)
+        }
+
+        return majority
+    }
 }
 
-private func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
+func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
     if residue == 46 { return 45 }
     if residue >= 97 && residue <= 122 { return residue - 32 }
     return residue
@@ -218,6 +260,10 @@ extension NSAttributedString.Key {
 }
 
 enum ResiduePalette {
+    static func isDefined(_ residue: UInt16) -> Bool {
+        color(for: residue) != nil
+    }
+
     static func backgroundColor(for residue: UInt16) -> NSColor? {
         color(for: residue)?.withAlphaComponent(0.22)
     }

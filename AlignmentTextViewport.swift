@@ -8,6 +8,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let sequenceChecksum: UInt64
     let alignmentLength: Int
     let identityByColumn: [Double]
+    let majorityResidueByColumn: [UInt16]
     let backgroundMode: AlignmentBackgroundMode
     let identityColorThreshold: Double
     let fontSize: Double
@@ -101,6 +102,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.sequenceTextView.updateAlignmentDisplay(
             alignmentLength: alignmentLength,
             identityByColumn: identityByColumn,
+            majorityResidueByColumn: majorityResidueByColumn,
             backgroundMode: backgroundMode,
             identityColorThreshold: identityColorThreshold
         )
@@ -692,6 +694,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     var alignmentLength = 0
     private var identityByColumn: [Double] = []
+    private var majorityResidueByColumn: [UInt16] = []
     private var backgroundMode: AlignmentBackgroundMode = .residue
     private var identityColorThreshold = 0.5
 
@@ -808,16 +811,19 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     func updateAlignmentDisplay(
         alignmentLength: Int,
         identityByColumn: [Double],
+        majorityResidueByColumn: [UInt16],
         backgroundMode: AlignmentBackgroundMode,
         identityColorThreshold: Double
     ) {
         let needsRedraw =
             self.alignmentLength != alignmentLength ||
             self.identityByColumn.count != identityByColumn.count ||
+            self.majorityResidueByColumn.count != majorityResidueByColumn.count ||
             self.backgroundMode != backgroundMode ||
             abs(self.identityColorThreshold - identityColorThreshold) > 0.001
         self.alignmentLength = alignmentLength
         self.identityByColumn = identityByColumn
+        self.majorityResidueByColumn = majorityResidueByColumn
         self.backgroundMode = backgroundMode
         self.identityColorThreshold = identityColorThreshold
         if needsRedraw {
@@ -827,7 +833,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
-        guard backgroundMode != .none, alignmentLength > 0 else { return }
+        guard alignmentLength > 0 else { return }
         guard let font else { return }
 
         let charWidth = max(("M" as NSString).size(withAttributes: [.font: font]).width, 1)
@@ -887,10 +893,13 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     private func backgroundColor(in text: NSString, at textIndex: Int, column: Int) -> NSColor? {
         switch backgroundMode {
-        case .none:
-            return nil
         case .residue:
             return ResiduePalette.backgroundColor(for: text.character(at: textIndex))
+        case .different:
+            let residue = normalizedResidueCode(text.character(at: textIndex))
+            guard let majorityResidue = majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
+            guard residue != majorityResidue else { return nil }
+            return ResiduePalette.backgroundColor(for: residue)
         case .identity:
             return identityByColumn[safe: column].map {
                 IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)

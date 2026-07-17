@@ -30,6 +30,7 @@ private final class AlignmentViewModel {
     private var cachedRenderVersion = -1
     private var cachedRenderFontSize = -1.0
     private var cachedRenderIdentityMode = false
+    private var cachedRenderMajorityMode = false
     private var cachedAlignment: RenderedAlignment?
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
@@ -40,6 +41,7 @@ private final class AlignmentViewModel {
         rawText: String,
         fontSize: Double,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
         referenceName: String?
     ) {
         parseTask?.cancel()
@@ -68,6 +70,7 @@ private final class AlignmentViewModel {
                     rerender(
                         fontSize: fontSize,
                         needsIdentityByColumn: needsIdentityByColumn,
+                        needsMajorityResidueByColumn: needsMajorityResidueByColumn,
                         referenceName: referenceName
                     )
                 }
@@ -88,6 +91,7 @@ private final class AlignmentViewModel {
     func rerender(
         fontSize: Double,
         needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
         referenceName: String?
     ) {
         renderTask?.cancel()
@@ -95,12 +99,14 @@ private final class AlignmentViewModel {
         let cacheKeyMatches =
             cachedRenderVersion == alignmentVersion &&
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
-            cachedRenderIdentityMode == needsIdentityByColumn
+            cachedRenderIdentityMode == needsIdentityByColumn &&
+            cachedRenderMajorityMode == needsMajorityResidueByColumn
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
             cachedRenderFontSize = fontSize
             cachedRenderIdentityMode = needsIdentityByColumn
+            cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedAlignment = nil
         }
 
@@ -122,6 +128,7 @@ private final class AlignmentViewModel {
                 AlignmentRenderer.render(
                     displayAlignment,
                     needsIdentityByColumn: needsIdentityByColumn,
+                    needsMajorityResidueByColumn: needsMajorityResidueByColumn,
                     fontSize: fontSize
                 )
             }
@@ -202,6 +209,7 @@ private final class AlignmentViewModel {
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
+        cachedRenderMajorityMode = false
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
@@ -257,8 +265,8 @@ private final class AlignmentViewModel {
 
 enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
     case residue = "Residue"
+    case different = "Different"
     case identity = "Identity"
-    case none = "None"
 
     var id: String { rawValue }
 }
@@ -293,6 +301,10 @@ private struct RootView: View {
 
     private var needsIdentityByColumn: Bool {
         backgroundMode == .identity || showsConservationPanel
+    }
+
+    private var needsMajorityResidueByColumn: Bool {
+        backgroundMode == .different
     }
 
     private var displayRows: [AlignmentRow] {
@@ -370,6 +382,7 @@ private struct RootView: View {
                         sequenceChecksum: model.renderedAlignment.sequenceChecksum,
                         alignmentLength: displayAlignment.length,
                         identityByColumn: model.renderedAlignment.identityByColumn,
+                        majorityResidueByColumn: model.renderedAlignment.majorityResidueByColumn,
                         backgroundMode: backgroundMode,
                         identityColorThreshold: identityColorThreshold,
                         fontSize: alignmentFontSize,
@@ -437,7 +450,7 @@ private struct RootView: View {
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
         .onChange(of: backgroundMode) { _, newValue in
-            if newValue == .identity {
+            if newValue == .identity || newValue == .different {
                 rerender()
             }
         }
@@ -454,6 +467,7 @@ private struct RootView: View {
             rawText: document.rawText,
             fontSize: alignmentFontSize,
             needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
             referenceName: selectedReferenceName
         )
     }
@@ -462,6 +476,7 @@ private struct RootView: View {
         model.rerender(
             fontSize: alignmentFontSize,
             needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
             referenceName: selectedReferenceName
         )
     }
