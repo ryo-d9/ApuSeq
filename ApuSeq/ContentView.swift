@@ -34,6 +34,7 @@ private final class AlignmentViewModel {
     private var cachedRenderIdentityMode = false
     private var cachedRenderMajorityMode = false
     private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
+    private var cachedRenderReferenceName = ""
     private var cachedAlignment: RenderedAlignment?
     private var cachedDisplayedRows: [AlignmentRow] = []
     private var cachedConsensusKey: ConsensusKey?
@@ -112,7 +113,8 @@ private final class AlignmentViewModel {
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
             cachedRenderIdentityMode == needsIdentityByColumn &&
             cachedRenderMajorityMode == needsMajorityResidueByColumn &&
-            cachedRenderOrderMode == displayOrderMode
+            cachedRenderOrderMode == displayOrderMode &&
+            cachedRenderReferenceName == (referenceName ?? "")
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
@@ -120,6 +122,7 @@ private final class AlignmentViewModel {
             cachedRenderIdentityMode = needsIdentityByColumn
             cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedRenderOrderMode = displayOrderMode
+            cachedRenderReferenceName = referenceName ?? ""
             cachedAlignment = nil
             cachedDisplayedRows = []
         }
@@ -241,6 +244,7 @@ private final class AlignmentViewModel {
         cachedRenderIdentityMode = false
         cachedRenderMajorityMode = false
         cachedRenderOrderMode = .original
+        cachedRenderReferenceName = ""
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil

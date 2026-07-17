@@ -181,8 +181,11 @@ enum AlignmentRenderer {
 }
 
 enum AlignmentClusterer {
+    private static let maximumUPGMARowCount = 400
+
     static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
         guard rows.count > 2 else { return rows }
+        guard rows.count <= maximumUPGMARowCount else { return rows }
 
         let count = rows.count
         let sequences = rows.map { $0.sequence as NSString }
