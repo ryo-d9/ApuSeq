@@ -53,17 +53,17 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
 
     // Keep runtime type handling aligned with Info.plist declarations.
     static let readableContentTypes: [UTType] = [
-        UTType(importedAs: "com.apuseq.fasta"),
-        UTType(importedAs: "org.clustal"),
-        UTType(importedAs: "com.apuseq.plain-text"),
+        .apuSeqFASTA,
+        .fasta,
+        .clustal,
         .plainText,
         .text
     ]
 
     static let writableContentTypes: [UTType] = [
-        UTType(importedAs: "com.apuseq.fasta"),
-        UTType(importedAs: "org.clustal"),
-        UTType(importedAs: "com.apuseq.plain-text"),
+        .apuSeqFASTA,
+        .fasta,
+        .clustal,
         .plainText
     ]
 
@@ -101,4 +101,10 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         body(&storage)
         lock.unlock()
     }
+}
+
+private extension UTType {
+    static let apuSeqFASTA = UTType("com.apuseq.fasta") ?? UTType(exportedAs: "com.apuseq.fasta")
+    static let fasta = UTType("org.fasta") ?? UTType(importedAs: "org.fasta")
+    static let clustal = UTType("org.clustal") ?? UTType(importedAs: "org.clustal")
 }
