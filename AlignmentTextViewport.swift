@@ -469,7 +469,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
         let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         let lineHeight = max(ceil(font.ascender - font.descender + font.leading), 1)
-        let height = lineCount > 0 ? max(CGFloat(lineCount) * lineHeight + 8, 24) : 0
+        let height = lineCount > 0 ? max(CGFloat(lineCount) * lineHeight + 24, 24) : 0
         let isVisible = lineCount > 0
         leftAuxHeightConstraint?.constant = height
         rightAuxHeightConstraint?.constant = height
@@ -570,7 +570,9 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             rightStack.bottomAnchor.constraint(equalTo: rightPane.bottomAnchor),
 
             leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight),
-            rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight)
+            rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight),
+            nameColumnView.heightAnchor.constraint(equalTo: sequenceScrollView.heightAnchor),
+            auxiliaryNameColumnView.heightAnchor.constraint(equalTo: auxiliarySequenceScrollView.heightAnchor)
         ])
     }
 
