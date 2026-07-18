@@ -107,6 +107,7 @@ private struct AlignmentEditCommands: Commands {
             Button("Remove All-Gap Columns") {
                 actions?.removeAllGapColumns()
             }
+            .keyboardShortcut(.delete, modifiers: [.command, .shift])
             .disabled(actions?.canRemoveAllGapColumns != true)
         }
     }

@@ -91,8 +91,19 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         if context.coordinator.lastContentVersion != contentVersion ||
             context.coordinator.lastRenderedFingerprint != fingerprint {
+            let selectedRanges = containerView.sequenceTextView.selectedRanges.map(\.rangeValue)
+            let columnSelectionRanges = containerView.sequenceTextView.columnSelectionRanges
+            let columnSelectionAnchor = containerView.sequenceTextView.columnSelectionAnchor
+            let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
             containerView.nameColumnView.rowNames = displayedRowNames
             containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
+            context.coordinator.restoreSelection(
+                selectedRanges,
+                columnSelectionRanges: columnSelectionRanges,
+                columnSelectionAnchor: columnSelectionAnchor,
+                columnSelectionWidth: columnSelectionWidth,
+                in: containerView.sequenceTextView
+            )
             context.coordinator.lastContentVersion = contentVersion
             context.coordinator.lastRenderedFingerprint = fingerprint
             DispatchQueue.main.async { [weak sequenceTextView = containerView.sequenceTextView, weak coordinator = context.coordinator] in
@@ -353,6 +364,34 @@ struct AlignmentTextViewport: NSViewRepresentable {
             selectedResidueCount.wrappedValue = count
             selectedStartPosition.wrappedValue = minPosition
             selectedEndPosition.wrappedValue = maxPosition
+        }
+
+        func restoreSelection(
+            _ selectedRanges: [NSRange],
+            columnSelectionRanges: [NSRange],
+            columnSelectionAnchor: Int?,
+            columnSelectionWidth: Int,
+            in textView: AlignmentViewportSequenceTextView
+        ) {
+            let textLength = (textView.string as NSString).length
+            let restoredRanges = selectedRanges.compactMap { clampedRange($0, textLength: textLength) }
+            guard !restoredRanges.isEmpty else { return }
+
+            textView.setSelectedRanges(
+                restoredRanges.map(NSValue.init(range:)),
+                affinity: .downstream,
+                stillSelecting: false
+            )
+            textView.columnSelectionRanges = columnSelectionRanges.compactMap { clampedRange($0, textLength: textLength) }
+            textView.columnSelectionAnchor = columnSelectionAnchor.map { min(max($0, 0), textLength) }
+            textView.columnSelectionWidth = columnSelectionWidth
+        }
+
+        private func clampedRange(_ range: NSRange, textLength: Int) -> NSRange? {
+            guard range.location != NSNotFound else { return nil }
+            let location = min(max(range.location, 0), textLength)
+            let maxLength = max(textLength - location, 0)
+            return NSRange(location: location, length: min(range.length, maxLength))
         }
 
 

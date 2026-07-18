@@ -8,6 +8,8 @@ struct FooterBar: View {
     let selectedStartPosition: Int?
     let selectedEndPosition: Int?
     @Binding var backgroundMode: AlignmentBackgroundMode
+    @Binding var displayOrderMode: AlignmentDisplayOrderMode
+    let canChangeDisplayOrder: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -25,6 +27,14 @@ struct FooterBar: View {
                 }
             }
             .pickerStyle(.menu)
+            Picker("Order", selection: $displayOrderMode) {
+                ForEach(AlignmentDisplayOrderMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(!canChangeDisplayOrder)
+            .help("Change sequence display order in view mode")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

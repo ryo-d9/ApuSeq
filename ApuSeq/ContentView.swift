@@ -520,7 +520,9 @@ private struct RootView: View {
                         selectedResidueCount: selectedResidueCount,
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
-                        backgroundMode: $backgroundMode
+                        backgroundMode: $backgroundMode,
+                        displayOrderMode: $displayOrderMode,
+                        canChangeDisplayOrder: viewerMode == .view
                     )
                 }
             }
@@ -535,15 +537,6 @@ private struct RootView: View {
                 }
                 .pickerStyle(.menu)
                 .help("Switch between read-only view and edit mode")
-
-                Picker("Order", selection: $displayOrderMode) {
-                    ForEach(AlignmentDisplayOrderMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.menu)
-                .disabled(viewerMode == .edit)
-                .help("Change sequence display order in view mode")
 
                 Button {
                     showsInspector.toggle()
