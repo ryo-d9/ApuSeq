@@ -7,17 +7,19 @@
 
 import Combine
 import Foundation
+import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
+@Observable
 final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
     typealias Snapshot = String
 
+    @ObservationIgnored
     let objectWillChange = ObservableObjectPublisher()
 
     private struct Storage {
         var rawText: String
-        var suggestedSaveFilename: String?
         var markEditedOnFirstDisplay: Bool
     }
 
@@ -29,11 +31,6 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         set { updateStorage { $0.rawText = newValue } }
     }
 
-    var suggestedSaveFilename: String? {
-        get { withLockedStorage { $0.suggestedSaveFilename } }
-        set { updateStorage { $0.suggestedSaveFilename = newValue } }
-    }
-
     var markEditedOnFirstDisplay: Bool {
         get { withLockedStorage { $0.markEditedOnFirstDisplay } }
         set { updateStorage { $0.markEditedOnFirstDisplay = newValue } }
@@ -41,12 +38,10 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
 
     init(
         rawText: String = "",
-        suggestedSaveFilename: String? = nil,
         markEditedOnFirstDisplay: Bool = false
     ) {
         storage = Storage(
             rawText: rawText,
-            suggestedSaveFilename: suggestedSaveFilename,
             markEditedOnFirstDisplay: markEditedOnFirstDisplay
         )
     }
@@ -81,7 +76,6 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         let decoded = TextDecoding.decode(data) ?? String(decoding: data, as: UTF8.self)
         storage = Storage(
             rawText: decoded,
-            suggestedSaveFilename: nil,
             markEditedOnFirstDisplay: false
         )
     }

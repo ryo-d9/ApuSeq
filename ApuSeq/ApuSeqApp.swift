@@ -11,8 +11,6 @@ import SwiftUI
 struct TranslationContext {
     let rawText: String
     let sequenceKind: SequenceKind
-    let fileBaseName: String
-    let sourceDirectoryURL: URL?
 }
 
 struct AlignmentEditActions {
@@ -191,7 +189,6 @@ private struct TranslationCommands: Commands {
                     newDocument {
                         ApuSeqDocument(
                             rawText: translated,
-                            suggestedSaveFilename: "\(context.fileBaseName)_translated",
                             markEditedOnFirstDisplay: true
                         )
                     }

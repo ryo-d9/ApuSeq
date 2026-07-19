@@ -10,7 +10,7 @@ import Observation
 import SwiftUI
 
 struct ContentView: View {
-    @ObservedObject var document: ApuSeqDocument
+    let document: ApuSeqDocument
     @AppStorage("appearanceMode") private var appearanceMode = AppAppearanceMode.system.rawValue
 
     var body: some View {
@@ -307,7 +307,7 @@ private struct RootView: View {
         var id: String { rawValue }
     }
 
-    @ObservedObject var document: ApuSeqDocument
+    let document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
     @Environment(\.undoManager) private var undoManager
 
@@ -373,19 +373,13 @@ private struct RootView: View {
         if let fileURL = documentConfiguration?.fileURL {
             return fileURL.lastPathComponent
         }
-        if let suggested = document.suggestedSaveFilename, !suggested.isEmpty {
-            return suggested
-        }
         return "Untitled"
     }
 
     private var translationContext: TranslationContext {
-        let baseName = documentConfiguration?.fileURL?.deletingPathExtension().lastPathComponent ?? "Untitled"
         return TranslationContext(
             rawText: document.rawText,
-            sequenceKind: model.alignment.sequenceKind,
-            fileBaseName: baseName,
-            sourceDirectoryURL: documentConfiguration?.fileURL?.deletingLastPathComponent()
+            sequenceKind: model.alignment.sequenceKind
         )
     }
 
