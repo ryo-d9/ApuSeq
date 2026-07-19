@@ -45,14 +45,9 @@ A lightweight Apple Help Book is bundled with the app and is available from the 
 
 ## Project Structure
 
-- `ApuSeq/ApuSeqApp.swift` - app entry point, commands, settings, and translation command routing
-- `ApuSeq/ApuSeqDocument.swift` - document storage and file read/write support
-- `ApuSeq/ContentView.swift` - main SwiftUI document view and alignment view model
-- `ApuSeq/AlignmentCore.swift` - parsing, rendering, statistics, clustering, editing, and translation core
-- `ApuSeq/AlignmentPanels.swift` - SwiftUI panels, controls, and status bar
-- `ApuSeq/AlignmentTextConfiguration.swift` - alignment display configuration
-- `ApuSeq/AlignmentTextViewport.swift` - AppKit/TextKit 2 alignment viewport
-- `ApuSeq/TextDecoding.swift` - text decoding helpers
+- `ApuSeq/App` - app entry point, document type, commands, settings, and the main SwiftUI document view
+- `ApuSeq/Core` - alignment data model, parsing, rendering, statistics, clustering, translation, and text decoding
+- `ApuSeq/Viewer` - SwiftUI panels and the AppKit/TextKit 2 alignment viewport
 - `ApuSeq/ApuSeqHelp.help` - bundled Apple Help Book
 - `ApuSeq/ApuSeqQuickLookExtension` - Quick Look preview extension
 - `ApuSeqIcon.icon` - Icon Composer app icon
