@@ -4,6 +4,10 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>ApuSeq</string>
+	<key>CFBundleHelpBookFolder</key>
+	<string>ApuSeqHelp.help</string>
+	<key>CFBundleHelpBookName</key>
+	<string>ApuSeq Help</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

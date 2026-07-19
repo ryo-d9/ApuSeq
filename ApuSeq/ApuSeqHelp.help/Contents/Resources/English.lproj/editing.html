@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="AppleTitle" content="Editing alignments">
+  <title>Editing alignments</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <p><a class="back-link" href="index.html">ApuSeq Help</a></p>
+    <h1>Editing alignments</h1>
+
+    <section>
+      <h2>Edit mode</h2>
+      <p>Edit mode uses the macOS document model, including autosave and versions. Use File &gt; Revert To to browse previous versions when available.</p>
+    </section>
+
+    <section>
+      <h2>Alignment length</h2>
+      <p>When text is inserted or deleted, ApuSeq keeps sequences aligned by adding gap characters to the affected columns as needed.</p>
+    </section>
+
+    <section>
+      <h2>Sequence deletion</h2>
+      <p>In Edit mode, Control-click or right-click a sequence name and choose Delete Sequence. If the deleted sequence is the reference, the reference selection is cleared.</p>
+    </section>
+
+    <section>
+      <h2>Remove all-gap columns</h2>
+      <p>Edit &gt; Remove All-Gap Columns removes columns where every sequence contains a gap. Both <code>-</code> and <code>.</code> are treated as gaps. The command is undoable and is disabled when it would leave the alignment empty.</p>
+    </section>
+  </main>
+</body>
+</html>
