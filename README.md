@@ -1,72 +1,77 @@
 # ApuSeq
 
-ApuSeq is a lightweight macOS alignment viewer/editor for FASTA, CLUSTAL, and plain text sequence alignments.
+ApuSeq is a lightweight native macOS alignment viewer and editor for sequence alignment files.
 
-## Goals
+The project focuses on fast viewing, simple editing, and standard macOS document behavior while keeping custom UI and infrastructure as small as practical.
 
-- Fast startup and smooth rendering for large alignments
-- Native macOS behavior and standard UI components
-- Minimal custom UI complexity where possible
+## Features
 
-## Current Features
+- Opens FASTA, Clustal, and plain-text alignment files
+- Native macOS document support with autosave and versions
+- TextKit 2 based alignment viewport
+- View and Edit modes
+- Reference, Consensus, and Identity panels
+- Residue, majority-difference, and identity coloring modes
+- View-only sequence ordering with Original and UPGMA modes
+- Column selection and multi-range editing
+- Sequence deletion from the name panel in Edit mode
+- Remove All-Gap Columns command, treating `-` and `.` as gaps
+- Nucleotide translation with selectable codon tables
+- Quick Look preview extension with lightweight residue coloring
+- Apple Help Book
+- Icon Composer app icon
 
-- Open and view alignments in:
-  - FASTA
-  - CLUSTAL
-  - Plain text
-- Optional residue coloring (`Residue` mode)
-- Optional identity shading (`Identity` mode)
-  - 3-level background shading:
-    - 100% match
-    - threshold-100% match
-    - 0-threshold match
-  - Threshold is configurable in Settings
-- Reference/Consensus/Identity auxiliary panel support
-- Edit mode for in-place sequence editing
-- Column selection up/down commands (multi-range edit workflow)
-- Quick Look extension target included
+## Design Goals
+
+- Use Apple-provided macOS document, menu, settings, help, Quick Look, and text system features where they fit
+- Keep the viewer responsive for large alignments
+- Avoid modifying files in View mode
+- Keep derived outputs, such as translated sequences, as new unsaved documents until the user saves them
+- Keep domain logic independent from platform UI where practical
+
+## Editing Behavior
+
+Edit mode follows the macOS document model. Changes can be autosaved and are managed by the system versions workflow.
+
+When inserting or deleting residues, ApuSeq preserves alignment shape by adding gap characters to other sequences as needed. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
+
+## Quick Look
+
+The Quick Look extension provides a compact HTML preview for supported alignment files. Previews are intentionally limited in size so Finder remains responsive.
+
+## Help
+
+A lightweight Apple Help Book is bundled with the app and is available from the macOS Help menu.
 
 ## Project Structure
 
-- `ApuSeq/` app target sources
-- `ApuSeqQuickLookExtension/` Quick Look extension sources
-- `AlignmentCore.swift` parsing/rendering/statistics core
-- `AlignmentTextSystem.swift` text system and panel synchronization
-- `AlignmentPanels.swift` footer/info UI
+- `ApuSeq/ApuSeqApp.swift` - app entry point, commands, settings, and translation command routing
+- `ApuSeq/ApuSeqDocument.swift` - document storage and file read/write support
+- `ApuSeq/ContentView.swift` - main SwiftUI document view and alignment view model
+- `ApuSeq/AlignmentCore.swift` - parsing, rendering, statistics, clustering, editing, and translation core
+- `ApuSeq/AlignmentPanels.swift` - SwiftUI panels, controls, and status bar
+- `ApuSeq/AlignmentTextConfiguration.swift` - alignment display configuration
+- `ApuSeq/AlignmentTextViewport.swift` - AppKit/TextKit 2 alignment viewport
+- `ApuSeq/TextDecoding.swift` - text decoding helpers
+- `ApuSeq/ApuSeqHelp.help` - bundled Apple Help Book
+- `ApuSeq/ApuSeqQuickLookExtension` - Quick Look preview extension
+- `ApuSeqIcon.icon` - Icon Composer app icon
 
 ## Requirements
 
-- macOS (project deployment target is set in Xcode project settings)
-- Xcode (current project configured for Swift 5)
+- macOS
+- Xcode
 
-## Build and Run
+The deployment target and signing settings are managed in the Xcode project.
 
-1. Open `ApuSeq.xcodeproj` in Xcode
-2. Select scheme:
-   - `ApuSeq` for app
-   - `ApuSeqQuickLookExtension` for extension debugging
-3. Build/Run with `Cmd+R`
+## Build
 
-## Settings
+1. Open `ApuSeq.xcodeproj` in Xcode.
+2. Select the `ApuSeq` scheme.
+3. Build and run with Command-R.
 
-Open **ApuSeq > Settings**:
-
-- Alignment Font Size
-- Identity Threshold
-- Translation Codon Table
-
-## Notes on Editing
-
-- Edit mode and View mode are switchable from the toolbar menu.
-- Edits are applied to sequence text and reflected in document content.
-- Multi-range column editing is supported through column selection commands.
-
-## Known Areas Under Active Development
-
-- View/Edit transition refresh behavior
-- Advanced multi-range undo/redo ergonomics
-- Quick Look extension workflow and distribution validation
+For Quick Look development, use the `ApuSeqQuickLookExtension` target and install the built app so macOS can discover the extension.
 
 ## License
 
-No license file is currently included in this repository.
+ApuSeq is released under the MIT License. See `LICENSE` for details.
