@@ -5,14 +5,17 @@
 //  Created by 須田崚 on 2026/04/27.
 //
 
+import AppKit
 import Observation
 import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var document: ApuSeqDocument
+    @AppStorage("appearanceMode") private var appearanceMode = AppAppearanceMode.system.rawValue
 
     var body: some View {
         RootView(document: document)
+            .preferredColorScheme((AppAppearanceMode(rawValue: appearanceMode) ?? .system).colorScheme)
     }
 }
 
@@ -312,10 +315,12 @@ private struct RootView: View {
 
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
     @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
+    @AppStorage("showEditModeAutosaveWarning") private var showEditModeAutosaveWarning = true
     @State private var backgroundMode: AlignmentBackgroundMode = .residue
     @State private var displayOrderMode: AlignmentDisplayOrderMode = .original
     @State private var showsInspector = false
     @State private var selectedResidueCount = 0
+    @State private var selectedSequenceCount = 0
     @State private var selectedStartPosition: Int?
     @State private var selectedEndPosition: Int?
 
@@ -388,6 +393,13 @@ private struct RootView: View {
         AlignmentEditActions(
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
             removeAllGapColumns: removeAllGapColumns
+        )
+    }
+
+    private var viewerModeBinding: Binding<ViewerMode> {
+        Binding(
+            get: { viewerMode },
+            set: { setViewerMode($0) }
         )
     }
 
@@ -503,6 +515,7 @@ private struct RootView: View {
                         isEditMode: canEditRenderedRows,
                         onSequenceEdited: applyEditedSequenceText,
                         selectedResidueCount: $selectedResidueCount,
+                        selectedSequenceCount: $selectedSequenceCount,
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition,
                         onDeleteSequence: deleteDisplayedSequence
@@ -516,8 +529,8 @@ private struct RootView: View {
                     FooterBar(
                         sequenceCount: displayAlignment.rows.count,
                         residueCount: displayAlignment.length,
-                        sequenceKind: displayAlignment.sequenceKind,
                         selectedResidueCount: selectedResidueCount,
+                        selectedSequenceCount: selectedSequenceCount,
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
                         backgroundMode: $backgroundMode,
@@ -530,7 +543,7 @@ private struct RootView: View {
         .navigationTitle(documentTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Picker("Mode", selection: $viewerMode) {
+                Picker("Mode", selection: viewerModeBinding) {
                     ForEach(ViewerMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
                     }
@@ -570,6 +583,32 @@ private struct RootView: View {
         .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.translationContext, translationContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
+    }
+
+    private func setViewerMode(_ mode: ViewerMode) {
+        guard mode != viewerMode else { return }
+        if mode == .edit, viewerMode != .edit, showEditModeAutosaveWarning {
+            guard confirmEnteringEditMode() else { return }
+        }
+        viewerMode = mode
+    }
+
+    private func confirmEnteringEditMode() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Changes in Edit mode are autosaved with versions."
+        alert.informativeText = "Editing can modify the document contents. macOS may autosave those changes and keep prior versions for recovery."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Enter Edit Mode")
+        alert.addButton(withTitle: "Cancel")
+        alert.showsSuppressionButton = true
+        alert.suppressionButton?.title = "Do not show again"
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return false }
+        if alert.suppressionButton?.state == .on {
+            showEditModeAutosaveWarning = false
+        }
+        return true
     }
 
     private func parseAndRender() {

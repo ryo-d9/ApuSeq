@@ -21,6 +21,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let isEditMode: Bool
     let onSequenceEdited: (String) -> Void
     @Binding var selectedResidueCount: Int
+    @Binding var selectedSequenceCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
     let onDeleteSequence: (Int) -> Void
@@ -140,6 +141,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(
             selectedResidueCount: $selectedResidueCount,
+            selectedSequenceCount: $selectedSequenceCount,
             selectedStartPosition: $selectedStartPosition,
             selectedEndPosition: $selectedEndPosition
         )
@@ -153,6 +155,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var isProgrammaticTextUpdate = false
 
         private let selectedResidueCount: Binding<Int>
+        private let selectedSequenceCount: Binding<Int>
         private let selectedStartPosition: Binding<Int?>
         private let selectedEndPosition: Binding<Int?>
         private var observerTokens: [NSObjectProtocol] = []
@@ -160,10 +163,12 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         init(
             selectedResidueCount: Binding<Int>,
+            selectedSequenceCount: Binding<Int>,
             selectedStartPosition: Binding<Int?>,
             selectedEndPosition: Binding<Int?>
         ) {
             self.selectedResidueCount = selectedResidueCount
+            self.selectedSequenceCount = selectedSequenceCount
             self.selectedStartPosition = selectedStartPosition
             self.selectedEndPosition = selectedEndPosition
         }
@@ -334,6 +339,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             let alignmentLength = (textView as? AlignmentViewportSequenceTextView)?.alignmentLength ?? 0
             guard alignmentLength > 0 else {
                 selectedResidueCount.wrappedValue = 0
+                selectedSequenceCount.wrappedValue = 0
                 selectedStartPosition.wrappedValue = nil
                 selectedEndPosition.wrappedValue = nil
                 return
@@ -341,6 +347,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
             let lineSpan = alignmentLength + 1
             var count = 0
+            var selectedRows = Set<Int>()
             var minPosition: Int?
             var maxPosition: Int?
 
@@ -350,9 +357,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
                 let upperBound = NSMaxRange(range)
                 var location = range.location
                 while location < upperBound {
+                    let row = location / lineSpan
                     let column = location % lineSpan
                     if column < alignmentLength {
                         count += 1
+                        selectedRows.insert(row)
                         let position = column + 1
                         minPosition = minPosition.map { min($0, position) } ?? position
                         maxPosition = maxPosition.map { max($0, position) } ?? position
@@ -362,6 +371,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             }
 
             selectedResidueCount.wrappedValue = count
+            selectedSequenceCount.wrappedValue = selectedRows.count
             selectedStartPosition.wrappedValue = minPosition
             selectedEndPosition.wrappedValue = maxPosition
         }
