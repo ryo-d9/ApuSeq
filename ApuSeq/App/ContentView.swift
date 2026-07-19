@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  ApuSeq
 //
-//  Created by 須田崚 on 2026/04/27.
+//  Created by Ryo Suda on 2026/04/27.
 //
 
 import AppKit
