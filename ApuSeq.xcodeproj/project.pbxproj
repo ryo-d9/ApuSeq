@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		2A021267300C70700040119E /* ApuSeqIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2A021266300C70700040119E /* ApuSeqIcon.icon */; };
+		2A02128D300C938C0040119E /* AppCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A02128C300C938C0040119E /* AppCommands.swift */; };
+		2A02128F300C93A10040119E /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A02128E300C93A10040119E /* AppSettingsView.swift */; };
+		2A021291300C93DA0040119E /* AlignmentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A021290300C93DA0040119E /* AlignmentViewModel.swift */; };
+		2A021296300C96190040119E /* AlignmentRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A021295300C96190040119E /* AlignmentRendering.swift */; };
+		2A021298300C96300040119E /* AlignmentClustering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A021297300C96300040119E /* AlignmentClustering.swift */; };
+		2A02129A300C964D0040119E /* AlignmentTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A021299300C964D0040119E /* AlignmentTranslation.swift */; };
 		2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */; };
 		2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */; };
 		2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */; };
@@ -43,6 +49,12 @@
 
 /* Begin PBXFileReference section */
 		2A021266300C70700040119E /* ApuSeqIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = ApuSeqIcon.icon; sourceTree = "<group>"; };
+		2A02128C300C938C0040119E /* AppCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCommands.swift; sourceTree = "<group>"; };
+		2A02128E300C93A10040119E /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
+		2A021290300C93DA0040119E /* AlignmentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentViewModel.swift; sourceTree = "<group>"; };
+		2A021295300C96190040119E /* AlignmentRendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentRendering.swift; sourceTree = "<group>"; };
+		2A021297300C96300040119E /* AlignmentClustering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentClustering.swift; sourceTree = "<group>"; };
+		2A021299300C964D0040119E /* AlignmentTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTranslation.swift; sourceTree = "<group>"; };
 		2A19AB9E2FA06DE200545FAB /* AlignmentCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentCore.swift; sourceTree = "<group>"; };
 		2A19ABA02FA06ED500545FAB /* AlignmentPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentPanels.swift; sourceTree = "<group>"; };
 		2A19ABA42FA08B7700545FAB /* AlignmentTextConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentTextConfiguration.swift; sourceTree = "<group>"; };
@@ -118,6 +130,12 @@
 				2A19ABA62FA08B7C00545FAB /* TextDecoding.swift */,
 				2AD641613009F90B00C187F5 /* AlignmentTextViewport.swift */,
 				2A021266300C70700040119E /* ApuSeqIcon.icon */,
+				2A02128C300C938C0040119E /* AppCommands.swift */,
+				2A02128E300C93A10040119E /* AppSettingsView.swift */,
+				2A021290300C93DA0040119E /* AlignmentViewModel.swift */,
+				2A021295300C96190040119E /* AlignmentRendering.swift */,
+				2A021297300C96300040119E /* AlignmentClustering.swift */,
+				2A021299300C964D0040119E /* AlignmentTranslation.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -240,10 +258,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2A021296300C96190040119E /* AlignmentRendering.swift in Sources */,
 				2AD641623009F90B00C187F5 /* AlignmentTextViewport.swift in Sources */,
+				2A02128D300C938C0040119E /* AppCommands.swift in Sources */,
+				2A02128F300C93A10040119E /* AppSettingsView.swift in Sources */,
+				2A021291300C93DA0040119E /* AlignmentViewModel.swift in Sources */,
 				2A19ABA52FA08B7700545FAB /* AlignmentTextConfiguration.swift in Sources */,
+				2A02129A300C964D0040119E /* AlignmentTranslation.swift in Sources */,
 				2A19AB9F2FA06DE200545FAB /* AlignmentCore.swift in Sources */,
 				2A19ABA12FA06ED500545FAB /* AlignmentPanels.swift in Sources */,
+				2A021298300C96300040119E /* AlignmentClustering.swift in Sources */,
 				2A19ABA72FA08B7C00545FAB /* TextDecoding.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

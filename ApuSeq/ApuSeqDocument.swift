@@ -15,6 +15,7 @@ import UniformTypeIdentifiers
 final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
     typealias Snapshot = String
 
+    // ReferenceFileDocument still requires ObservableObject; Observation drives SwiftUI reads.
     @ObservationIgnored
     let objectWillChange = ObservableObjectPublisher()
 

@@ -101,19 +101,19 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
     }
 
     private func highlightedResiduesHTML(for text: String) -> String {
-        var html = ""
-        html.reserveCapacity(text.count * 2)
+        var fragments: [String] = []
+        fragments.reserveCapacity(text.count)
 
         for character in text {
             let escaped = escapedHTML(String(character))
             if let cssClass = residueCSSClass(for: character) {
-                html += "<span class=\"\(cssClass)\">\(escaped)</span>"
+                fragments.append("<span class=\"\(cssClass)\">\(escaped)</span>")
             } else {
-                html += escaped
+                fragments.append(escaped)
             }
         }
 
-        return html
+        return fragments.joined()
     }
 
     private func residueCSSClass(for residue: Character) -> String? {
