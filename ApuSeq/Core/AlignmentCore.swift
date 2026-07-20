@@ -1,25 +1,25 @@
 import Foundation
 
-struct AlignmentData {
+struct AlignmentData: Sendable {
     let format: AlignmentFormat
     let rows: [AlignmentRow]
     let length: Int
     let sequenceKind: SequenceKind
 
-    static let empty = AlignmentData(format: .plainText, rows: [], length: 0, sequenceKind: .nucleotide)
+    nonisolated static let empty = AlignmentData(format: .plainText, rows: [], length: 0, sequenceKind: .nucleotide)
 }
 
-struct AlignmentRow {
+struct AlignmentRow: Sendable {
     let name: String
     let sequence: String
 }
 
-enum SequenceKind: String {
+enum SequenceKind: String, Sendable {
     case nucleotide = "Nucleotide"
     case aminoAcid = "Amino acid"
 }
 
-enum AlignmentFormat: String {
+enum AlignmentFormat: String, Sendable {
     case fasta = "FASTA"
     case clustal = "CLUSTAL"
     case plainText = "Plain Text"
@@ -37,7 +37,7 @@ enum AlignmentParseError: LocalizedError {
 }
 
 enum AlignmentParser {
-    static func parse(_ text: String) throws -> AlignmentData {
+    nonisolated static func parse(_ text: String) throws -> AlignmentData {
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return .empty }
 
@@ -50,7 +50,7 @@ enum AlignmentParser {
         return try parsePlainText(normalized)
     }
 
-    private static func parseFASTA(_ text: String) throws -> AlignmentData {
+    nonisolated private static func parseFASTA(_ text: String) throws -> AlignmentData {
         let lines = text.components(separatedBy: .newlines)
         var rows: [AlignmentRow] = []
         var currentName: String?
@@ -81,7 +81,7 @@ enum AlignmentParser {
         return normalize(rows: rows, format: .fasta)
     }
 
-    private static func parseCLUSTAL(_ text: String) throws -> AlignmentData {
+    nonisolated private static func parseCLUSTAL(_ text: String) throws -> AlignmentData {
         let lines = text.components(separatedBy: .newlines)
         var order: [String] = []
         var sequencesByName: [String: String] = [:]
@@ -113,7 +113,7 @@ enum AlignmentParser {
         return normalize(rows: rows, format: .clustal)
     }
 
-    private static func parsePlainText(_ text: String) throws -> AlignmentData {
+    nonisolated private static func parsePlainText(_ text: String) throws -> AlignmentData {
         let lines = text
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -130,7 +130,7 @@ enum AlignmentParser {
         return normalize(rows: rows, format: .plainText)
     }
 
-    private static func normalize(rows: [AlignmentRow], format: AlignmentFormat) -> AlignmentData {
+    nonisolated private static func normalize(rows: [AlignmentRow], format: AlignmentFormat) -> AlignmentData {
         let maxLength = rows.map(\.sequence.count).max() ?? 0
         let normalizedRows = rows.enumerated().map { index, row in
             let cleanName = row.name.isEmpty ? "Sequence \(index + 1)" : row.name
@@ -146,7 +146,7 @@ enum AlignmentParser {
         )
     }
 
-    private static func inferSequenceKind(from rows: [AlignmentRow]) -> SequenceKind {
+    nonisolated private static func inferSequenceKind(from rows: [AlignmentRow]) -> SequenceKind {
         let nucleotideSet = Set("ACGTUNRYSWKMBDHV")
         for row in rows {
             for scalar in row.sequence.unicodeScalars {

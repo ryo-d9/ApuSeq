@@ -1,9 +1,9 @@
 import Foundation
 
 enum AlignmentClusterer {
-    private static let maximumUPGMARowCount = 400
+    nonisolated private static let maximumUPGMARowCount = 400
 
-    static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
+    nonisolated static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
         guard rows.count > 2 else { return rows }
         guard rows.count <= maximumUPGMARowCount else { return rows }
 
@@ -64,7 +64,7 @@ enum AlignmentClusterer {
         return members[root].map { rows[$0] }
     }
 
-    private static func sequenceDistance(_ first: NSString, _ second: NSString) -> Double {
+    nonisolated private static func sequenceDistance(_ first: NSString, _ second: NSString) -> Double {
         let length = min(first.length, second.length)
         guard length > 0 else { return 1 }
 

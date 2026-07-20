@@ -231,24 +231,16 @@ final class AlignmentViewModel {
         return sequence
     }
 
-    private func runOnBackground<T>(_ work: @escaping () -> T) async -> T {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                continuation.resume(returning: work())
-            }
-        }
+    private func runOnBackground<T: Sendable>(_ work: @Sendable @escaping () -> T) async -> T {
+        await Task.detached(priority: .userInitiated) {
+            work()
+        }.value
     }
 
-    private func runOnBackgroundThrowing<T>(_ work: @escaping () throws -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    continuation.resume(returning: try work())
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+    private func runOnBackgroundThrowing<T: Sendable>(_ work: @Sendable @escaping () throws -> T) async throws -> T {
+        try await Task.detached(priority: .userInitiated) {
+            try work()
+        }.value
     }
 
     private struct ConsensusKey: Equatable {

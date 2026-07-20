@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-struct RenderedAlignment {
+struct RenderedAlignment: @unchecked Sendable {
     let sequenceAttributedText: NSAttributedString
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
@@ -10,7 +10,7 @@ struct RenderedAlignment {
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
 
-    static let empty = RenderedAlignment(
+    nonisolated static let empty = RenderedAlignment(
         sequenceAttributedText: NSAttributedString(string: ""),
         nameAttributedText: NSAttributedString(string: ""),
         nameColumnWidth: 120,
@@ -36,7 +36,7 @@ struct RenderedFingerprint: Equatable {
 }
 
 enum AlignmentRenderer {
-    static func render(
+    nonisolated static func render(
         _ alignment: AlignmentData,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
@@ -92,7 +92,7 @@ enum AlignmentRenderer {
         )
     }
 
-    private static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
+    nonisolated private static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
         var identity: [Double] = Array(repeating: 0, count: length)
@@ -135,13 +135,13 @@ enum AlignmentRenderer {
         return identity
     }
 
-    private static func residueBucketIndex(_ residue: UInt16) -> Int? {
+    nonisolated private static func residueBucketIndex(_ residue: UInt16) -> Int? {
         let normalized = normalizedResidueCode(residue)
         guard normalized < 128 else { return nil }
         return Int(normalized)
     }
 
-    private static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+    nonisolated private static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
         var majority: [UInt16] = Array(repeating: 0, count: length)
@@ -256,12 +256,17 @@ extension Array {
 }
 
 extension NSAttributedString.Key {
-    static let residueSymbol = NSAttributedString.Key("ApuSeq.ResidueSymbol")
+    nonisolated static let residueSymbol = NSAttributedString.Key("ApuSeq.ResidueSymbol")
 }
 
 enum ResiduePalette {
-    static func isDefined(_ residue: UInt16) -> Bool {
-        color(for: residue) != nil
+    nonisolated static func isDefined(_ residue: UInt16) -> Bool {
+        switch normalizedResidueCode(residue) {
+        case 65, 67, 71, 84, 85, 82, 75, 72, 68, 69, 83, 78, 81, 70, 87, 89, 76, 73, 86, 77, 80, 88, 66, 90, 74, 79:
+            return true
+        default:
+            return false
+        }
     }
 
     static func backgroundColor(for residue: UInt16) -> NSColor? {
@@ -301,7 +306,7 @@ enum ResiduePalette {
     }
 }
 
-func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
+nonisolated func normalizedResidueCode(_ residue: UInt16) -> UInt16 {
     if residue == 46 { return 45 }
     if residue >= 97 && residue <= 122 { return residue - 32 }
     return residue
