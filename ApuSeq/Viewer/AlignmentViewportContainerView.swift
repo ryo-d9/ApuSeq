@@ -83,6 +83,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     func updateNameRows(
         _ names: [String],
         isEditMode: Bool,
+        onAddSequence: @escaping () -> Void,
+        onRenameSequence: @escaping (Int) -> Void,
         onDeleteSequence: @escaping (Int) -> Void,
         onSetReference: @escaping (String?) -> Void
     ) {
@@ -90,8 +92,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             nameColumnView.rowNames = names
         }
         nameColumnView.isEditMode = isEditMode
+        nameColumnView.onAddSequence = onAddSequence
+        nameColumnView.onRenameSequence = onRenameSequence
         nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
+        sequenceTextView.onAddSequence = onAddSequence
     }
 
     func updateAuxiliaryPanel(

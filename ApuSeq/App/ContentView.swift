@@ -70,6 +70,10 @@ private struct RootView: View {
         viewerMode == .edit && model.renderedDisplayOrderMode == .original
     }
 
+    private var canAddSequence: Bool {
+        viewerMode == .edit && model.parseErrorMessage == nil
+    }
+
     private var displayAlignment: AlignmentData {
         AlignmentData(
             format: model.alignment.format,
@@ -104,6 +108,8 @@ private struct RootView: View {
 
     private var alignmentEditActions: AlignmentEditActions {
         AlignmentEditActions(
+            canAddSequence: canAddSequence,
+            addSequence: addSequence,
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
             removeAllGapColumns: removeAllGapColumns
         )
@@ -200,12 +206,6 @@ private struct RootView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(parseErrorMessage)
                 )
-            } else if model.alignment.rows.isEmpty {
-                ContentUnavailableView(
-                    "Open an Alignment",
-                    systemImage: "doc.text",
-                    description: Text("Supported formats: FASTA, CLUSTAL, plain text")
-                )
             } else {
                 VStack(spacing: 0) {
                     AlignmentTextViewport(
@@ -231,6 +231,8 @@ private struct RootView: View {
                         selectedSequenceCount: $selectedSequenceCount,
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition,
+                        onAddSequence: addSequence,
+                        onRenameSequence: renameDisplayedSequence,
                         onDeleteSequence: deleteDisplayedSequence
                     ) { selectedName in
                         selectedReferenceName = selectedName
@@ -263,6 +265,14 @@ private struct RootView: View {
                 }
                 .pickerStyle(.menu)
                 .help("Switch between read-only view and edit mode")
+
+                Button {
+                    addSequence()
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .help("Add a sequence")
+                .disabled(!canAddSequence)
 
                 Button {
                     showsInspector.toggle()
@@ -353,6 +363,46 @@ private struct RootView: View {
         guard let rebuilt = rebuildFASTA(fromEditedSequenceText: editedText) else { return }
         guard document.rawText != rebuilt else { return }
         document.rawText = rebuilt
+    }
+
+    private func addSequence() {
+        guard canAddSequence else { return }
+        let existingNames = Set(model.alignment.rows.map(\.name))
+        guard let name = promptForSequenceName(
+            title: "Add Sequence",
+            informativeText: "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added.",
+            defaultName: nextSequenceName(),
+            existingNames: existingNames
+        ) else { return }
+
+        var rows = model.alignment.rows
+        let newLength = max(model.alignment.length, 1)
+        rows.append(AlignmentRow(name: name, sequence: String(repeating: "-", count: newLength)))
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Add Sequence")
+    }
+
+    private func renameDisplayedSequence(at displayedRowIndex: Int) {
+        guard viewerMode == .edit else { return }
+        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+
+        var rows = model.alignment.rows
+        let oldName = rows[displayedRowIndex].name
+        var existingNames = Set(rows.map(\.name))
+        existingNames.remove(oldName)
+
+        guard let newName = promptForSequenceName(
+            title: "Rename Sequence",
+            informativeText: "Enter a new name for this sequence.",
+            defaultName: oldName,
+            existingNames: existingNames
+        ) else { return }
+        guard newName != oldName else { return }
+
+        rows[displayedRowIndex] = AlignmentRow(name: newName, sequence: rows[displayedRowIndex].sequence)
+        if selectedReferenceName == oldName {
+            selectedReferenceName = newName
+        }
+        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Rename Sequence")
     }
 
     private func deleteDisplayedSequence(at displayedRowIndex: Int) {
@@ -459,6 +509,55 @@ private struct RootView: View {
             document.rawText = restoredText
         }
         undoManager.setActionName(actionName)
+    }
+
+    private func promptForSequenceName(
+        title: String,
+        informativeText: String,
+        defaultName: String,
+        existingNames: Set<String>
+    ) -> String? {
+        var currentValue = defaultName
+        var currentInformativeText = informativeText
+
+        while true {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = currentInformativeText
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+
+            let textField = NSTextField(string: currentValue)
+            textField.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
+            alert.accessoryView = textField
+
+            let response = alert.runModal()
+            guard response == .alertFirstButtonReturn else { return nil }
+
+            let name = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            currentValue = textField.stringValue
+            if name.isEmpty {
+                NSSound.beep()
+                currentInformativeText = "Sequence name cannot be empty."
+                continue
+            }
+            if existingNames.contains(name) {
+                NSSound.beep()
+                currentInformativeText = "A sequence named \"\(name)\" already exists."
+                continue
+            }
+            return name
+        }
+    }
+
+    private func nextSequenceName() -> String {
+        let existingNames = Set(model.alignment.rows.map(\.name))
+        var index = model.alignment.rows.count + 1
+        while existingNames.contains("Sequence \(index)") {
+            index += 1
+        }
+        return "Sequence \(index)"
     }
 
     private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {

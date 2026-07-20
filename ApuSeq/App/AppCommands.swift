@@ -7,6 +7,8 @@ struct TranslationContext {
 }
 
 struct AlignmentEditActions {
+    let canAddSequence: Bool
+    let addSequence: () -> Void
     let canRemoveAllGapColumns: Bool
     let removeAllGapColumns: () -> Void
 }
@@ -75,6 +77,12 @@ struct AlignmentEditCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
+            Button("Add Sequence...") {
+                actions?.addSequence()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
+            .disabled(actions?.canAddSequence != true)
+
             Button("Remove All-Gap Columns") {
                 actions?.removeAllGapColumns()
             }

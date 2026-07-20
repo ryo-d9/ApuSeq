@@ -15,6 +15,8 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var isEditMode = false
+    var onAddSequence: (() -> Void)?
+    var onRenameSequence: ((Int) -> Void)?
     var onDeleteSequence: ((Int) -> Void)?
     var onSetReference: ((String?) -> Void)?
 
@@ -54,7 +56,14 @@ final class AlignmentViewportNameColumnView: NSView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
-        guard row >= 0, row < rowNames.count else { return super.menu(for: event) }
+        guard row >= 0, row < rowNames.count else {
+            guard isEditMode else { return super.menu(for: event) }
+            let menu = NSMenu(title: "Sequence")
+            let addItem = NSMenuItem(title: "Add Sequence...", action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
+            addItem.target = self
+            menu.addItem(addItem)
+            return menu
+        }
 
         let menu = NSMenu(title: "Reference")
         let setItem = NSMenuItem(title: "Set as Reference", action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
@@ -68,6 +77,15 @@ final class AlignmentViewportNameColumnView: NSView {
 
         if isEditMode {
             menu.addItem(.separator())
+            let addItem = NSMenuItem(title: "Add Sequence...", action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
+            addItem.target = self
+            menu.addItem(addItem)
+
+            let renameItem = NSMenuItem(title: "Rename Sequence...", action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
+            renameItem.target = self
+            renameItem.representedObject = row
+            menu.addItem(renameItem)
+
             let deleteItem = NSMenuItem(title: "Delete Sequence", action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
             deleteItem.target = self
             deleteItem.representedObject = row
@@ -92,6 +110,15 @@ final class AlignmentViewportNameColumnView: NSView {
 
     @objc private func clearReferenceFromMenu(_ sender: NSMenuItem) {
         onSetReference?(nil)
+    }
+
+    @objc private func addSequenceFromMenu(_ sender: NSMenuItem) {
+        onAddSequence?()
+    }
+
+    @objc private func renameSequenceFromMenu(_ sender: NSMenuItem) {
+        guard let row = sender.representedObject as? Int else { return }
+        onRenameSequence?(row)
     }
 
     @objc private func deleteSequenceFromMenu(_ sender: NSMenuItem) {

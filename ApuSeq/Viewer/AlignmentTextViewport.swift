@@ -24,6 +24,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var selectedSequenceCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
+    let onAddSequence: () -> Void
+    let onRenameSequence: (Int) -> Void
     let onDeleteSequence: (Int) -> Void
     let onSetReference: (String?) -> Void
 
@@ -32,6 +34,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
         nameColumnView.isEditMode = isEditMode
+        nameColumnView.onAddSequence = onAddSequence
+        nameColumnView.onRenameSequence = onRenameSequence
         nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
 
@@ -42,6 +46,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             guard let coordinator, let sequenceTextView else { return false }
             return coordinator.addVerticalCursors(in: sequenceTextView, direction: direction)
         }
+        sequenceTextView.onAddSequence = onAddSequence
 
         let auxiliaryNameTextView = NSTextView(usingTextLayoutManager: true)
         configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize)
@@ -58,6 +63,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateNameRows(
             displayedRowNames,
             isEditMode: isEditMode,
+            onAddSequence: onAddSequence,
+            onRenameSequence: onRenameSequence,
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference
         )
@@ -71,6 +78,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateNameRows(
             displayedRowNames,
             isEditMode: isEditMode,
+            onAddSequence: onAddSequence,
+            onRenameSequence: onRenameSequence,
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference
         )
