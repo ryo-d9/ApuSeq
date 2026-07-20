@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-struct TranslationContext {
+struct SequenceTransformContext {
     let rawText: String
     let sequenceKind: SequenceKind
 }
@@ -13,8 +13,8 @@ struct AlignmentEditActions {
     let removeAllGapColumns: () -> Void
 }
 
-private struct TranslationContextKey: FocusedValueKey {
-    typealias Value = TranslationContext
+private struct SequenceTransformContextKey: FocusedValueKey {
+    typealias Value = SequenceTransformContext
 }
 
 private struct AlignmentEditActionsKey: FocusedValueKey {
@@ -22,9 +22,9 @@ private struct AlignmentEditActionsKey: FocusedValueKey {
 }
 
 extension FocusedValues {
-    var translationContext: TranslationContext? {
-        get { self[TranslationContextKey.self] }
-        set { self[TranslationContextKey.self] = newValue }
+    var sequenceTransformContext: SequenceTransformContext? {
+        get { self[SequenceTransformContextKey.self] }
+        set { self[SequenceTransformContextKey.self] = newValue }
     }
 
     var alignmentEditActions: AlignmentEditActions? {
@@ -116,7 +116,7 @@ private enum FindActionDispatcher {
 }
 
 struct TranslationCommands: Commands {
-    @FocusedValue(\.translationContext) private var context
+    @FocusedValue(\.sequenceTransformContext) private var context
     @Environment(\.newDocument) private var newDocument
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
 
@@ -151,6 +151,46 @@ struct TranslationCommands: Commands {
                     newDocument {
                         ApuSeqDocument(
                             rawText: translated,
+                            markEditedOnFirstDisplay: true
+                        )
+                    }
+                }
+            } catch {
+                NSSound.beep()
+            }
+        }
+    }
+}
+
+struct ReverseComplementCommands: Commands {
+    @FocusedValue(\.sequenceTransformContext) private var context
+    @Environment(\.newDocument) private var newDocument
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button(AppStrings.reverseComplement) {
+                runReverseComplement()
+            }
+            .disabled(!canReverseComplement)
+        }
+    }
+
+    private var canReverseComplement: Bool {
+        guard let context else { return false }
+        return context.sequenceKind == .nucleotide && !context.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func runReverseComplement() {
+        guard let context else { return }
+        Task {
+            do {
+                let reverseComplemented = try AlignmentReverseComplementer.reverseComplementFASTA(
+                    rawText: context.rawText
+                )
+                await MainActor.run {
+                    newDocument {
+                        ApuSeqDocument(
+                            rawText: reverseComplemented,
                             markEditedOnFirstDisplay: true
                         )
                     }

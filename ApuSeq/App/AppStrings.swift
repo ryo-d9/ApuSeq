@@ -7,6 +7,7 @@ enum AppStrings {
     static let renameSequenceTitle = String(localized: "Rename Sequence")
     static let deleteSequence = String(localized: "Delete Sequence")
     static let removeAllGapColumns = String(localized: "Remove All-Gap Columns")
+    static let reverseComplement = String(localized: "Reverse Complement")
     static let cancel = String(localized: "Cancel")
     static let ok = String(localized: "OK")
     static let sequenceMenu = String(localized: "Sequence")

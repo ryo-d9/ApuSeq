@@ -108,8 +108,8 @@ private struct RootView: View {
         return "Untitled"
     }
 
-    private var translationContext: TranslationContext {
-        return TranslationContext(
+    private var sequenceTransformContext: SequenceTransformContext {
+        return SequenceTransformContext(
             rawText: document.rawText,
             sequenceKind: model.alignment.sequenceKind
         )
@@ -313,7 +313,7 @@ private struct RootView: View {
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
         .onChange(of: displayOrderMode) { _, _ in rerender() }
         .onChange(of: viewerMode) { _, _ in rerender() }
-        .focusedSceneValue(\.translationContext, translationContext)
+        .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
     }
 

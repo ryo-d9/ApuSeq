@@ -16,6 +16,7 @@ struct ApuSeqApp: App {
         .commands {
             FindCommands()
             TranslationCommands()
+            ReverseComplementCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
             AlignmentEditCommands()
