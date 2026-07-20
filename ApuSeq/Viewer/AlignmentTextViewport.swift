@@ -163,12 +163,22 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var onSequenceEdited: ((String) -> Void)?
         var isProgrammaticTextUpdate = false
 
+        private struct SelectionSummary: Equatable {
+            let residueCount: Int
+            let sequenceCount: Int
+            let startPosition: Int?
+            let endPosition: Int?
+        }
+
         private let selectedResidueCount: Binding<Int>
         private let selectedSequenceCount: Binding<Int>
         private let selectedStartPosition: Binding<Int?>
         private let selectedEndPosition: Binding<Int?>
         private var observerTokens: [NSObjectProtocol] = []
         private var isSyncingScroll = false
+        private var pendingSelectionSummary: SelectionSummary?
+        private var isSelectionSummaryUpdateScheduled = false
+        private var lastAppliedSelectionSummary: SelectionSummary?
 
         init(
             selectedResidueCount: Binding<Int>,
@@ -347,10 +357,14 @@ struct AlignmentTextViewport: NSViewRepresentable {
         func updateSelectedResidueCount(in textView: NSTextView) {
             let alignmentLength = (textView as? AlignmentViewportSequenceTextView)?.alignmentLength ?? 0
             guard alignmentLength > 0 else {
-                selectedResidueCount.wrappedValue = 0
-                selectedSequenceCount.wrappedValue = 0
-                selectedStartPosition.wrappedValue = nil
-                selectedEndPosition.wrappedValue = nil
+                scheduleSelectionSummaryUpdate(
+                    SelectionSummary(
+                        residueCount: 0,
+                        sequenceCount: 0,
+                        startPosition: nil,
+                        endPosition: nil
+                    )
+                )
                 return
             }
 
@@ -379,10 +393,38 @@ struct AlignmentTextViewport: NSViewRepresentable {
                 }
             }
 
-            selectedResidueCount.wrappedValue = count
-            selectedSequenceCount.wrappedValue = selectedRows.count
-            selectedStartPosition.wrappedValue = minPosition
-            selectedEndPosition.wrappedValue = maxPosition
+            scheduleSelectionSummaryUpdate(
+                SelectionSummary(
+                    residueCount: count,
+                    sequenceCount: selectedRows.count,
+                    startPosition: minPosition,
+                    endPosition: maxPosition
+                )
+            )
+        }
+
+        private func scheduleSelectionSummaryUpdate(_ summary: SelectionSummary) {
+            guard summary != lastAppliedSelectionSummary || pendingSelectionSummary != nil else { return }
+            pendingSelectionSummary = summary
+            guard !isSelectionSummaryUpdateScheduled else { return }
+
+            isSelectionSummaryUpdateScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                self?.flushPendingSelectionSummary()
+            }
+        }
+
+        private func flushPendingSelectionSummary() {
+            isSelectionSummaryUpdateScheduled = false
+            guard let summary = pendingSelectionSummary else { return }
+            pendingSelectionSummary = nil
+            guard summary != lastAppliedSelectionSummary else { return }
+
+            selectedResidueCount.wrappedValue = summary.residueCount
+            selectedSequenceCount.wrappedValue = summary.sequenceCount
+            selectedStartPosition.wrappedValue = summary.startPosition
+            selectedEndPosition.wrappedValue = summary.endPosition
+            lastAppliedSelectionSummary = summary
         }
 
         func restoreSelection(
