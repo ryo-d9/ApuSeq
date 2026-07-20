@@ -160,3 +160,71 @@ enum AlignmentParser {
         return .nucleotide
     }
 }
+
+enum AlignmentSerializer {
+    nonisolated private static let clustalBlockWidth = 60
+    nonisolated private static let clustalNamePadding = 4
+
+    nonisolated static func serialize(rows: [AlignmentRow], preferredFormat: AlignmentFormat) -> String {
+        switch preferredFormat {
+        case .clustal:
+            return serializeCLUSTAL(rows: rows)
+        case .fasta, .plainText:
+            return serializeFASTA(rows: rows)
+        }
+    }
+
+    nonisolated private static func serializeFASTA(rows: [AlignmentRow]) -> String {
+        var output = ""
+        let sequenceLength = rows.reduce(0) { $0 + $1.sequence.count }
+        output.reserveCapacity(sequenceLength + (rows.count * 16))
+
+        for row in rows {
+            output += ">"
+            output += row.name
+            output += "\n"
+            output += row.sequence
+            output += "\n"
+        }
+        return output
+    }
+
+    nonisolated private static func serializeCLUSTAL(rows: [AlignmentRow]) -> String {
+        guard !rows.isEmpty else { return "CLUSTAL\n" }
+
+        let serializedRows = rows.map {
+            AlignmentRow(name: sanitizedCLUSTALName($0.name), sequence: $0.sequence)
+        }
+        let alignmentLength = serializedRows.map(\.sequence.count).max() ?? 0
+        let nameColumnWidth = (serializedRows.map { $0.name.count }.max() ?? 0) + clustalNamePadding
+
+        var output = "CLUSTAL\n\n"
+        for blockStart in stride(from: 0, to: max(alignmentLength, 1), by: clustalBlockWidth) {
+            let blockEnd = min(blockStart + clustalBlockWidth, alignmentLength)
+            for row in serializedRows {
+                let chunk = sequenceChunk(row.sequence, start: blockStart, end: blockEnd)
+                output += row.name.padding(toLength: nameColumnWidth, withPad: " ", startingAt: 0)
+                output += chunk
+                output += "\n"
+            }
+            output += "\n"
+        }
+        return output
+    }
+
+    nonisolated private static func sequenceChunk(_ sequence: String, start: Int, end: Int) -> String {
+        guard start < end else { return "" }
+        let source = sequence as NSString
+        guard start < source.length else { return "" }
+        let length = max(min(end, source.length) - start, 0)
+        return source.substring(with: NSRange(location: start, length: length))
+    }
+
+    nonisolated private static func sanitizedCLUSTALName(_ name: String) -> String {
+        let sanitized = name.map { character in
+            character.isWhitespace ? "_" : character
+        }
+        let output = String(sanitized)
+        return output.isEmpty ? "Sequence" : output
+    }
+}

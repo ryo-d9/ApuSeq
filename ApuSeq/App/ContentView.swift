@@ -360,7 +360,7 @@ private struct RootView: View {
 
     private func applyEditedSequenceText(_ editedText: String) {
         guard viewerMode == .edit else { return }
-        guard let rebuilt = rebuildFASTA(fromEditedSequenceText: editedText) else { return }
+        guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
         guard document.rawText != rebuilt else { return }
         document.rawText = rebuilt
     }
@@ -378,7 +378,7 @@ private struct RootView: View {
         var rows = model.alignment.rows
         let newLength = max(model.alignment.length, 1)
         rows.append(AlignmentRow(name: name, sequence: String(repeating: "-", count: newLength)))
-        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Add Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Add Sequence")
     }
 
     private func renameDisplayedSequence(at displayedRowIndex: Int) {
@@ -402,7 +402,7 @@ private struct RootView: View {
         if selectedReferenceName == oldName {
             selectedReferenceName = newName
         }
-        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Rename Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Rename Sequence")
     }
 
     private func deleteDisplayedSequence(at displayedRowIndex: Int) {
@@ -417,7 +417,7 @@ private struct RootView: View {
         if selectedReferenceName == rowToDelete.name {
             selectedReferenceName = nil
         }
-        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Delete Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Delete Sequence")
     }
 
     private func removeAllGapColumns() {
@@ -431,7 +431,7 @@ private struct RootView: View {
                 sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
             )
         }
-        applyDocumentRawText(rebuildFASTA(fromRows: rows), undoActionName: "Remove All-Gap Columns")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Remove All-Gap Columns")
     }
 
     private func removableAllGapColumnMask() -> [Bool]? {
@@ -560,7 +560,7 @@ private struct RootView: View {
         return "Sequence \(index)"
     }
 
-    private func rebuildFASTA(fromEditedSequenceText editedText: String) -> String? {
+    private func rebuildAlignment(fromEditedSequenceText editedText: String) -> String? {
         var sequenceLines = editedText
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
@@ -571,21 +571,11 @@ private struct RootView: View {
         let rows = zip(displayRows, sequenceLines).map { row, sequence in
             AlignmentRow(name: row.name, sequence: sequence)
         }
-        return rebuildFASTA(fromRows: rows)
+        return rebuildAlignment(fromRows: rows)
     }
 
-    private func rebuildFASTA(fromRows rows: [AlignmentRow]) -> String {
-        var output = ""
-        let sequenceLength = rows.reduce(0) { $0 + $1.sequence.count }
-        output.reserveCapacity(sequenceLength + (rows.count * 16))
-        for row in rows {
-            output += ">"
-            output += row.name
-            output += "\n"
-            output += row.sequence
-            output += "\n"
-        }
-        return output
+    private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {
+        AlignmentSerializer.serialize(rows: rows, preferredFormat: model.alignment.format)
     }
 
     private func markTranslatedDocumentAsEditedIfNeeded() {
