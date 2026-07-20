@@ -19,6 +19,7 @@ struct ApuSeqApp: App {
             ViewPanelCommands()
             ColumnSelectionCommands()
             AlignmentEditCommands()
+            InspectorCommands()
         }
 
         Settings {
