@@ -37,17 +37,17 @@ struct FindCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .pasteboard) {
             Divider()
-            Button("Find") {
+            Button(String(localized: "Find")) {
                 FindActionDispatcher.perform(.showFindInterface)
             }
             .keyboardShortcut("f", modifiers: .command)
 
-            Button("Find Next") {
+            Button(String(localized: "Find Next")) {
                 FindActionDispatcher.perform(.nextMatch)
             }
             .keyboardShortcut("g", modifiers: .command)
 
-            Button("Find Previous") {
+            Button(String(localized: "Find Previous")) {
                 FindActionDispatcher.perform(.previousMatch)
             }
             .keyboardShortcut("g", modifiers: [.command, .shift])
@@ -59,12 +59,12 @@ struct ColumnSelectionCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .textEditing) {
             Divider()
-            Button("Select Column Up") {
+            Button(String(localized: "Select Column Up")) {
                 _ = NSApp.sendAction(NSSelectorFromString("selectColumnUp:"), to: nil, from: nil)
             }
             .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
 
-            Button("Select Column Down") {
+            Button(String(localized: "Select Column Down")) {
                 _ = NSApp.sendAction(NSSelectorFromString("selectColumnDown:"), to: nil, from: nil)
             }
             .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
@@ -77,13 +77,13 @@ struct AlignmentEditCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
-            Button("Add Sequence...") {
+            Button(AppStrings.addSequence) {
                 actions?.addSequence()
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
             .disabled(actions?.canAddSequence != true)
 
-            Button("Remove All-Gap Columns") {
+            Button(AppStrings.removeAllGapColumns) {
                 actions?.removeAllGapColumns()
             }
             .keyboardShortcut(.delete, modifiers: [.command, .shift])
@@ -100,9 +100,9 @@ struct ViewPanelCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .toolbar) {
             Divider()
-            Toggle(showReferencePanel ? "Hide Reference Panel" : "Show Reference Panel", isOn: $showReferencePanel)
-            Toggle(showConsensusPanel ? "Hide Consensus Panel" : "Show Consensus Panel", isOn: $showConsensusPanel)
-            Toggle(showConservationPanel ? "Hide Identity Panel" : "Show Identity Panel", isOn: $showConservationPanel)
+            Toggle(showReferencePanel ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel"), isOn: $showReferencePanel)
+            Toggle(showConsensusPanel ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel"), isOn: $showConsensusPanel)
+            Toggle(showConservationPanel ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel"), isOn: $showConservationPanel)
         }
     }
 }
@@ -122,11 +122,11 @@ struct TranslationCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
-            Menu("Translation") {
-                Button("Frame +0") { runTranslation(frameOffset: 0) }
+            Menu(String(localized: "Translation")) {
+                Button(String(localized: "Frame +0")) { runTranslation(frameOffset: 0) }
                     .keyboardShortcut("0", modifiers: [.command, .option])
-                Button("Frame +1") { runTranslation(frameOffset: 1) }
-                Button("Frame +2") { runTranslation(frameOffset: 2) }
+                Button(String(localized: "Frame +1")) { runTranslation(frameOffset: 1) }
+                Button(String(localized: "Frame +2")) { runTranslation(frameOffset: 2) }
             }
             .disabled(!canTranslate)
         }

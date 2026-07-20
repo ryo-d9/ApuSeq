@@ -7,6 +7,10 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var localizedName: String {
+        AppStrings.appearanceName(self)
+    }
+
     var colorScheme: ColorScheme? {
         switch self {
         case .system:
@@ -30,17 +34,17 @@ struct AppSettingsView: View {
         TabView {
             generalSettings
                 .tabItem {
-                    Label("General", systemImage: "gearshape")
+                    Label(String(localized: "General"), systemImage: "gearshape")
                 }
 
             appearanceSettings
                 .tabItem {
-                    Label("Appearance", systemImage: "paintbrush")
+                    Label(String(localized: "Appearance"), systemImage: "paintbrush")
                 }
 
             editingSettings
                 .tabItem {
-                    Label("Editing", systemImage: "pencil")
+                    Label(String(localized: "Editing"), systemImage: "pencil")
                 }
         }
         .padding(20)
@@ -50,9 +54,9 @@ struct AppSettingsView: View {
 
     private var generalSettings: some View {
         Form {
-            Section("Alignment") {
+            Section(String(localized: "Alignment")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    LabeledContent("Font Size") {
+                    LabeledContent(String(localized: "Font Size")) {
                         HStack {
                             Slider(value: $alignmentFontSize, in: 8...24, step: 1)
                                 .frame(width: 220)
@@ -62,7 +66,7 @@ struct AppSettingsView: View {
                         }
                     }
 
-                    LabeledContent("Identity Threshold") {
+                    LabeledContent(String(localized: "Identity Threshold")) {
                         HStack {
                             Slider(value: $identityColorThreshold, in: 0.1...0.9, step: 0.01)
                                 .frame(width: 220)
@@ -74,8 +78,8 @@ struct AppSettingsView: View {
                 }
             }
 
-            Section("Translation") {
-                Picker("Codon Table", selection: $translationCodonTable) {
+            Section(String(localized: "Translation")) {
+                Picker(String(localized: "Codon Table"), selection: $translationCodonTable) {
                     ForEach(TranslationCodonTable.allCases) { table in
                         Text(table.displayName).tag(table.rawValue)
                     }
@@ -88,15 +92,15 @@ struct AppSettingsView: View {
 
     private var appearanceSettings: some View {
         Form {
-            Section("Appearance") {
-                Picker("Appearance", selection: $appearanceMode) {
+            Section(String(localized: "Appearance")) {
+                Picker(String(localized: "Appearance"), selection: $appearanceMode) {
                     ForEach(AppAppearanceMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode.rawValue)
+                        Text(mode.localizedName).tag(mode.rawValue)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Text("Choose whether ApuSeq follows the system appearance or uses a fixed light or dark appearance.")
+                Text(String(localized: "Choose whether ApuSeq follows the system appearance or uses a fixed light or dark appearance."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -106,10 +110,10 @@ struct AppSettingsView: View {
 
     private var editingSettings: some View {
         Form {
-            Section("Edit Mode") {
-                Toggle("Edit Mode Warning", isOn: $showEditModeAutosaveWarning)
+            Section(String(localized: "Edit Mode")) {
+                Toggle(String(localized: "Edit Mode Warning"), isOn: $showEditModeAutosaveWarning)
 
-                Text("Show a warning before entering Edit mode because edits can be autosaved with document versions.")
+                Text(String(localized: "Show a warning before entering Edit mode because edits can be autosaved with document versions."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

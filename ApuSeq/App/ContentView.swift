@@ -24,6 +24,15 @@ private struct RootView: View {
         case edit = "Edit"
 
         var id: String { rawValue }
+
+        var localizedName: String {
+            switch self {
+            case .view:
+                return String(localized: "View")
+            case .edit:
+                return String(localized: "Edit")
+            }
+        }
     }
 
     let document: ApuSeqDocument
@@ -202,7 +211,7 @@ private struct RootView: View {
         Group {
             if let parseErrorMessage = model.parseErrorMessage {
                 ContentUnavailableView(
-                    "Cannot Parse Alignment",
+                    String(localized: "Cannot Parse Alignment"),
                     systemImage: "exclamationmark.triangle",
                     description: Text(parseErrorMessage)
                 )
@@ -258,20 +267,20 @@ private struct RootView: View {
         .navigationTitle(documentTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Picker("Mode", selection: viewerModeBinding) {
+                Picker(String(localized: "Mode"), selection: viewerModeBinding) {
                     ForEach(ViewerMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
+                        Text(mode.localizedName).tag(mode)
                     }
                 }
                 .pickerStyle(.menu)
-                .help("Switch between read-only view and edit mode")
+                .help(String(localized: "Switch between read-only view and edit mode"))
 
                 Button {
                     addSequence()
                 } label: {
                     Image(systemName: "plus")
                 }
-                .help("Add a sequence")
+                .help(String(localized: "Add a sequence"))
                 .disabled(!canAddSequence)
 
                 Button {
@@ -279,12 +288,12 @@ private struct RootView: View {
                 } label: {
                     Image(systemName: "info.circle")
                 }
-                .help("Show alignment information")
+                .help(String(localized: "Show alignment information"))
             }
         }
         .inspector(isPresented: $showsInspector) {
             FileInformationView(
-                format: model.alignment.format.rawValue,
+                format: AppStrings.alignmentFormatName(model.alignment.format),
                 sequenceCount: displayAlignment.rows.count,
                 residueCount: displayAlignment.length,
                 sourceCharacterCount: document.rawText.count
@@ -318,13 +327,13 @@ private struct RootView: View {
 
     private func confirmEnteringEditMode() -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Changes in Edit mode are autosaved with versions."
-        alert.informativeText = "Editing can modify the document contents. macOS may autosave those changes and keep prior versions for recovery."
+        alert.messageText = String(localized: "Changes in Edit mode are autosaved with versions.")
+        alert.informativeText = String(localized: "Editing can modify the document contents. macOS may autosave those changes and keep prior versions for recovery.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Enter Edit Mode")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: String(localized: "Enter Edit Mode"))
+        alert.addButton(withTitle: AppStrings.cancel)
         alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = "Do not show again"
+        alert.suppressionButton?.title = String(localized: "Do not show again")
 
         let response = alert.runModal()
         guard response == .alertFirstButtonReturn else { return false }
@@ -369,8 +378,8 @@ private struct RootView: View {
         guard canAddSequence else { return }
         let existingNames = Set(model.alignment.rows.map(\.name))
         guard let name = promptForSequenceName(
-            title: "Add Sequence",
-            informativeText: "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added.",
+            title: AppStrings.addSequenceTitle,
+            informativeText: String(localized: "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added."),
             defaultName: nextSequenceName(),
             existingNames: existingNames
         ) else { return }
@@ -378,7 +387,7 @@ private struct RootView: View {
         var rows = model.alignment.rows
         let newLength = max(model.alignment.length, 1)
         rows.append(AlignmentRow(name: name, sequence: String(repeating: "-", count: newLength)))
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Add Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.addSequenceTitle)
     }
 
     private func renameDisplayedSequence(at displayedRowIndex: Int) {
@@ -391,8 +400,8 @@ private struct RootView: View {
         existingNames.remove(oldName)
 
         guard let newName = promptForSequenceName(
-            title: "Rename Sequence",
-            informativeText: "Enter a new name for this sequence.",
+            title: AppStrings.renameSequenceTitle,
+            informativeText: String(localized: "Enter a new name for this sequence."),
             defaultName: oldName,
             existingNames: existingNames
         ) else { return }
@@ -402,7 +411,7 @@ private struct RootView: View {
         if selectedReferenceName == oldName {
             selectedReferenceName = newName
         }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Rename Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.renameSequenceTitle)
     }
 
     private func deleteDisplayedSequence(at displayedRowIndex: Int) {
@@ -417,7 +426,7 @@ private struct RootView: View {
         if selectedReferenceName == rowToDelete.name {
             selectedReferenceName = nil
         }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Delete Sequence")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.deleteSequence)
     }
 
     private func removeAllGapColumns() {
@@ -431,7 +440,7 @@ private struct RootView: View {
                 sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
             )
         }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: "Remove All-Gap Columns")
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.removeAllGapColumns)
     }
 
     private func removableAllGapColumnMask() -> [Bool]? {
@@ -525,8 +534,8 @@ private struct RootView: View {
             alert.messageText = title
             alert.informativeText = currentInformativeText
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: AppStrings.ok)
+            alert.addButton(withTitle: AppStrings.cancel)
 
             let textField = NSTextField(string: currentValue)
             textField.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
@@ -539,12 +548,12 @@ private struct RootView: View {
             currentValue = textField.stringValue
             if name.isEmpty {
                 NSSound.beep()
-                currentInformativeText = "Sequence name cannot be empty."
+                currentInformativeText = String(localized: "Sequence name cannot be empty.")
                 continue
             }
             if existingNames.contains(name) {
                 NSSound.beep()
-                currentInformativeText = "A sequence named \"\(name)\" already exists."
+                currentInformativeText = String(localized: "A sequence named \"\(name)\" already exists.")
                 continue
             }
             return name

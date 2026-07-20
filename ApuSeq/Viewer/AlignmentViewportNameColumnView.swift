@@ -58,35 +58,35 @@ final class AlignmentViewportNameColumnView: NSView {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
         guard row >= 0, row < rowNames.count else {
             guard isEditMode else { return super.menu(for: event) }
-            let menu = NSMenu(title: "Sequence")
-            let addItem = NSMenuItem(title: "Add Sequence...", action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
+            let menu = NSMenu(title: AppStrings.sequenceMenu)
+            let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self
             menu.addItem(addItem)
             return menu
         }
 
-        let menu = NSMenu(title: "Reference")
-        let setItem = NSMenuItem(title: "Set as Reference", action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
+        let menu = NSMenu(title: AppStrings.referenceMenu)
+        let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
         setItem.target = self
         setItem.representedObject = rowNames[row]
         menu.addItem(setItem)
 
-        let clearItem = NSMenuItem(title: "Clear Reference", action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
+        let clearItem = NSMenuItem(title: AppStrings.clearReference, action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
         clearItem.target = self
         menu.addItem(clearItem)
 
         if isEditMode {
             menu.addItem(.separator())
-            let addItem = NSMenuItem(title: "Add Sequence...", action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
+            let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self
             menu.addItem(addItem)
 
-            let renameItem = NSMenuItem(title: "Rename Sequence...", action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
+            let renameItem = NSMenuItem(title: AppStrings.renameSequence, action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
             renameItem.target = self
             renameItem.representedObject = row
             menu.addItem(renameItem)
 
-            let deleteItem = NSMenuItem(title: "Delete Sequence", action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
+            let deleteItem = NSMenuItem(title: AppStrings.deleteSequence, action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
             deleteItem.target = self
             deleteItem.representedObject = row
             menu.addItem(deleteItem)

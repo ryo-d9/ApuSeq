@@ -214,12 +214,12 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        let menu = super.menu(for: event) ?? NSMenu(title: "Sequence")
+        let menu = super.menu(for: event) ?? NSMenu(title: AppStrings.sequenceMenu)
         guard isEditable else { return menu }
         if !menu.items.isEmpty {
             menu.addItem(.separator())
         }
-        let addItem = NSMenuItem(title: "Add Sequence...", action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
+        let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
         addItem.target = self
         menu.addItem(addItem)
         return menu

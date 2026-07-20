@@ -31,7 +31,7 @@ enum AlignmentParseError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat:
-            return "Input data is not in FASTA, CLUSTAL, or plain-text sequence format."
+            return String(localized: "Input data is not in FASTA, CLUSTAL, or plain-text sequence format.")
         }
     }
 }

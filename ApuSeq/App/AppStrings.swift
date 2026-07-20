@@ -1,0 +1,58 @@
+import Foundation
+
+enum AppStrings {
+    static let addSequence = String(localized: "Add Sequence...")
+    static let addSequenceTitle = String(localized: "Add Sequence")
+    static let renameSequence = String(localized: "Rename Sequence...")
+    static let renameSequenceTitle = String(localized: "Rename Sequence")
+    static let deleteSequence = String(localized: "Delete Sequence")
+    static let removeAllGapColumns = String(localized: "Remove All-Gap Columns")
+    static let cancel = String(localized: "Cancel")
+    static let ok = String(localized: "OK")
+    static let sequenceMenu = String(localized: "Sequence")
+    static let referenceMenu = String(localized: "Reference")
+    static let setAsReference = String(localized: "Set as Reference")
+    static let clearReference = String(localized: "Clear Reference")
+
+    static func appearanceName(_ mode: AppAppearanceMode) -> String {
+        switch mode {
+        case .system:
+            return String(localized: "System")
+        case .light:
+            return String(localized: "Light")
+        case .dark:
+            return String(localized: "Dark")
+        }
+    }
+
+    static func backgroundName(_ mode: AlignmentBackgroundMode) -> String {
+        switch mode {
+        case .residue:
+            return String(localized: "Residue")
+        case .different:
+            return String(localized: "Different")
+        case .identity:
+            return String(localized: "Identity")
+        }
+    }
+
+    static func displayOrderName(_ mode: AlignmentDisplayOrderMode) -> String {
+        switch mode {
+        case .original:
+            return String(localized: "Original")
+        case .upgma:
+            return String(localized: "UPGMA")
+        }
+    }
+
+    static func alignmentFormatName(_ format: AlignmentFormat) -> String {
+        switch format {
+        case .fasta:
+            return String(localized: "FASTA")
+        case .clustal:
+            return String(localized: "CLUSTAL")
+        case .plainText:
+            return String(localized: "Plain Text")
+        }
+    }
+}

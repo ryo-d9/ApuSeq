@@ -13,32 +13,32 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            statusItem(label: "Sequences", value: "\(sequenceCount)\(selectedSequenceSuffix)")
-            statusItem(label: "Sites", value: "\(residueCount)\(selectedResidueSuffix)")
+            statusItem(label: String(localized: "Sequences"), value: "\(sequenceCount)\(selectedSequenceSuffix)")
+            statusItem(label: String(localized: "Sites"), value: "\(residueCount)\(selectedResidueSuffix)")
             if let selectedStartPosition, let selectedEndPosition, selectedResidueCount > 0 {
-                statusItem(label: "Columns", value: "\(selectedStartPosition)-\(selectedEndPosition)")
+                statusItem(label: String(localized: "Columns"), value: "\(selectedStartPosition)-\(selectedEndPosition)")
             }
             Spacer()
-            Picker("Background", selection: $backgroundMode) {
+            Picker(String(localized: "Background"), selection: $backgroundMode) {
                 ForEach(AlignmentBackgroundMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.localizedName).tag(mode)
                 }
             }
             .pickerStyle(.menu)
             .labelsVisibility(.hidden)
             .fixedSize()
-            .help("Change background coloring")
+            .help(String(localized: "Change background coloring"))
             Divider()
-            Picker("Order", selection: $displayOrderMode) {
+            Picker(String(localized: "Order"), selection: $displayOrderMode) {
                 ForEach(AlignmentDisplayOrderMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.localizedName).tag(mode)
                 }
             }
             .pickerStyle(.menu)
             .labelsVisibility(.hidden)
             .fixedSize()
             .disabled(!canChangeDisplayOrder)
-            .help("Change sequence display order in view mode")
+            .help(String(localized: "Change sequence display order in view mode"))
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
@@ -76,11 +76,11 @@ struct FileInformationView: View {
 
     var body: some View {
         List {
-            LabeledContent("Format", value: format)
-            LabeledContent("Sequences", value: "\(sequenceCount)")
-            LabeledContent("Residues", value: "\(residueCount)")
-            LabeledContent("Source Chars", value: "\(sourceCharacterCount)")
+            LabeledContent(String(localized: "Format"), value: format)
+            LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
+            LabeledContent(String(localized: "Residues"), value: "\(residueCount)")
+            LabeledContent(String(localized: "Source Chars"), value: "\(sourceCharacterCount)")
         }
-        .navigationTitle("Information")
+        .navigationTitle(String(localized: "Information"))
     }
 }

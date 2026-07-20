@@ -264,6 +264,10 @@ enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
     case identity = "Identity"
 
     var id: String { rawValue }
+
+    var localizedName: String {
+        AppStrings.backgroundName(self)
+    }
 }
 
 enum AlignmentDisplayOrderMode: String, CaseIterable, Identifiable {
@@ -271,6 +275,10 @@ enum AlignmentDisplayOrderMode: String, CaseIterable, Identifiable {
     case upgma = "UPGMA"
 
     var id: String { rawValue }
+
+    var localizedName: String {
+        AppStrings.displayOrderName(self)
+    }
 }
 
 struct AuxiliaryPanelContent {

@@ -9,9 +9,9 @@ enum TranslationCodonTable: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .standard:
-            return "Standard"
+            return String(localized: "Standard")
         case .vertebrateMitochondrial:
-            return "Vertebrate Mitochondrial"
+            return String(localized: "Vertebrate Mitochondrial")
         }
     }
 }
@@ -22,7 +22,7 @@ enum AlignmentTranslationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedSequenceKind:
-            return "Translation is available only for nucleotide alignments."
+            return String(localized: "Translation is available only for nucleotide alignments.")
         }
     }
 }
