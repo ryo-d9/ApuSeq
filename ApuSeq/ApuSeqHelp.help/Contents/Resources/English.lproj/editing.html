@@ -22,6 +22,12 @@
     </section>
 
     <section>
+      <h2>Adding and renaming sequences</h2>
+      <p>In Edit mode, choose Edit &gt; Add Sequence or Control-click the sequence name area and choose Add Sequence. ApuSeq adds a gap-filled row that can be edited directly in the alignment view.</p>
+      <p>To rename a sequence, Control-click or right-click its name and choose Rename Sequence.</p>
+    </section>
+
+    <section>
       <h2>Sequence deletion</h2>
       <p>In Edit mode, Control-click or right-click a sequence name and choose Delete Sequence. If the deleted sequence is the reference, the reference selection is cleared.</p>
     </section>
@@ -29,6 +35,12 @@
     <section>
       <h2>Remove all-gap columns</h2>
       <p>Edit &gt; Remove All-Gap Columns removes columns where every sequence contains a gap. Both <code>-</code> and <code>.</code> are treated as gaps. The command is undoable and is disabled when it would leave the alignment empty.</p>
+    </section>
+
+    <section>
+      <h2>Reverse complement</h2>
+      <p>Edit &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence. The original document is not changed.</p>
+      <p>ApuSeq preserves lowercase residues as lowercase. Ambiguous nucleotide codes are complemented when possible, and gap characters remain in place after the sequence order is reversed.</p>
     </section>
   </main>
 </body>

@@ -14,9 +14,10 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Residue, majority-difference, and identity coloring modes
 - View-only sequence ordering with Original and UPGMA modes
 - Column selection and multi-range editing
-- Sequence deletion from the name panel in Edit mode
+- Sequence add, rename, and deletion from Edit mode
 - Remove All-Gap Columns command, treating `-` and `.` as gaps
 - Nucleotide translation with selectable codon tables
+- Reverse complement generation for nucleotide alignments
 - Quick Look preview extension with lightweight residue coloring
 - Apple Help Book
 - Icon Composer app icon
@@ -26,7 +27,7 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Use Apple-provided macOS document, menu, settings, help, Quick Look, and text system features where they fit
 - Keep the viewer responsive for large alignments
 - Avoid modifying files in View mode
-- Keep derived outputs, such as translated sequences, as new unsaved documents until the user saves them
+- Keep derived outputs, such as translated or reverse-complemented sequences, as new unsaved documents until the user saves them
 - Keep domain logic independent from platform UI where practical
 
 ## Editing Behavior
@@ -34,6 +35,8 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 Edit mode follows the macOS document model. Changes can be autosaved and are managed by the system versions workflow.
 
 When inserting or deleting residues, ApuSeq preserves alignment shape by adding gap characters to other sequences as needed. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
+
+Use Edit > Reverse Complement to create a new unsaved FASTA document containing reverse-complemented nucleotide sequences. The source document is not modified.
 
 ## Quick Look
 
@@ -46,7 +49,7 @@ A lightweight Apple Help Book is bundled with the app and is available from the 
 ## Project Structure
 
 - `ApuSeq/App` - app entry point, document type, commands, settings, and the main SwiftUI document view
-- `ApuSeq/Core` - alignment data model, parsing, rendering, statistics, clustering, translation, and text decoding
+- `ApuSeq/Core` - alignment data model, parsing, rendering, statistics, clustering, translation, reverse complement, and text decoding
 - `ApuSeq/Viewer` - SwiftUI panels and the AppKit/TextKit 2 alignment viewport
 - `ApuSeq/ApuSeqHelp.help` - bundled Apple Help Book
 - `ApuSeq/ApuSeqQuickLookExtension` - Quick Look preview extension
