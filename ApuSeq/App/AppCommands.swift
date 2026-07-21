@@ -13,6 +13,11 @@ struct AlignmentEditActions {
     let removeAllGapColumns: () -> Void
 }
 
+struct ViewerModeActions {
+    let toggleTitle: String
+    let toggle: () -> Void
+}
+
 struct MAFFTAlignmentActions {
     let canAlign: Bool
     let align: () -> Void
@@ -28,6 +33,10 @@ private struct AlignmentEditActionsKey: FocusedValueKey {
     typealias Value = AlignmentEditActions
 }
 
+private struct ViewerModeActionsKey: FocusedValueKey {
+    typealias Value = ViewerModeActions
+}
+
 private struct MAFFTAlignmentActionsKey: FocusedValueKey {
     typealias Value = MAFFTAlignmentActions
 }
@@ -41,6 +50,11 @@ extension FocusedValues {
     var alignmentEditActions: AlignmentEditActions? {
         get { self[AlignmentEditActionsKey.self] }
         set { self[AlignmentEditActionsKey.self] = newValue }
+    }
+
+    var viewerModeActions: ViewerModeActions? {
+        get { self[ViewerModeActionsKey.self] }
+        set { self[ViewerModeActionsKey.self] = newValue }
     }
 
     var mafftAlignmentActions: MAFFTAlignmentActions? {
@@ -108,6 +122,20 @@ struct AlignmentEditCommands: Commands {
     }
 }
 
+struct ViewerModeCommands: Commands {
+    @FocusedValue(\.viewerModeActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .toolbar) {
+            Button(actions?.toggleTitle ?? AppStrings.enterEditMode) {
+                actions?.toggle()
+            }
+            .keyboardShortcut("e", modifiers: [.command, .option])
+            .disabled(actions == nil)
+        }
+    }
+}
+
 struct ViewPanelCommands: Commands {
     @AppStorage("showReferencePanel") private var showReferencePanel = false
     @AppStorage("showConsensusPanel") private var showConsensusPanel = false
@@ -116,9 +144,15 @@ struct ViewPanelCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .toolbar) {
             Divider()
-            Toggle(showReferencePanel ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel"), isOn: $showReferencePanel)
-            Toggle(showConsensusPanel ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel"), isOn: $showConsensusPanel)
-            Toggle(showConservationPanel ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel"), isOn: $showConservationPanel)
+            Button(showReferencePanel ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel")) {
+                showReferencePanel.toggle()
+            }
+            Button(showConsensusPanel ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel")) {
+                showConsensusPanel.toggle()
+            }
+            Button(showConservationPanel ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel")) {
+                showConservationPanel.toggle()
+            }
         }
     }
 }

@@ -129,6 +129,13 @@ private struct RootView: View {
         )
     }
 
+    private var viewerModeActions: ViewerModeActions {
+        ViewerModeActions(
+            toggleTitle: viewerMode == .edit ? AppStrings.exitEditMode : AppStrings.enterEditMode,
+            toggle: toggleViewerMode
+        )
+    }
+
     private var mafftAlignmentActions: MAFFTAlignmentActions {
         MAFFTAlignmentActions(
             canAlign: canAlignWithMAFFT,
@@ -345,6 +352,7 @@ private struct RootView: View {
         .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
+        .focusedSceneValue(\.viewerModeActions, viewerModeActions)
         .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
     }
 
@@ -354,6 +362,10 @@ private struct RootView: View {
             guard confirmEnteringEditMode() else { return }
         }
         viewerMode = mode
+    }
+
+    private func toggleViewerMode() {
+        setViewerMode(viewerMode == .edit ? .view : .edit)
     }
 
     private func confirmEnteringEditMode() -> Bool {

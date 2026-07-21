@@ -18,6 +18,7 @@ struct ApuSeqApp: App {
             TranslationCommands()
             MAFFTCommands()
             ReverseComplementCommands()
+            ViewerModeCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
             AlignmentEditCommands()

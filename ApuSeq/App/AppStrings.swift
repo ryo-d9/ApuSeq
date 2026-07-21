@@ -7,6 +7,8 @@ enum AppStrings {
     static let renameSequenceTitle = String(localized: "Rename Sequence")
     static let deleteSequence = String(localized: "Delete Sequence")
     static let removeAllGapColumns = String(localized: "Remove All-Gap Columns")
+    static let enterEditMode = String(localized: "Enter Edit Mode")
+    static let exitEditMode = String(localized: "Exit Edit Mode")
     static let alignWithMAFFTAuto = String(localized: "Align with MAFFT Auto")
     static let aligningWithMAFFT = String(localized: "Aligning with MAFFT...")
     static let mafftAlignmentFailed = String(localized: "MAFFT Alignment Failed")
