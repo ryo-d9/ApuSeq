@@ -1,5 +1,11 @@
 import AppKit
 
+private let alignmentLineHeightLayoutManager = NSLayoutManager()
+
+func alignmentLineHeight(for font: NSFont) -> CGFloat {
+    max(alignmentLineHeightLayoutManager.defaultLineHeight(for: font), 1)
+}
+
 func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isEditable = false
     textView.isSelectable = true

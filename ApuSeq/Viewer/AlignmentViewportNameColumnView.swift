@@ -101,7 +101,7 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     private var lineHeight: CGFloat {
-        ceil(font.ascender - font.descender + font.leading)
+        alignmentLineHeight(for: font)
     }
 
     @objc private func setReferenceFromMenu(_ sender: NSMenuItem) {

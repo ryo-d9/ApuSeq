@@ -109,7 +109,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         auxiliarySequenceTextView.textStorage?.setAttributedString(sequenceText)
 
         let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        let lineHeight = max(ceil(font.ascender - font.descender + font.leading), 1)
+        let lineHeight = alignmentLineHeight(for: font)
         let height = lineCount > 0 ? max(CGFloat(lineCount) * lineHeight + 8, 24) : 0
         let isVisible = lineCount > 0
         leftAuxHeightConstraint?.constant = height

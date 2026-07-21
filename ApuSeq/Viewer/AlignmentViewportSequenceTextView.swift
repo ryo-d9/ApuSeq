@@ -258,7 +258,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         guard let font else { return }
 
         let charWidth = max(("M" as NSString).size(withAttributes: [.font: font]).width, 1)
-        let lineHeight = max(ceil(font.ascender - font.descender + font.leading), 1)
+        let lineHeight = alignmentLineHeight(for: font)
         let inset = textContainerInset
         let lineSpan = alignmentLength + 1
         let text = string as NSString
