@@ -37,6 +37,7 @@ private struct RootView: View {
 
     let document: ApuSeqDocument
     @Environment(\.documentConfiguration) private var documentConfiguration
+    @Environment(\.newDocument) private var newDocument
     @Environment(\.undoManager) private var undoManager
 
     @State private var model = AlignmentViewModel()
@@ -51,6 +52,10 @@ private struct RootView: View {
     @State private var selectedSequenceCount = 0
     @State private var selectedStartPosition: Int?
     @State private var selectedEndPosition: Int?
+    @State private var isRunningMAFFTAlignment = false
+    @State private var mafftAlignmentTask: Task<Void, Never>?
+    @State private var mafftAlignmentErrorMessage = ""
+    @State private var showsMAFFTAlignmentError = false
 
     @AppStorage("showReferencePanel") private var showsReferencePanel = false
     @AppStorage("showConsensusPanel") private var showsConsensusPanel = false
@@ -122,6 +127,19 @@ private struct RootView: View {
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
             removeAllGapColumns: removeAllGapColumns
         )
+    }
+
+    private var mafftAlignmentActions: MAFFTAlignmentActions {
+        MAFFTAlignmentActions(
+            canAlign: canAlignWithMAFFT,
+            align: startMAFFTAlignment,
+            cancel: cancelMAFFTAlignment,
+            isRunning: isRunningMAFFTAlignment
+        )
+    }
+
+    private var canAlignWithMAFFT: Bool {
+        !isRunningMAFFTAlignment && !document.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var viewerModeBinding: Binding<ViewerMode> {
@@ -299,9 +317,21 @@ private struct RootView: View {
                 sourceCharacterCount: document.rawText.count
             )
         }
+        .sheet(isPresented: $isRunningMAFFTAlignment) {
+            MAFFTAlignmentProgressView(cancel: cancelMAFFTAlignment)
+                .interactiveDismissDisabled()
+        }
+        .alert(AppStrings.mafftAlignmentFailed, isPresented: $showsMAFFTAlignmentError) {
+            Button(AppStrings.ok, role: .cancel) {}
+        } message: {
+            Text(mafftAlignmentErrorMessage)
+        }
         .onAppear {
             markTranslatedDocumentAsEditedIfNeeded()
             parseAndRender()
+        }
+        .onDisappear {
+            cancelMAFFTAlignment()
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
         .onChange(of: backgroundMode) { _, newValue in
@@ -315,6 +345,7 @@ private struct RootView: View {
         .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
+        .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
     }
 
     private func setViewerMode(_ mode: ViewerMode) {
@@ -441,6 +472,40 @@ private struct RootView: View {
             )
         }
         applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.removeAllGapColumns)
+    }
+
+    private func startMAFFTAlignment() {
+        guard canAlignWithMAFFT else { return }
+        let rawText = document.rawText
+        isRunningMAFFTAlignment = true
+        mafftAlignmentTask = Task { @MainActor in
+            do {
+                let aligned = try await MAFFTAligner.alignAuto(rawText: rawText)
+                guard !Task.isCancelled else { return }
+                finishMAFFTAlignment()
+                newDocument {
+                    ApuSeqDocument(
+                        rawText: aligned,
+                        markEditedOnFirstDisplay: true
+                    )
+                }
+            } catch is CancellationError {
+                finishMAFFTAlignment()
+            } catch {
+                finishMAFFTAlignment()
+                mafftAlignmentErrorMessage = error.localizedDescription
+                showsMAFFTAlignmentError = true
+            }
+        }
+    }
+
+    private func cancelMAFFTAlignment() {
+        mafftAlignmentTask?.cancel()
+    }
+
+    private func finishMAFFTAlignment() {
+        isRunningMAFFTAlignment = false
+        mafftAlignmentTask = nil
     }
 
     private func removableAllGapColumnMask() -> [Bool]? {
@@ -592,6 +657,27 @@ private struct RootView: View {
         guard document.markEditedOnFirstDisplay else { return }
         document.markEditedOnFirstDisplay = false
         document.rawText += "\n"
+    }
+}
+
+private struct MAFFTAlignmentProgressView: View {
+    let cancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.regular)
+
+            Text(AppStrings.aligningWithMAFFT)
+                .font(.headline)
+
+            Button(AppStrings.cancel) {
+                cancel()
+            }
+            .keyboardShortcut(.cancelAction)
+        }
+        .padding(24)
+        .frame(width: 320)
     }
 }
 

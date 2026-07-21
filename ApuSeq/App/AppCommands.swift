@@ -13,12 +13,23 @@ struct AlignmentEditActions {
     let removeAllGapColumns: () -> Void
 }
 
+struct MAFFTAlignmentActions {
+    let canAlign: Bool
+    let align: () -> Void
+    let cancel: () -> Void
+    let isRunning: Bool
+}
+
 private struct SequenceTransformContextKey: FocusedValueKey {
     typealias Value = SequenceTransformContext
 }
 
 private struct AlignmentEditActionsKey: FocusedValueKey {
     typealias Value = AlignmentEditActions
+}
+
+private struct MAFFTAlignmentActionsKey: FocusedValueKey {
+    typealias Value = MAFFTAlignmentActions
 }
 
 extension FocusedValues {
@@ -30,6 +41,11 @@ extension FocusedValues {
     var alignmentEditActions: AlignmentEditActions? {
         get { self[AlignmentEditActionsKey.self] }
         set { self[AlignmentEditActionsKey.self] = newValue }
+    }
+
+    var mafftAlignmentActions: MAFFTAlignmentActions? {
+        get { self[MAFFTAlignmentActionsKey.self] }
+        set { self[MAFFTAlignmentActionsKey.self] = newValue }
     }
 }
 
@@ -107,6 +123,18 @@ struct ViewPanelCommands: Commands {
     }
 }
 
+struct OpenSourceLicenseCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(after: .help) {
+            Button(AppStrings.openSourceLicensesMenuItem) {
+                openWindow(id: OpenSourceLicensesView.windowID)
+            }
+        }
+    }
+}
+
 private enum FindActionDispatcher {
     static func perform(_ action: NSTextFinder.Action) {
         let item = NSMenuItem()
@@ -158,6 +186,19 @@ struct TranslationCommands: Commands {
             } catch {
                 NSSound.beep()
             }
+        }
+    }
+}
+
+struct MAFFTCommands: Commands {
+    @FocusedValue(\.mafftAlignmentActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button(AppStrings.alignWithMAFFTAuto) {
+                actions?.align()
+            }
+            .disabled(actions?.canAlign != true)
         }
     }
 }

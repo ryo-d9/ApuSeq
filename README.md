@@ -18,8 +18,10 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Remove All-Gap Columns command, treating `-` and `.` as gaps
 - Nucleotide translation with selectable codon tables
 - Reverse complement generation for nucleotide alignments
+- Bundled MAFFT `--auto` alignment that creates a new FASTA document
 - Quick Look preview extension with lightweight residue coloring
 - Apple Help Book
+- Open source license viewer for bundled third-party components
 - Icon Composer app icon
 
 ## Design Goals
@@ -38,6 +40,8 @@ When inserting or deleting residues, ApuSeq preserves alignment shape by adding 
 
 Use Edit > Reverse Complement to create a new unsaved FASTA document containing reverse-complemented nucleotide sequences. The source document is not modified.
 
+Use Edit > Align with MAFFT Auto to create a new unsaved FASTA document aligned by the bundled MAFFT executable using `--auto`. ApuSeq shows an indeterminate progress sheet while MAFFT is running and provides a Cancel button for long-running alignments. The source document is not modified.
+
 ## Quick Look
 
 The Quick Look extension provides a compact HTML preview for supported alignment files. Previews are intentionally limited in size so Finder remains responsive.
@@ -46,13 +50,18 @@ The Quick Look extension provides a compact HTML preview for supported alignment
 
 A lightweight Apple Help Book is bundled with the app and is available from the macOS Help menu.
 
+Open source license notices for bundled third-party components are available from Help > Open Source Licenses.
+
 ## Project Structure
 
 - `ApuSeq/App` - app entry point, document type, commands, settings, and the main SwiftUI document view
-- `ApuSeq/Core` - alignment data model, parsing, rendering, statistics, clustering, translation, reverse complement, and text decoding
+- `ApuSeq/Core` - alignment data model, parsing, rendering, statistics, clustering, translation, reverse complement, MAFFT integration, and text decoding
 - `ApuSeq/Viewer` - SwiftUI panels and the AppKit/TextKit 2 alignment viewport
 - `ApuSeq/ApuSeqHelp.help` - bundled Apple Help Book
 - `ApuSeq/ApuSeqQuickLookExtension` - Quick Look preview extension
+- `Vendor/MAFFT` - bundled MAFFT files and MAFFT license notice
+- `Scripts` - build helper scripts and file lists for bundled tools
+- `Signing` - helper entitlements used when signing bundled command-line tools
 - `ApuSeqIcon.icon` - Icon Composer app icon
 
 ## Requirements
@@ -73,3 +82,5 @@ For Quick Look development, use the `ApuSeqQuickLookExtension` target and instal
 ## License
 
 ApuSeq is released under the MIT License. See `LICENSE` for details.
+
+MAFFT is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or Help > Open Source Licenses in the app.

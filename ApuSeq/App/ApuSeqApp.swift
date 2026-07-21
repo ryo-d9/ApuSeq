@@ -16,12 +16,19 @@ struct ApuSeqApp: App {
         .commands {
             FindCommands()
             TranslationCommands()
+            MAFFTCommands()
             ReverseComplementCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
             AlignmentEditCommands()
             InspectorCommands()
+            OpenSourceLicenseCommands()
         }
+
+        Window(AppStrings.openSourceLicenses, id: OpenSourceLicensesView.windowID) {
+            OpenSourceLicensesView()
+        }
+        .windowResizability(.contentSize)
 
         Settings {
             AppSettingsView()
