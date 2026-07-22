@@ -80,7 +80,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             affinity: .downstream,
             stillSelecting: false
         )
-        columnSelectionRanges = newSelections
+        columnSelectionRanges = newSelections.count > 1 ? newSelections : []
         registerColumnUndo(toRestore: previousState)
         didChangeText()
     }

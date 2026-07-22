@@ -256,9 +256,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
         ) -> Bool {
             guard let sequenceView = textView as? AlignmentViewportSequenceTextView else { return true }
             guard sequenceView.isEditable else { return true }
-            let selectedRanges = sequenceView.columnSelectionRanges.isEmpty
-                ? sequenceView.selectedRanges.map(\.rangeValue)
-                : sequenceView.columnSelectionRanges
+            let selectedRanges = sequenceView.columnSelectionRanges.count > 1
+                ? sequenceView.columnSelectionRanges
+                : [affectedCharRange]
             sequenceView.applyAlignmentReplacement(replacementString ?? "", to: selectedRanges)
             return false
         }
@@ -270,9 +270,12 @@ struct AlignmentTextViewport: NSViewRepresentable {
         ) -> Bool {
             guard let sequenceView = textView as? AlignmentViewportSequenceTextView else { return true }
             guard sequenceView.isEditable else { return true }
+            let selectedRanges = sequenceView.columnSelectionRanges.count > 1
+                ? sequenceView.columnSelectionRanges
+                : affectedRanges.map(\.rangeValue)
             sequenceView.applyAlignmentReplacement(
                 replacementStrings?.first ?? "",
-                to: affectedRanges.map(\.rangeValue)
+                to: selectedRanges
             )
             return false
         }
