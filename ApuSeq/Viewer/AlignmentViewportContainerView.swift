@@ -82,6 +82,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func updateNameRows(
         _ names: [String],
+        sequences: [String],
         isEditMode: Bool,
         onAddSequence: @escaping () -> Void,
         onRenameSequence: @escaping (Int) -> Void,
@@ -91,6 +92,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         if nameColumnView.rowNames != names {
             nameColumnView.rowNames = names
         }
+        nameColumnView.rowSequences = sequences
         nameColumnView.isEditMode = isEditMode
         nameColumnView.onAddSequence = onAddSequence
         nameColumnView.onRenameSequence = onRenameSequence

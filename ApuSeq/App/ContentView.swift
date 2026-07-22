@@ -129,6 +129,13 @@ private struct RootView: View {
         )
     }
 
+    private var alignmentCopyActions: AlignmentCopyActions {
+        AlignmentCopyActions(
+            canCopyConsensus: !model.alignment.rows.isEmpty && model.alignment.length > 0,
+            copyConsensus: copyConsensus
+        )
+    }
+
     private var viewerModeActions: ViewerModeActions {
         ViewerModeActions(
             toggleTitle: viewerMode == .edit ? AppStrings.exitEditMode : AppStrings.enterEditMode,
@@ -256,6 +263,7 @@ private struct RootView: View {
                         contentVersion: model.contentVersion,
                         defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
                         displayedRowNames: displayRows.map(\.name),
+                        displayedRowSequences: displayRows.map(\.sequence),
                         auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
                         auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
                         auxiliaryLineCount: auxiliaryPanel.lineCount,
@@ -352,6 +360,7 @@ private struct RootView: View {
         .onChange(of: viewerMode) { _, _ in rerender() }
         .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
+        .focusedSceneValue(\.alignmentCopyActions, alignmentCopyActions)
         .focusedSceneValue(\.viewerModeActions, viewerModeActions)
         .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
     }
@@ -484,6 +493,14 @@ private struct RootView: View {
             )
         }
         applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.removeAllGapColumns)
+    }
+
+    private func copyConsensus() {
+        let consensus = model.consensusSequence()
+        guard !consensus.isEmpty else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(consensus, forType: .string)
     }
 
     private func startMAFFTAlignment() {

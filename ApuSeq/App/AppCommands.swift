@@ -13,6 +13,11 @@ struct AlignmentEditActions {
     let removeAllGapColumns: () -> Void
 }
 
+struct AlignmentCopyActions {
+    let canCopyConsensus: Bool
+    let copyConsensus: () -> Void
+}
+
 struct ViewerModeActions {
     let toggleTitle: String
     let toggle: () -> Void
@@ -33,6 +38,10 @@ private struct AlignmentEditActionsKey: FocusedValueKey {
     typealias Value = AlignmentEditActions
 }
 
+private struct AlignmentCopyActionsKey: FocusedValueKey {
+    typealias Value = AlignmentCopyActions
+}
+
 private struct ViewerModeActionsKey: FocusedValueKey {
     typealias Value = ViewerModeActions
 }
@@ -50,6 +59,11 @@ extension FocusedValues {
     var alignmentEditActions: AlignmentEditActions? {
         get { self[AlignmentEditActionsKey.self] }
         set { self[AlignmentEditActionsKey.self] = newValue }
+    }
+
+    var alignmentCopyActions: AlignmentCopyActions? {
+        get { self[AlignmentCopyActionsKey.self] }
+        set { self[AlignmentCopyActionsKey.self] = newValue }
     }
 
     var viewerModeActions: ViewerModeActions? {
@@ -86,18 +100,38 @@ struct FindCommands: Commands {
 }
 
 struct ColumnSelectionCommands: Commands {
+    @FocusedValue(\.alignmentCopyActions) private var actions
+
     var body: some Commands {
+        CommandGroup(after: .pasteboard) {
+            Button(AppStrings.copyConsensus) {
+                actions?.copyConsensus()
+            }
+            .disabled(actions?.canCopyConsensus != true)
+        }
+
         CommandGroup(after: .textEditing) {
             Divider()
-            Button(String(localized: "Select Column Up")) {
-                _ = NSApp.sendAction(NSSelectorFromString("selectColumnUp:"), to: nil, from: nil)
-            }
-            .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
+            Menu(AppStrings.select) {
+                Button(AppStrings.selectUngappedChunk) {
+                    _ = NSApp.sendAction(NSSelectorFromString("selectWord:"), to: nil, from: nil)
+                }
 
-            Button(String(localized: "Select Column Down")) {
-                _ = NSApp.sendAction(NSSelectorFromString("selectColumnDown:"), to: nil, from: nil)
+                Button(AppStrings.selectLine) {
+                    _ = NSApp.sendAction(NSSelectorFromString("selectLine:"), to: nil, from: nil)
+                }
+
+                Divider()
+                Button(String(localized: "Select Column Up")) {
+                    _ = NSApp.sendAction(NSSelectorFromString("selectColumnUp:"), to: nil, from: nil)
+                }
+                .keyboardShortcut(.upArrow, modifiers: [.control, .shift])
+
+                Button(String(localized: "Select Column Down")) {
+                    _ = NSApp.sendAction(NSSelectorFromString("selectColumnDown:"), to: nil, from: nil)
+                }
+                .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
             }
-            .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
         }
     }
 }
@@ -112,12 +146,6 @@ struct AlignmentEditCommands: Commands {
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
             .disabled(actions?.canAddSequence != true)
-
-            Button(AppStrings.removeAllGapColumns) {
-                actions?.removeAllGapColumns()
-            }
-            .keyboardShortcut(.delete, modifiers: [.command, .shift])
-            .disabled(actions?.canRemoveAllGapColumns != true)
         }
     }
 }
@@ -177,13 +205,33 @@ private enum FindActionDispatcher {
     }
 }
 
-struct TranslationCommands: Commands {
+struct AlignmentCommands: Commands {
+    @FocusedValue(\.alignmentEditActions) private var editActions
+    @FocusedValue(\.mafftAlignmentActions) private var mafftActions
     @FocusedValue(\.sequenceTransformContext) private var context
     @Environment(\.newDocument) private var newDocument
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
 
     var body: some Commands {
-        CommandGroup(after: .textEditing) {
+        CommandMenu(AppStrings.alignment) {
+            Button(AppStrings.alignWithMAFFTAuto) {
+                mafftActions?.align()
+            }
+            .disabled(mafftActions?.canAlign != true)
+
+            Button(AppStrings.removeAllGapColumns) {
+                editActions?.removeAllGapColumns()
+            }
+            .keyboardShortcut(.delete, modifiers: [.command, .shift])
+            .disabled(editActions?.canRemoveAllGapColumns != true)
+
+            Divider()
+
+            Button(AppStrings.reverseComplement) {
+                runReverseComplement()
+            }
+            .disabled(!canReverseComplement)
+
             Menu(String(localized: "Translation")) {
                 Button(String(localized: "Frame +0")) { runTranslation(frameOffset: 0) }
                     .keyboardShortcut("0", modifiers: [.command, .option])
@@ -194,9 +242,35 @@ struct TranslationCommands: Commands {
         }
     }
 
+    private var canReverseComplement: Bool {
+        guard let context else { return false }
+        return context.sequenceKind == .nucleotide && !context.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var canTranslate: Bool {
         guard let context else { return false }
         return context.sequenceKind == .nucleotide && !context.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func runReverseComplement() {
+        guard let context else { return }
+        Task {
+            do {
+                let reverseComplemented = try AlignmentReverseComplementer.reverseComplementFASTA(
+                    rawText: context.rawText
+                )
+                await MainActor.run {
+                    newDocument {
+                        ApuSeqDocument(
+                            rawText: reverseComplemented,
+                            markEditedOnFirstDisplay: true
+                        )
+                    }
+                }
+            } catch {
+                NSSound.beep()
+            }
+        }
     }
 
     private func runTranslation(frameOffset: Int) {
@@ -213,59 +287,6 @@ struct TranslationCommands: Commands {
                     newDocument {
                         ApuSeqDocument(
                             rawText: translated,
-                            markEditedOnFirstDisplay: true
-                        )
-                    }
-                }
-            } catch {
-                NSSound.beep()
-            }
-        }
-    }
-}
-
-struct MAFFTCommands: Commands {
-    @FocusedValue(\.mafftAlignmentActions) private var actions
-
-    var body: some Commands {
-        CommandGroup(after: .textEditing) {
-            Button(AppStrings.alignWithMAFFTAuto) {
-                actions?.align()
-            }
-            .disabled(actions?.canAlign != true)
-        }
-    }
-}
-
-struct ReverseComplementCommands: Commands {
-    @FocusedValue(\.sequenceTransformContext) private var context
-    @Environment(\.newDocument) private var newDocument
-
-    var body: some Commands {
-        CommandGroup(after: .textEditing) {
-            Button(AppStrings.reverseComplement) {
-                runReverseComplement()
-            }
-            .disabled(!canReverseComplement)
-        }
-    }
-
-    private var canReverseComplement: Bool {
-        guard let context else { return false }
-        return context.sequenceKind == .nucleotide && !context.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private func runReverseComplement() {
-        guard let context else { return }
-        Task {
-            do {
-                let reverseComplemented = try AlignmentReverseComplementer.reverseComplementFASTA(
-                    rawText: context.rawText
-                )
-                await MainActor.run {
-                    newDocument {
-                        ApuSeqDocument(
-                            rawText: reverseComplemented,
                             markEditedOnFirstDisplay: true
                         )
                     }

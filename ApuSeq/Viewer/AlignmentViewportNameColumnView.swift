@@ -4,6 +4,7 @@ final class AlignmentViewportNameColumnView: NSView {
     var rowNames: [String] = [] {
         didSet { needsDisplay = true }
     }
+    var rowSequences: [String] = []
     var verticalOffset: CGFloat = 0 {
         didSet {
             if abs(verticalOffset - oldValue) > 0.5 {
@@ -66,6 +67,12 @@ final class AlignmentViewportNameColumnView: NSView {
         }
 
         let menu = NSMenu(title: AppStrings.referenceMenu)
+        let copyItem = NSMenuItem(title: AppStrings.copySequence, action: #selector(copySequenceFromMenu(_:)), keyEquivalent: "")
+        copyItem.target = self
+        copyItem.representedObject = row
+        menu.addItem(copyItem)
+        menu.addItem(.separator())
+
         let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
         setItem.target = self
         setItem.representedObject = rowNames[row]
@@ -110,6 +117,14 @@ final class AlignmentViewportNameColumnView: NSView {
 
     @objc private func clearReferenceFromMenu(_ sender: NSMenuItem) {
         onSetReference?(nil)
+    }
+
+    @objc private func copySequenceFromMenu(_ sender: NSMenuItem) {
+        guard let row = sender.representedObject as? Int else { return }
+        guard row >= 0, row < rowSequences.count else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(rowSequences[row], forType: .string)
     }
 
     @objc private func addSequenceFromMenu(_ sender: NSMenuItem) {

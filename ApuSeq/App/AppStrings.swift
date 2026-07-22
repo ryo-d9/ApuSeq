@@ -2,11 +2,17 @@ import Foundation
 
 enum AppStrings {
     static let addSequence = String(localized: "Add Sequence...")
+    static let alignment = String(localized: "Alignment")
+    static let copyConsensus = String(localized: "Copy Consensus")
+    static let copySequence = String(localized: "Copy Sequence")
     static let addSequenceTitle = String(localized: "Add Sequence")
     static let renameSequence = String(localized: "Rename Sequence...")
     static let renameSequenceTitle = String(localized: "Rename Sequence")
     static let deleteSequence = String(localized: "Delete Sequence")
     static let removeAllGapColumns = String(localized: "Remove All-Gap Columns")
+    static let select = String(localized: "Select")
+    static let selectLine = String(localized: "Select Line")
+    static let selectUngappedChunk = String(localized: "Select Ungapped Chunk")
     static let enterEditMode = String(localized: "Enter Edit Mode")
     static let exitEditMode = String(localized: "Exit Edit Mode")
     static let alignWithMAFFTAuto = String(localized: "Align with MAFFT Auto")

@@ -195,6 +195,10 @@ final class AlignmentViewModel {
         return alignment.rows.contains(where: { $0.name == name })
     }
 
+    func consensusSequence() -> String {
+        cachedConsensusSequence(rows: alignment.rows)
+    }
+
     private func apply(
         _ rendered: RenderedAlignment,
         displayedRows: [AlignmentRow],

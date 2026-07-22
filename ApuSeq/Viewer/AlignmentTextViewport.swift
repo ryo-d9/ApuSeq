@@ -15,6 +15,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let contentVersion: Int
     let defaultNameColumnWidth: CGFloat
     let displayedRowNames: [String]
+    let displayedRowSequences: [String]
     let auxiliaryNameAttributedText: NSAttributedString
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
@@ -62,6 +63,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         containerView.updateNameRows(
             displayedRowNames,
+            sequences: displayedRowSequences,
             isEditMode: isEditMode,
             onAddSequence: onAddSequence,
             onRenameSequence: onRenameSequence,
@@ -77,6 +79,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(
             displayedRowNames,
+            sequences: displayedRowSequences,
             isEditMode: isEditMode,
             onAddSequence: onAddSequence,
             onRenameSequence: onRenameSequence,
