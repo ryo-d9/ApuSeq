@@ -228,3 +228,53 @@ enum AlignmentSerializer {
         return output.isEmpty ? "Sequence" : output
     }
 }
+
+enum AlignmentColumnEditor {
+    nonisolated static func removingAllGapColumns(from rows: [AlignmentRow], length: Int) -> [AlignmentRow]? {
+        guard let keepColumns = removableAllGapColumnMask(rows: rows, length: length) else { return nil }
+        let keptColumnCount = keepColumns.filter(\.self).count
+        return rows.map { row in
+            AlignmentRow(
+                name: row.name,
+                sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
+            )
+        }
+    }
+
+    nonisolated private static func removableAllGapColumnMask(rows: [AlignmentRow], length: Int) -> [Bool]? {
+        guard !rows.isEmpty, length > 0 else { return nil }
+
+        let sequences = rows.map { $0.sequence as NSString }
+        var keepColumns = Array(repeating: true, count: length)
+        var removedCount = 0
+
+        for column in 0..<length {
+            let isAllGap = sequences.allSatisfy { sequence in
+                guard column < sequence.length else { return true }
+                return isGap(sequence.character(at: column))
+            }
+            if isAllGap {
+                keepColumns[column] = false
+                removedCount += 1
+            }
+        }
+
+        guard removedCount > 0, removedCount < length else { return nil }
+        return keepColumns
+    }
+
+    nonisolated private static func sequence(_ sequence: String, keepingColumns keepColumns: [Bool], keptColumnCount: Int) -> String {
+        let source = sequence as NSString
+        var result = ""
+        result.reserveCapacity(keptColumnCount)
+        for (column, shouldKeep) in keepColumns.enumerated() where shouldKeep {
+            guard column < source.length else { continue }
+            result += source.substring(with: NSRange(location: column, length: 1))
+        }
+        return result
+    }
+
+    nonisolated private static func isGap(_ residue: UInt16) -> Bool {
+        residue == 45 || residue == 46
+    }
+}

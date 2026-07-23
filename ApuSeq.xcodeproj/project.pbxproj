@@ -12,6 +12,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		2AD865A83012185700872719 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2AE5D2212F9F91EF00434619 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2AE5D2282F9F91EF00434619;
+			remoteInfo = ApuSeq;
+		};
+		2AD865B830121D1C00872719 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2AE5D2212F9F91EF00434619 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2AE5D2282F9F91EF00434619;
+			remoteInfo = ApuSeq;
+		};
 		9A00000A2F9FAAAA00434619 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2AE5D2212F9F91EF00434619 /* Project object */;
@@ -37,6 +51,9 @@
 
 /* Begin PBXFileReference section */
 		2A021266300C70700040119E /* ApuSeqIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = ApuSeqIcon.icon; sourceTree = "<group>"; };
+		2AD865A43012185700872719 /* ApuSeqTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ApuSeqTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2AD865AD301218B600872719 /* ApuSeq.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = ApuSeq.xctestplan; sourceTree = "<group>"; };
+		2AD865B230121D1C00872719 /* ApuSeqUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ApuSeqUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AE5D2292F9F91EF00434619 /* ApuSeq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ApuSeq.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ApuSeqQuickLookExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -66,6 +83,16 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		2AD865A53012185700872719 /* ApuSeqTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ApuSeqTests;
+			sourceTree = "<group>";
+		};
+		2AD865B330121D1C00872719 /* ApuSeqUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ApuSeqUITests;
+			sourceTree = "<group>";
+		};
 		2AE5D22B2F9F91EF00434619 /* ApuSeq */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -86,6 +113,20 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2AD865A13012185700872719 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AD865AF30121D1C00872719 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2AE5D2262F9F91EF00434619 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -106,8 +147,11 @@
 		2AE5D2202F9F91EF00434619 = {
 			isa = PBXGroup;
 			children = (
+				2AD865AD301218B600872719 /* ApuSeq.xctestplan */,
 				2AE5D22B2F9F91EF00434619 /* ApuSeq */,
 				9A0000042F9FAAAA00434619 /* ApuSeqQuickLookExtension */,
+				2AD865A53012185700872719 /* ApuSeqTests */,
+				2AD865B330121D1C00872719 /* ApuSeqUITests */,
 				2AE5D22A2F9F91EF00434619 /* Products */,
 				2A021266300C70700040119E /* ApuSeqIcon.icon */,
 			);
@@ -118,6 +162,8 @@
 			children = (
 				2AE5D2292F9F91EF00434619 /* ApuSeq.app */,
 				9A0000022F9FAAAA00434619 /* ApuSeqQuickLookExtension.appex */,
+				2AD865A43012185700872719 /* ApuSeqTests.xctest */,
+				2AD865B230121D1C00872719 /* ApuSeqUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -125,6 +171,52 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2AD865A33012185700872719 /* ApuSeqTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AD865AA3012185700872719 /* Build configuration list for PBXNativeTarget "ApuSeqTests" */;
+			buildPhases = (
+				2AD865A03012185700872719 /* Sources */,
+				2AD865A13012185700872719 /* Frameworks */,
+				2AD865A23012185700872719 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2AD865A93012185700872719 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2AD865A53012185700872719 /* ApuSeqTests */,
+			);
+			name = ApuSeqTests;
+			packageProductDependencies = (
+			);
+			productName = ApuSeqTests;
+			productReference = 2AD865A43012185700872719 /* ApuSeqTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		2AD865B130121D1C00872719 /* ApuSeqUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AD865BA30121D1C00872719 /* Build configuration list for PBXNativeTarget "ApuSeqUITests" */;
+			buildPhases = (
+				2AD865AE30121D1C00872719 /* Sources */,
+				2AD865AF30121D1C00872719 /* Frameworks */,
+				2AD865B030121D1C00872719 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2AD865B930121D1C00872719 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2AD865B330121D1C00872719 /* ApuSeqUITests */,
+			);
+			name = ApuSeqUITests;
+			packageProductDependencies = (
+			);
+			productName = ApuSeqUITests;
+			productReference = 2AD865B230121D1C00872719 /* ApuSeqUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		2AE5D2282F9F91EF00434619 /* ApuSeq */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2AE5D2362F9F91F000434619 /* Build configuration list for PBXNativeTarget "ApuSeq" */;
@@ -179,9 +271,17 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					2AD865A33012185700872719 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 2AE5D2282F9F91EF00434619;
+					};
+					2AD865B130121D1C00872719 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 2AE5D2282F9F91EF00434619;
+					};
 					2AE5D2282F9F91EF00434619 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
@@ -206,11 +306,27 @@
 			targets = (
 				2AE5D2282F9F91EF00434619 /* ApuSeq */,
 				9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */,
+				2AD865A33012185700872719 /* ApuSeqTests */,
+				2AD865B130121D1C00872719 /* ApuSeqUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		2AD865A23012185700872719 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AD865B030121D1C00872719 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2AE5D2272F9F91EF00434619 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -253,6 +369,20 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2AD865A03012185700872719 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AD865AE30121D1C00872719 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2AE5D2252F9F91EF00434619 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -270,6 +400,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2AD865A93012185700872719 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2AE5D2282F9F91EF00434619 /* ApuSeq */;
+			targetProxy = 2AD865A83012185700872719 /* PBXContainerItemProxy */;
+		};
+		2AD865B930121D1C00872719 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2AE5D2282F9F91EF00434619 /* ApuSeq */;
+			targetProxy = 2AD865B830121D1C00872719 /* PBXContainerItemProxy */;
+		};
 		9A00000B2F9FAAAA00434619 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 9A0000092F9FAAAA00434619 /* ApuSeqQuickLookExtension */;
@@ -278,6 +418,88 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		2AD865AB3012185700872719 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeqTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ApuSeq.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ApuSeq";
+			};
+			name = Debug;
+		};
+		2AD865AC3012185700872719 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeqTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ApuSeq.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ApuSeq";
+			};
+			name = Release;
+		};
+		2AD865BB30121D1C00872719 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeqUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ApuSeq;
+			};
+			name = Debug;
+		};
+		2AD865BC30121D1C00872719 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BWQNJKHB97;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ryo-d9.ApuSeqUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ApuSeq;
+			};
+			name = Release;
+		};
 		2AE5D2372F9F91F000434619 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -534,6 +756,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2AD865AA3012185700872719 /* Build configuration list for PBXNativeTarget "ApuSeqTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AD865AB3012185700872719 /* Debug */,
+				2AD865AC3012185700872719 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2AD865BA30121D1C00872719 /* Build configuration list for PBXNativeTarget "ApuSeqUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AD865BB30121D1C00872719 /* Debug */,
+				2AD865BC30121D1C00872719 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		2AE5D2242F9F91EF00434619 /* Build configuration list for PBXProject "ApuSeq" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -1,0 +1,262 @@
+import Foundation
+import Testing
+import UniformTypeIdentifiers
+@testable import ApuSeq
+
+struct ApuSeqTests {
+    @Test func parsesFASTANormalizesRowsAndInfersNucleotideKind() throws {
+        let text = """
+        >Beta
+        ACGT
+        >Alpha
+        AC
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.format == .fasta)
+        #expect(alignment.length == 4)
+        #expect(alignment.sequenceKind == .nucleotide)
+        #expect(alignment.rows.map(\.name) == ["Beta", "Alpha"])
+        #expect(alignment.rows.map(\.sequence) == ["ACGT", "AC--"])
+    }
+
+    @Test func parsesCLUSTALBlocksInOriginalSequenceOrder() throws {
+        let text = """
+        CLUSTAL W
+
+        Seq1    ACGT
+        Seq2    AC-T
+
+        Seq1    TGCA
+        Seq2    TG-A
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.format == .clustal)
+        #expect(alignment.rows.map(\.name) == ["Seq1", "Seq2"])
+        #expect(alignment.rows.map(\.sequence) == ["ACGTTGCA", "AC-TTG-A"])
+    }
+
+    @Test func serializesRowsAsFASTAAndCLUSTAL() {
+        let rows = [
+            AlignmentRow(name: "Seq 1", sequence: "ACGT"),
+            AlignmentRow(name: "Seq2", sequence: "A-GT")
+        ]
+
+        let fasta = AlignmentSerializer.serialize(rows: rows, preferredFormat: .fasta)
+        let clustal = AlignmentSerializer.serialize(rows: rows, preferredFormat: .clustal)
+
+        #expect(fasta == ">Seq 1\nACGT\n>Seq2\nA-GT\n")
+        #expect(clustal.hasPrefix("CLUSTAL\n\n"))
+        #expect(clustal.contains("Seq_1"))
+        #expect(clustal.contains("A-GT"))
+    }
+
+    @Test func reverseComplementPreservesNamesAndHandlesAmbiguousBases() throws {
+        let text = """
+        >Mixed
+        ACGTURYKMBVDH-.acgt
+        """
+
+        let output = try AlignmentReverseComplementer.reverseComplementFASTA(rawText: text)
+
+        #expect(output == ">Mixed\nacgt.-DHBVKMRYAACGT")
+    }
+
+    @Test func reverseComplementRejectsAminoAcidAlignments() throws {
+        let text = """
+        >Protein
+        MPEPTIDE
+        """
+
+        #expect(throws: AlignmentReverseComplementError.unsupportedSequenceKind) {
+            try AlignmentReverseComplementer.reverseComplementFASTA(rawText: text)
+        }
+    }
+
+    @Test func translatesNucleotideFASTAWithFramesAndCodonTables() throws {
+        let text = """
+        >Coding
+        ATGAAATGATAA
+        """
+
+        let standard = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .standard
+        )
+        let mitochondrial = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .vertebrateMitochondrial
+        )
+        let shifted = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 1,
+            codonTable: .standard
+        )
+
+        #expect(standard == ">Coding\nMK**")
+        #expect(mitochondrial == ">Coding\nMKW*")
+        #expect(shifted == ">Coding\n*ND")
+    }
+
+    @Test func textDecodingReadsUTF8UTF16AndShiftJIS() throws {
+        let utf8Data = Data("ACGT".utf8)
+        let utf16Data = try #require("ACGT".data(using: .utf16LittleEndian))
+        let shiftJISData = try #require("配列".data(using: .shiftJIS))
+
+        #expect(TextDecoding.decode(utf8Data) == "ACGT")
+        #expect(TextDecoding.decode(utf16Data) == "ACGT")
+        #expect(TextDecoding.decode(shiftJISData) == "配列")
+    }
+
+    @Test func consensusIgnoresGapsAndFallsBackToGapForEmptyColumns() {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "A-C"),
+            AlignmentRow(name: "B", sequence: "AT-"),
+            AlignmentRow(name: "C", sequence: "A--")
+        ]
+
+        let consensus = AlignmentStatistics.consensusSequence(rows: rows, length: 3)
+
+        #expect(consensus == "ATC")
+    }
+
+    @Test func rendererComputesIdentityAndMajorityResiduesWhenRequested() throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "ACG"),
+            AlignmentRow(name: "B", sequence: "ATG"),
+            AlignmentRow(name: "C", sequence: "A-G")
+        ]
+        let alignment = AlignmentData(format: .fasta, rows: rows, length: 3, sequenceKind: .nucleotide)
+
+        let rendered = AlignmentRenderer.render(
+            alignment,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: true,
+            fontSize: 12
+        )
+
+        #expect(rendered.identityByColumn.count == 3)
+        #expect(abs(rendered.identityByColumn[0] - 1.0) < 0.001)
+        #expect(abs(rendered.identityByColumn[1] - (1.0 / 3.0)) < 0.001)
+        #expect(abs(rendered.identityByColumn[2] - 1.0) < 0.001)
+        #expect(rendered.majorityResidueByColumn.compactMap(UnicodeScalar.init).map(String.init) == ["A", "C", "G"])
+    }
+
+    @Test func rendererSkipsColumnStatisticsWhenBackgroundDoesNotNeedThem() {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "ACG"),
+            AlignmentRow(name: "B", sequence: "ATG")
+        ]
+        let alignment = AlignmentData(format: .fasta, rows: rows, length: 3, sequenceKind: .nucleotide)
+
+        let rendered = AlignmentRenderer.render(
+            alignment,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            fontSize: 12
+        )
+
+        #expect(rendered.identityByColumn.isEmpty)
+        #expect(rendered.majorityResidueByColumn.isEmpty)
+    }
+
+    @Test func upgmaOrderingGroupsMostSimilarRows() throws {
+        let rows = [
+            AlignmentRow(name: "Distant", sequence: "TTTT"),
+            AlignmentRow(name: "Reference", sequence: "AAAA"),
+            AlignmentRow(name: "Similar", sequence: "AAAT")
+        ]
+
+        let orderedNames = AlignmentClusterer.upgmaOrderedRows(rows).map(\.name)
+
+        let referenceIndex = try #require(orderedNames.firstIndex(of: "Reference"))
+        let similarIndex = try #require(orderedNames.firstIndex(of: "Similar"))
+        #expect(abs(referenceIndex - similarIndex) == 1)
+    }
+
+    @Test func allGapColumnRemovalRemovesOnlySharedGapColumns() throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "A-.C"),
+            AlignmentRow(name: "B", sequence: "T--G"),
+            AlignmentRow(name: "C", sequence: "C-.T")
+        ]
+
+        let editedRows = try #require(AlignmentColumnEditor.removingAllGapColumns(from: rows, length: 4))
+
+        #expect(editedRows.map(\.name) == ["A", "B", "C"])
+        #expect(editedRows.map(\.sequence) == ["AC", "TG", "CT"])
+    }
+
+    @Test func allGapColumnRemovalLeavesNoOpAndAllGapAlignmentsUnchanged() {
+        let noGapRows = [
+            AlignmentRow(name: "A", sequence: "AC"),
+            AlignmentRow(name: "B", sequence: "TG")
+        ]
+        let allGapRows = [
+            AlignmentRow(name: "A", sequence: "-."),
+            AlignmentRow(name: "B", sequence: "--")
+        ]
+
+        #expect(AlignmentColumnEditor.removingAllGapColumns(from: noGapRows, length: 2) == nil)
+        #expect(AlignmentColumnEditor.removingAllGapColumns(from: allGapRows, length: 2) == nil)
+    }
+
+    @Test @MainActor func viewModelRendersNameOrderWithoutChangingOriginalAlignment() async throws {
+        let viewModel = AlignmentViewModel()
+        viewModel.alignment = AlignmentData(
+            format: .fasta,
+            rows: [
+                AlignmentRow(name: "sample 10", sequence: "AAAA"),
+                AlignmentRow(name: "sample 2", sequence: "CCCC"),
+                AlignmentRow(name: "sample 1", sequence: "GGGG")
+            ],
+            length: 4,
+            sequenceKind: .nucleotide
+        )
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .name,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.contentVersion > 0 }
+
+        #expect(viewModel.displayedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
+        #expect(viewModel.alignment.rows.map(\.name) == ["sample 10", "sample 2", "sample 1"])
+        #expect(viewModel.renderedDisplayOrderMode == .name)
+    }
+
+    @Test func documentSnapshotReturnsCurrentRawText() throws {
+        let rawText = ">Seq1\nACGT\n"
+        let document = ApuSeqDocument(rawText: rawText)
+
+        let snapshot = try document.snapshot(contentType: .plainText)
+
+        #expect(snapshot == rawText)
+
+        document.rawText = ">Seq2\nTGCA\n"
+        #expect(try document.snapshot(contentType: .plainText) == ">Seq2\nTGCA\n")
+    }
+
+    @MainActor
+    private func waitUntil(
+        timeout: Duration = .seconds(2),
+        condition: @MainActor @escaping () -> Bool
+    ) async throws {
+        let start = ContinuousClock.now
+        while !condition() {
+            if ContinuousClock.now - start > timeout {
+                Issue.record("Timed out waiting for asynchronous rendering")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}

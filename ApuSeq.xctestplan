@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "7EFBD8FD-3499-43B4-9639-36503D431171",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:ApuSeq.xcodeproj",
+      "identifier" : "2AE5D2282F9F91EF00434619",
+      "name" : "ApuSeq"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:ApuSeq.xcodeproj",
+        "identifier" : "2AD865A33012185700872719",
+        "name" : "ApuSeqTests"
+      }
+    }
+  ],
+  "version" : 1
+}
