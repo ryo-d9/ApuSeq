@@ -5,6 +5,7 @@ struct OpenSourceLicensesView: View {
 
     private let mafftLicense = ThirdPartyLicense(
         name: "MAFFT",
+        version: "7.526 (2024/Apr/26)",
         description: String(localized: "Multiple sequence alignment program"),
         copyright: "Copyright (c) 2006 Kazutaka Katoh",
         licenseName: "BSD License",
@@ -29,6 +30,7 @@ private struct ThirdPartyLicense: Identifiable {
     var id: String { name }
 
     let name: String
+    let version: String?
     let description: String
     let copyright: String
     let licenseName: String
@@ -53,6 +55,12 @@ private struct ThirdPartyLicenseView: View {
 
             Text(item.description)
                 .foregroundStyle(.secondary)
+
+            if let version = item.version {
+                Text("Version \(version)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Text(item.copyright)
                 .font(.caption)

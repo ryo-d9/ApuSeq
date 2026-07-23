@@ -15,3 +15,18 @@ xcuserdata/
 
 *.swp
 
+# Distribution artifacts
+*.xcarchive
+*.dSYM
+*.ipa
+*.pkg
+
+# Signing material
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.crt
+*.key
+*.pem

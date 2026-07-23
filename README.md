@@ -18,7 +18,7 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Remove All-Gap Columns command, treating `-` and `.` as gaps
 - Nucleotide translation with selectable codon tables
 - Reverse complement generation for nucleotide alignments
-- Bundled MAFFT `--auto` alignment that creates a new FASTA document
+- Bundled MAFFT 7.526 `--auto` alignment that creates a new FASTA document
 - Quick Look preview extension with lightweight residue coloring
 - Apple Help Book
 - Open source license viewer for bundled third-party components
@@ -85,4 +85,4 @@ For Quick Look development, use the `ApuSeqQuickLookExtension` target and instal
 
 ApuSeq is released under the MIT License. See `LICENSE` for details.
 
-MAFFT is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or Help > Open Source Licenses in the app.
+MAFFT 7.526 (2024/Apr/26) is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or Help > Open Source Licenses in the app.
