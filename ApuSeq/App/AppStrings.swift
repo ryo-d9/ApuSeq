@@ -42,6 +42,8 @@ enum AppStrings {
 
     static func backgroundName(_ mode: AlignmentBackgroundMode) -> String {
         switch mode {
+        case .none:
+            return String(localized: "None")
         case .residue:
             return String(localized: "Residue")
         case .different:
@@ -55,6 +57,8 @@ enum AppStrings {
         switch mode {
         case .original:
             return String(localized: "Original")
+        case .name:
+            return String(localized: "Name")
         case .upgma:
             return String(localized: "UPGMA")
         }

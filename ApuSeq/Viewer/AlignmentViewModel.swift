@@ -122,9 +122,17 @@ final class AlignmentViewModel {
 
         renderTask = Task(priority: .userInitiated) {
             let renderResult: (RenderedAlignment, [AlignmentRow]) = await runOnBackground {
-                let orderedRows = displayOrderMode == .upgma
-                    ? AlignmentClusterer.upgmaOrderedRows(baseRows)
-                    : baseRows
+                let orderedRows: [AlignmentRow]
+                switch displayOrderMode {
+                case .original:
+                    orderedRows = baseRows
+                case .name:
+                    orderedRows = baseRows.sorted {
+                        $0.name.localizedStandardCompare($1.name) == .orderedAscending
+                    }
+                case .upgma:
+                    orderedRows = AlignmentClusterer.upgmaOrderedRows(baseRows)
+                }
                 let displayAlignment = AlignmentData(
                     format: format,
                     rows: orderedRows,
@@ -263,6 +271,7 @@ final class AlignmentViewModel {
 }
 
 enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
+    case none = "None"
     case residue = "Residue"
     case different = "Different"
     case identity = "Identity"
@@ -276,6 +285,7 @@ enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
 
 enum AlignmentDisplayOrderMode: String, CaseIterable, Identifiable {
     case original = "Original"
+    case name = "Name"
     case upgma = "UPGMA"
 
     var id: String { rawValue }

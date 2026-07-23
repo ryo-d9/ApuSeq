@@ -11,8 +11,8 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - TextKit 2 based alignment viewport
 - View and Edit modes
 - Reference, Consensus, and Identity panels
-- Residue, majority-difference, and identity coloring modes
-- View-only sequence ordering with Original and UPGMA modes
+- None, Residue, Different, and Identity background coloring modes
+- View-only sequence ordering with Original, Name, and UPGMA modes
 - Column selection and multi-range editing
 - Sequence add, rename, and deletion from Edit mode
 - Remove All-Gap Columns command, treating `-` and `.` as gaps
@@ -38,9 +38,11 @@ Edit mode follows the macOS document model. Changes can be autosaved and are man
 
 When inserting or deleting residues, ApuSeq preserves alignment shape by adding gap characters to other sequences as needed. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
 
-Use Edit > Reverse Complement to create a new unsaved FASTA document containing reverse-complemented nucleotide sequences. The source document is not modified.
+Use Alignment > Reverse Complement to create a new unsaved FASTA document containing reverse-complemented nucleotide sequences. The source document is not modified.
 
-Use Edit > Align with MAFFT Auto to create a new unsaved FASTA document aligned by the bundled MAFFT executable using `--auto`. ApuSeq shows an indeterminate progress sheet while MAFFT is running and provides a Cancel button for long-running alignments. The source document is not modified.
+Use Alignment > Translation to create a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2. The source document is not modified.
+
+Use Alignment > Align with MAFFT Auto to create a new unsaved FASTA document aligned by the bundled MAFFT executable using `--auto`. ApuSeq shows an indeterminate progress sheet while MAFFT is running and provides a Cancel button for long-running alignments. The source document is not modified.
 
 ## Quick Look
 

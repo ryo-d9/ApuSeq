@@ -23,6 +23,14 @@ struct ViewerModeActions {
     let toggle: () -> Void
 }
 
+struct AlignmentDisplayActions {
+    let backgroundMode: AlignmentBackgroundMode
+    let setBackgroundMode: (AlignmentBackgroundMode) -> Void
+    let displayOrderMode: AlignmentDisplayOrderMode
+    let canChangeDisplayOrder: Bool
+    let setDisplayOrderMode: (AlignmentDisplayOrderMode) -> Void
+}
+
 struct MAFFTAlignmentActions {
     let canAlign: Bool
     let align: () -> Void
@@ -44,6 +52,10 @@ private struct AlignmentCopyActionsKey: FocusedValueKey {
 
 private struct ViewerModeActionsKey: FocusedValueKey {
     typealias Value = ViewerModeActions
+}
+
+private struct AlignmentDisplayActionsKey: FocusedValueKey {
+    typealias Value = AlignmentDisplayActions
 }
 
 private struct MAFFTAlignmentActionsKey: FocusedValueKey {
@@ -69,6 +81,11 @@ extension FocusedValues {
     var viewerModeActions: ViewerModeActions? {
         get { self[ViewerModeActionsKey.self] }
         set { self[ViewerModeActionsKey.self] = newValue }
+    }
+
+    var alignmentDisplayActions: AlignmentDisplayActions? {
+        get { self[AlignmentDisplayActionsKey.self] }
+        set { self[AlignmentDisplayActionsKey.self] = newValue }
     }
 
     var mafftAlignmentActions: MAFFTAlignmentActions? {
@@ -168,6 +185,7 @@ struct ViewPanelCommands: Commands {
     @AppStorage("showReferencePanel") private var showReferencePanel = false
     @AppStorage("showConsensusPanel") private var showConsensusPanel = false
     @AppStorage("showConservationPanel") private var showConservationPanel = false
+    @FocusedValue(\.alignmentDisplayActions) private var displayActions
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
@@ -181,7 +199,36 @@ struct ViewPanelCommands: Commands {
             Button(showConservationPanel ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel")) {
                 showConservationPanel.toggle()
             }
+
+            Divider()
+            Picker(String(localized: "Background Color"), selection: backgroundModeBinding) {
+                ForEach(AlignmentBackgroundMode.allCases) { mode in
+                    Text(mode.localizedName).tag(mode)
+                }
+            }
+            .disabled(displayActions == nil)
+
+            Picker(String(localized: "Sequence Order"), selection: displayOrderModeBinding) {
+                ForEach(AlignmentDisplayOrderMode.allCases) { mode in
+                    Text(mode.localizedName).tag(mode)
+                }
+            }
+            .disabled(displayActions?.canChangeDisplayOrder != true)
         }
+    }
+
+    private var backgroundModeBinding: Binding<AlignmentBackgroundMode> {
+        Binding(
+            get: { displayActions?.backgroundMode ?? .residue },
+            set: { displayActions?.setBackgroundMode($0) }
+        )
+    }
+
+    private var displayOrderModeBinding: Binding<AlignmentDisplayOrderMode> {
+        Binding(
+            get: { displayActions?.displayOrderMode ?? .original },
+            set: { displayActions?.setDisplayOrderMode($0) }
+        )
     }
 }
 

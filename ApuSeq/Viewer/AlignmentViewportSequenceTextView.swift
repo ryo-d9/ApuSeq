@@ -254,6 +254,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
+        guard backgroundMode != .none else { return }
         guard alignmentLength > 0 else { return }
         guard let font else { return }
 
@@ -314,6 +315,8 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     private func backgroundColor(in text: NSString, at textIndex: Int, column: Int) -> NSColor? {
         switch backgroundMode {
+        case .none:
+            return nil
         case .residue:
             return ResiduePalette.backgroundColor(for: text.character(at: textIndex))
         case .different:

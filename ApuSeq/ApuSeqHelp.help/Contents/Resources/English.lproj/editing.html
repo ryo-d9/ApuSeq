@@ -34,18 +34,24 @@
 
     <section>
       <h2>Remove all-gap columns</h2>
-      <p>Edit &gt; Remove All-Gap Columns removes columns where every sequence contains a gap. Both <code>-</code> and <code>.</code> are treated as gaps. The command is undoable and is disabled when it would leave the alignment empty.</p>
+      <p>Alignment &gt; Remove All-Gap Columns removes columns where every sequence contains a gap. Both <code>-</code> and <code>.</code> are treated as gaps. The command is undoable and is disabled when it would leave the alignment empty.</p>
     </section>
 
     <section>
       <h2>Reverse complement</h2>
-      <p>Edit &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence. The original document is not changed.</p>
+      <p>Alignment &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence. The original document is not changed.</p>
       <p>ApuSeq preserves lowercase residues as lowercase. Ambiguous nucleotide codes are complemented when possible, and gap characters remain in place after the sequence order is reversed.</p>
     </section>
 
     <section>
+      <h2>Translation</h2>
+      <p>Alignment &gt; Translation creates a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2. The original document is not changed.</p>
+      <p>The codon table is selected in Settings &gt; General &gt; Translation.</p>
+    </section>
+
+    <section>
       <h2>MAFFT alignment</h2>
-      <p>Edit &gt; Align with MAFFT Auto creates a new unsaved FASTA document aligned by the bundled MAFFT executable using its automatic strategy selection.</p>
+      <p>Alignment &gt; Align with MAFFT Auto creates a new unsaved FASTA document aligned by the bundled MAFFT executable using its automatic strategy selection.</p>
       <p>The original document is not changed. While MAFFT is running, ApuSeq shows a progress sheet with a Cancel button.</p>
     </section>
   </main>

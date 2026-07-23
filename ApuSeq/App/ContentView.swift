@@ -80,6 +80,17 @@ private struct RootView: View {
         viewerMode == .view ? displayOrderMode : .original
     }
 
+    private var footerDisplayOrderMode: Binding<AlignmentDisplayOrderMode> {
+        Binding(
+            get: {
+                viewerMode == .view ? displayOrderMode : .original
+            },
+            set: { newValue in
+                displayOrderMode = newValue
+            }
+        )
+    }
+
     private var canEditRenderedRows: Bool {
         viewerMode == .edit && model.renderedDisplayOrderMode == .original
     }
@@ -140,6 +151,16 @@ private struct RootView: View {
         ViewerModeActions(
             toggleTitle: viewerMode == .edit ? AppStrings.exitEditMode : AppStrings.enterEditMode,
             toggle: toggleViewerMode
+        )
+    }
+
+    private var alignmentDisplayActions: AlignmentDisplayActions {
+        AlignmentDisplayActions(
+            backgroundMode: backgroundMode,
+            setBackgroundMode: { backgroundMode = $0 },
+            displayOrderMode: effectiveDisplayOrderMode,
+            canChangeDisplayOrder: viewerMode == .view,
+            setDisplayOrderMode: { displayOrderMode = $0 }
         )
     }
 
@@ -225,6 +246,8 @@ private struct RootView: View {
 
     private func auxiliaryBackgroundColor(for residue: UInt16, column: Int) -> NSColor? {
         switch backgroundMode {
+        case .none:
+            return nil
         case .residue:
             return ResiduePalette.backgroundColor(for: residue)
         case .different:
@@ -291,7 +314,7 @@ private struct RootView: View {
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
                         backgroundMode: $backgroundMode,
-                        displayOrderMode: $displayOrderMode,
+                        displayOrderMode: footerDisplayOrderMode,
                         canChangeDisplayOrder: viewerMode == .view
                     )
                 }
@@ -362,6 +385,7 @@ private struct RootView: View {
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
         .focusedSceneValue(\.alignmentCopyActions, alignmentCopyActions)
         .focusedSceneValue(\.viewerModeActions, viewerModeActions)
+        .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
         .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
     }
 
