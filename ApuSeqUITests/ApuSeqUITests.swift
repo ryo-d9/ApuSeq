@@ -25,7 +25,7 @@ final class ApuSeqUITests: XCTestCase {
         viewMenu.click()
 
         XCTAssertTrue(app.menuItems["Background Color"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.menuItems["Sequence Order"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Display Order"].waitForExistence(timeout: 2))
 
         app.typeKey(.escape, modifierFlags: [])
     }

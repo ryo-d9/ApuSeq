@@ -179,6 +179,29 @@ struct ApuSeqTests {
         #expect(abs(referenceIndex - similarIndex) == 1)
     }
 
+    @Test func rowOrderingSortsNamesUsingLocalizedStandardCompare() {
+        let rows = [
+            AlignmentRow(name: "sample 10", sequence: "AAAA"),
+            AlignmentRow(name: "sample 2", sequence: "CCCC"),
+            AlignmentRow(name: "sample 1", sequence: "GGGG")
+        ]
+
+        let orderedRows = AlignmentRowOrdering.nameOrderedRows(rows)
+
+        #expect(orderedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
+    }
+
+    @Test func upgmaOrderingIsLimitedToThreeThroughThreeHundredRows() {
+        let twoRows = (0..<2).map { AlignmentRow(name: "Row \($0)", sequence: "AC") }
+        let threeHundredRows = (0..<300).map { AlignmentRow(name: "Row \($0)", sequence: "AC") }
+        let threeHundredOneRows = (0..<301).map { AlignmentRow(name: "Row \($0)", sequence: "AC") }
+
+        #expect(!AlignmentRowOrdering.canOrderWithUPGMA(rowCount: twoRows.count))
+        #expect(AlignmentRowOrdering.canOrderWithUPGMA(rowCount: threeHundredRows.count))
+        #expect(!AlignmentRowOrdering.canOrderWithUPGMA(rowCount: threeHundredOneRows.count))
+        #expect(AlignmentRowOrdering.upgmaOrderedRows(threeHundredOneRows).map(\.name) == threeHundredOneRows.map(\.name))
+    }
+
     @Test func allGapColumnRemovalRemovesOnlySharedGapColumns() throws {
         let rows = [
             AlignmentRow(name: "A", sequence: "A-.C"),
@@ -204,6 +227,30 @@ struct ApuSeqTests {
 
         #expect(AlignmentColumnEditor.removingAllGapColumns(from: noGapRows, length: 2) == nil)
         #expect(AlignmentColumnEditor.removingAllGapColumns(from: allGapRows, length: 2) == nil)
+    }
+
+    @Test func trailingGapTrimRemovesOnlyTerminalGapCharacters() throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "AC--"),
+            AlignmentRow(name: "B", sequence: "A-C."),
+            AlignmentRow(name: "C", sequence: "--AC")
+        ]
+
+        #expect(AlignmentColumnEditor.hasTrailingGaps(in: rows))
+        let trimmedRows = try #require(AlignmentColumnEditor.trimmingTrailingGaps(from: rows))
+
+        #expect(trimmedRows.map(\.name) == ["A", "B", "C"])
+        #expect(trimmedRows.map(\.sequence) == ["AC", "A-C", "--AC"])
+    }
+
+    @Test func trailingGapTrimReturnsNilWhenNoRowsChange() {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "AC"),
+            AlignmentRow(name: "B", sequence: "-C")
+        ]
+
+        #expect(!AlignmentColumnEditor.hasTrailingGaps(in: rows))
+        #expect(AlignmentColumnEditor.trimmingTrailingGaps(from: rows) == nil)
     }
 
     @Test @MainActor func viewModelRendersNameOrderWithoutChangingOriginalAlignment() async throws {

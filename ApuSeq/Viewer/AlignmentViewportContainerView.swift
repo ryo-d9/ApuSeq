@@ -23,7 +23,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private var leftAuxHeightConstraint: NSLayoutConstraint?
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = 180
-    private var hasInitializedNameWidth = false
+    private var hasAppliedInitialNameWidth = false
+    private var pendingInitialNameWidth: CGFloat?
     private var lastSequenceHorizontalOffset = CGFloat.greatestFiniteMagnitude
 
     init(
@@ -124,16 +125,14 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 
     func updateNameColumnWidth(_ width: CGFloat) {
-        if !hasInitializedNameWidth {
-            hasInitializedNameWidth = true
-            desiredNameWidth = max(width, Self.minimumNameWidth)
-            applySplitPosition()
-        }
+        guard !hasAppliedInitialNameWidth else { return }
+        pendingInitialNameWidth = max(width, Self.minimumNameWidth)
+        applyInitialSplitPositionIfNeeded()
     }
 
     override func layout() {
         super.layout()
-        applySplitPosition()
+        applyInitialSplitPositionIfNeeded()
         updateNameColumnVerticalOffset()
         syncAuxiliaryHorizontalOffset()
     }
@@ -223,13 +222,39 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         ])
     }
 
-    private func applySplitPosition() {
+    private func applyInitialSplitPositionIfNeeded() {
+        guard !hasAppliedInitialNameWidth else { return }
+        guard let pendingInitialNameWidth else { return }
         guard splitView.subviews.count >= 2 else { return }
+        guard bounds.width >= Self.minimumNameWidth + splitView.dividerThickness + Self.minimumSequenceWidth else { return }
+
+        if let autosavedNameWidth, autosavedNameWidth > Self.minimumNameWidth + 0.5 {
+            desiredNameWidth = autosavedNameWidth
+            hasAppliedInitialNameWidth = true
+            return
+        }
+
         let maxAllowed = max(Self.minimumNameWidth, bounds.width - splitView.dividerThickness - Self.minimumSequenceWidth)
-        let clamped = min(max(desiredNameWidth, Self.minimumNameWidth), maxAllowed)
+        let clamped = min(max(pendingInitialNameWidth, Self.minimumNameWidth), maxAllowed)
         if abs(splitView.subviews[0].frame.width - clamped) > 0.5 {
             splitView.setPosition(clamped, ofDividerAt: 0)
         }
+        desiredNameWidth = clamped
+        hasAppliedInitialNameWidth = true
+    }
+
+    private var autosavedNameWidth: CGFloat? {
+        let key = "NSSplitView Subview Frames \(Self.splitViewAutosaveName)"
+        guard let frames = UserDefaults.standard.array(forKey: key) as? [String],
+              let firstFrame = frames.first else {
+            return nil
+        }
+        let values = firstFrame
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) }
+        guard values.count >= 3 else { return nil }
+        guard let width = Double(values[2]) else { return nil }
+        return CGFloat(width)
     }
 
     func splitView(_ splitView: NSSplitView, constrainSplitPosition proposedPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
@@ -239,6 +264,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func splitViewDidResizeSubviews(_ notification: Notification) {
         guard splitView.subviews.count >= 2 else { return }
+        guard bounds.width >= Self.minimumNameWidth + splitView.dividerThickness + Self.minimumSequenceWidth else { return }
+        guard hasAppliedInitialNameWidth else { return }
         desiredNameWidth = splitView.subviews[0].frame.width
         rulerView.needsDisplay = true
     }

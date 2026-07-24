@@ -11,6 +11,11 @@ struct AlignmentEditActions {
     let addSequence: () -> Void
     let canRemoveAllGapColumns: Bool
     let removeAllGapColumns: () -> Void
+    let canTrimTrailingGaps: Bool
+    let trimTrailingGaps: () -> Void
+    let canSortSequencesByName: Bool
+    let canSortSequencesByUPGMA: Bool
+    let sortSequences: (AlignmentDisplayOrderMode) -> Void
 }
 
 struct AlignmentCopyActions {
@@ -28,6 +33,7 @@ struct AlignmentDisplayActions {
     let setBackgroundMode: (AlignmentBackgroundMode) -> Void
     let displayOrderMode: AlignmentDisplayOrderMode
     let canChangeDisplayOrder: Bool
+    let canDisplayUPGMAOrder: Bool
     let setDisplayOrderMode: (AlignmentDisplayOrderMode) -> Void
 }
 
@@ -208,9 +214,10 @@ struct ViewPanelCommands: Commands {
             }
             .disabled(displayActions == nil)
 
-            Picker(String(localized: "Sequence Order"), selection: displayOrderModeBinding) {
+            Picker(String(localized: "Display Order"), selection: displayOrderModeBinding) {
                 ForEach(AlignmentDisplayOrderMode.allCases) { mode in
                     Text(mode.localizedName).tag(mode)
+                        .disabled(mode == .upgma && displayActions?.canDisplayUPGMAOrder != true)
                 }
             }
             .disabled(displayActions?.canChangeDisplayOrder != true)
@@ -271,6 +278,24 @@ struct AlignmentCommands: Commands {
             }
             .keyboardShortcut(.delete, modifiers: [.command, .shift])
             .disabled(editActions?.canRemoveAllGapColumns != true)
+
+            Button(AppStrings.trimTrailingGaps) {
+                editActions?.trimTrailingGaps()
+            }
+            .disabled(editActions?.canTrimTrailingGaps != true)
+
+            Menu(AppStrings.sortSequences) {
+                Button(AppStrings.sortSequencesByName) {
+                    editActions?.sortSequences(.name)
+                }
+                .disabled(editActions?.canSortSequencesByName != true)
+
+                Button(AppStrings.sortSequencesByUPGMA) {
+                    editActions?.sortSequences(.upgma)
+                }
+                .disabled(editActions?.canSortSequencesByUPGMA != true)
+            }
+            .disabled(editActions?.canSortSequencesByName != true && editActions?.canSortSequencesByUPGMA != true)
 
             Divider()
 

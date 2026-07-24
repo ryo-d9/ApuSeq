@@ -1,0 +1,7 @@
+CLUSTAL
+
+Reference_alpha    ATGCTAGCTAGCTTACGATCGA--
+sample_2           ATG-TAGCTAGCTTACGATCGATT
+sample_10          ATGCTAG-TAG-TTACGATCGAT.
+Distant_delta      TTGCTCGATCGATTACTTTCGA--
+Short_tail_gap     ATGCTAGCTAGCTTACGATC----

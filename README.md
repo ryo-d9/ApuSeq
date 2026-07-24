@@ -12,10 +12,10 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - View and Edit modes
 - Reference, Consensus, and Identity panels
 - None, Residue, Different, and Identity background coloring modes
-- View-only sequence ordering with Original, Name, and UPGMA modes
+- View-only display ordering with Original, Name, and UPGMA modes for alignments with 3 to 300 sequences
 - Column selection and multi-range editing
 - Sequence add, rename, and deletion from Edit mode
-- Remove All-Gap Columns command, treating `-` and `.` as gaps
+- Remove All-Gap Columns, Trim Trailing Gaps, and Sort Sequences commands, treating `-` and `.` as gaps where applicable
 - Nucleotide translation with selectable codon tables
 - Reverse complement generation for nucleotide alignments
 - Bundled MAFFT 7.526 `--auto` alignment that creates a new FASTA document
@@ -38,6 +38,10 @@ Edit mode follows the macOS document model. Changes can be autosaved and are man
 
 When inserting or deleting residues, ApuSeq preserves alignment shape by adding gap characters to other sequences as needed. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
 
+Use Alignment > Trim Trailing Gaps in Edit mode to remove trailing `-` and `.` characters from each sequence. ApuSeq may still display temporary padding gaps to keep alignment columns visually aligned.
+
+Use Alignment > Sort Sequences in Edit mode to reorder the document contents by sequence name or UPGMA. UPGMA ordering is available for alignments with 3 to 300 sequences. Use View > Display Order to change only the displayed order without modifying the document.
+
 Use Alignment > Reverse Complement to create a new unsaved FASTA document containing reverse-complemented nucleotide sequences. The source document is not modified.
 
 Use Alignment > Translation to create a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2. The source document is not modified.
@@ -47,6 +51,10 @@ Use Alignment > Align with MAFFT Auto to create a new unsaved FASTA document ali
 ## Quick Look
 
 The Quick Look extension provides a compact HTML preview for supported alignment files. Previews are intentionally limited in size so Finder remains responsive.
+
+## Sample Data
+
+Small synthetic alignments for trying ApuSeq and for App Store review notes are available in `SampleData/`. They are not bundled with the app.
 
 ## Help
 
@@ -61,6 +69,7 @@ Open source license notices for bundled third-party components are available fro
 - `ApuSeq/Viewer` - SwiftUI panels and the AppKit/TextKit 2 alignment viewport
 - `ApuSeq/ApuSeqHelp.help` - bundled Apple Help Book
 - `ApuSeq/ApuSeqQuickLookExtension` - Quick Look preview extension
+- `SampleData` - small synthetic alignments for review and manual testing
 - `Vendor/MAFFT` - bundled MAFFT files and MAFFT license notice
 - `Scripts` - build helper scripts and file lists for bundled tools
 - `Signing` - helper entitlements used when signing bundled command-line tools

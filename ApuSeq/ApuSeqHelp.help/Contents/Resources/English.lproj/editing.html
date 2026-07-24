@@ -38,6 +38,17 @@
     </section>
 
     <section>
+      <h2>Trim trailing gaps</h2>
+      <p>Alignment &gt; Trim Trailing Gaps removes trailing <code>-</code> and <code>.</code> characters from each sequence in Edit mode. The command is undoable. ApuSeq may still display temporary padding gaps after trimming to keep alignment columns visually aligned.</p>
+    </section>
+
+    <section>
+      <h2>Sort sequences</h2>
+      <p>Alignment &gt; Sort Sequences reorders the document contents by sequence name or UPGMA in Edit mode. UPGMA sorting is available for alignments with 3 to 300 sequences. The command is undoable.</p>
+      <p>Use View &gt; Display Order to change only the displayed order without modifying the document.</p>
+    </section>
+
+    <section>
       <h2>Reverse complement</h2>
       <p>Alignment &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence. The original document is not changed.</p>
       <p>ApuSeq preserves lowercase residues as lowercase. Ambiguous nucleotide codes are complemented when possible, and gap characters remain in place after the sequence order is reversed.</p>

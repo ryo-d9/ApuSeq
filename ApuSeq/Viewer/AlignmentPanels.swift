@@ -10,6 +10,7 @@ struct FooterBar: View {
     @Binding var backgroundMode: AlignmentBackgroundMode
     @Binding var displayOrderMode: AlignmentDisplayOrderMode
     let canChangeDisplayOrder: Bool
+    let canDisplayUPGMAOrder: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -29,9 +30,10 @@ struct FooterBar: View {
             .fixedSize()
             .help(String(localized: "Change background coloring"))
             Divider()
-            Picker(String(localized: "Order"), selection: $displayOrderMode) {
+            Picker(String(localized: "Display Order"), selection: $displayOrderMode) {
                 ForEach(AlignmentDisplayOrderMode.allCases) { mode in
                     Text(mode.localizedName).tag(mode)
+                        .disabled(mode == .upgma && !canDisplayUPGMAOrder)
                 }
             }
             .pickerStyle(.menu)

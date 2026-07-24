@@ -230,6 +230,25 @@ enum AlignmentSerializer {
 }
 
 enum AlignmentColumnEditor {
+    nonisolated static func hasTrailingGaps(in rows: [AlignmentRow]) -> Bool {
+        rows.contains { row in
+            guard let last = row.sequence.unicodeScalars.last else { return false }
+            return isGap(last)
+        }
+    }
+
+    nonisolated static func trimmingTrailingGaps(from rows: [AlignmentRow]) -> [AlignmentRow]? {
+        var didTrim = false
+        let trimmedRows = rows.map { row in
+            let trimmedSequence = trimmingTrailingGaps(in: row.sequence)
+            if trimmedSequence != row.sequence {
+                didTrim = true
+            }
+            return AlignmentRow(name: row.name, sequence: trimmedSequence)
+        }
+        return didTrim ? trimmedRows : nil
+    }
+
     nonisolated static func removingAllGapColumns(from rows: [AlignmentRow], length: Int) -> [AlignmentRow]? {
         guard let keepColumns = removableAllGapColumnMask(rows: rows, length: length) else { return nil }
         let keptColumnCount = keepColumns.filter(\.self).count
@@ -272,6 +291,21 @@ enum AlignmentColumnEditor {
             result += source.substring(with: NSRange(location: column, length: 1))
         }
         return result
+    }
+
+    nonisolated private static func trimmingTrailingGaps(in sequence: String) -> String {
+        let scalars = sequence.unicodeScalars
+        var endIndex = scalars.endIndex
+        while endIndex > scalars.startIndex {
+            let previousIndex = scalars.index(before: endIndex)
+            guard isGap(scalars[previousIndex]) else { break }
+            endIndex = previousIndex
+        }
+        return String(scalars[..<endIndex])
+    }
+
+    nonisolated private static func isGap(_ scalar: UnicodeScalar) -> Bool {
+        scalar.value == 45 || scalar.value == 46
     }
 
     nonisolated private static func isGap(_ residue: UInt16) -> Bool {

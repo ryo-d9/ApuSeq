@@ -1,11 +1,26 @@
 import Foundation
 
-enum AlignmentClusterer {
-    nonisolated private static let maximumUPGMARowCount = 400
+enum AlignmentRowOrdering {
+    nonisolated static let maximumUPGMARowCount = 300
+
+    nonisolated static func canOrderWithUPGMA(rowCount: Int) -> Bool {
+        rowCount > 2 && rowCount <= maximumUPGMARowCount
+    }
+
+    nonisolated static func nameOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
+        rows.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
 
     nonisolated static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
-        guard rows.count > 2 else { return rows }
-        guard rows.count <= maximumUPGMARowCount else { return rows }
+        AlignmentClusterer.upgmaOrderedRows(rows)
+    }
+}
+
+enum AlignmentClusterer {
+    nonisolated static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
+        guard AlignmentRowOrdering.canOrderWithUPGMA(rowCount: rows.count) else { return rows }
 
         let count = rows.count
         let sequences = rows.map { $0.sequence as NSString }

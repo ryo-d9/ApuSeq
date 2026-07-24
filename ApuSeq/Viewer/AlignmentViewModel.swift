@@ -127,11 +127,9 @@ final class AlignmentViewModel {
                 case .original:
                     orderedRows = baseRows
                 case .name:
-                    orderedRows = baseRows.sorted {
-                        $0.name.localizedStandardCompare($1.name) == .orderedAscending
-                    }
+                    orderedRows = AlignmentRowOrdering.nameOrderedRows(baseRows)
                 case .upgma:
-                    orderedRows = AlignmentClusterer.upgmaOrderedRows(baseRows)
+                    orderedRows = AlignmentRowOrdering.upgmaOrderedRows(baseRows)
                 }
                 let displayAlignment = AlignmentData(
                     format: format,

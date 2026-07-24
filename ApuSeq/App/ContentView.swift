@@ -136,7 +136,12 @@ private struct RootView: View {
             canAddSequence: canAddSequence,
             addSequence: addSequence,
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
-            removeAllGapColumns: removeAllGapColumns
+            removeAllGapColumns: removeAllGapColumns,
+            canTrimTrailingGaps: viewerMode == .edit && AlignmentColumnEditor.hasTrailingGaps(in: model.alignment.rows),
+            trimTrailingGaps: trimTrailingGaps,
+            canSortSequencesByName: viewerMode == .edit && model.alignment.rows.count > 1,
+            canSortSequencesByUPGMA: viewerMode == .edit && AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count),
+            sortSequences: sortSequences
         )
     }
 
@@ -160,6 +165,7 @@ private struct RootView: View {
             setBackgroundMode: { backgroundMode = $0 },
             displayOrderMode: effectiveDisplayOrderMode,
             canChangeDisplayOrder: viewerMode == .view,
+            canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count),
             setDisplayOrderMode: { displayOrderMode = $0 }
         )
     }
@@ -315,7 +321,8 @@ private struct RootView: View {
                         selectedEndPosition: selectedEndPosition,
                         backgroundMode: $backgroundMode,
                         displayOrderMode: footerDisplayOrderMode,
-                        canChangeDisplayOrder: viewerMode == .view
+                        canChangeDisplayOrder: viewerMode == .view,
+                        canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
                     )
                 }
             }
@@ -372,6 +379,7 @@ private struct RootView: View {
             cancelMAFFTAlignment()
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
+        .onChange(of: model.alignment.rows.count) { _, _ in validateDisplayOrderMode() }
         .onChange(of: backgroundMode) { _, newValue in
             if newValue == .identity || newValue == .different {
                 rerender()
@@ -443,6 +451,12 @@ private struct RootView: View {
         )
     }
 
+    private func validateDisplayOrderMode() {
+        guard displayOrderMode == .upgma else { return }
+        guard !AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count) else { return }
+        displayOrderMode = .original
+    }
+
     private func applyEditedSequenceText(_ editedText: String) {
         guard viewerMode == .edit else { return }
         guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
@@ -512,6 +526,30 @@ private struct RootView: View {
             length: model.alignment.length
         ) else { return }
         applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.removeAllGapColumns)
+    }
+
+    private func trimTrailingGaps() {
+        guard viewerMode == .edit else { return }
+        guard let rows = AlignmentColumnEditor.trimmingTrailingGaps(from: model.alignment.rows) else { return }
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.trimTrailingGaps)
+    }
+
+    private func sortSequences(_ mode: AlignmentDisplayOrderMode) {
+        guard viewerMode == .edit, model.alignment.rows.count > 1 else { return }
+
+        let rows: [AlignmentRow]
+        switch mode {
+        case .original:
+            return
+        case .name:
+            rows = AlignmentRowOrdering.nameOrderedRows(model.alignment.rows)
+        case .upgma:
+            guard AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count) else { return }
+            rows = AlignmentRowOrdering.upgmaOrderedRows(model.alignment.rows)
+        }
+
+        guard !sameRowOrder(rows, model.alignment.rows) else { return }
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.sortSequences)
     }
 
     private func copyConsensus() {
@@ -659,6 +697,12 @@ private struct RootView: View {
 
     private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {
         AlignmentSerializer.serialize(rows: rows, preferredFormat: model.alignment.format)
+    }
+
+    private func sameRowOrder(_ first: [AlignmentRow], _ second: [AlignmentRow]) -> Bool {
+        first.elementsEqual(second) { left, right in
+            left.name == right.name && left.sequence == right.sequence
+        }
     }
 
     private func markTranslatedDocumentAsEditedIfNeeded() {
