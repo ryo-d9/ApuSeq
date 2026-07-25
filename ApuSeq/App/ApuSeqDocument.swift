@@ -21,7 +21,6 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
 
     private struct Storage {
         var rawText: String
-        var markEditedOnFirstDisplay: Bool
     }
 
     private let lock = NSLock()
@@ -32,19 +31,8 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         set { updateStorage { $0.rawText = newValue } }
     }
 
-    var markEditedOnFirstDisplay: Bool {
-        get { withLockedStorage { $0.markEditedOnFirstDisplay } }
-        set { updateStorage { $0.markEditedOnFirstDisplay = newValue } }
-    }
-
-    init(
-        rawText: String = "",
-        markEditedOnFirstDisplay: Bool = false
-    ) {
-        storage = Storage(
-            rawText: rawText,
-            markEditedOnFirstDisplay: markEditedOnFirstDisplay
-        )
+    init(rawText: String = "") {
+        storage = Storage(rawText: rawText)
     }
 
     // Keep runtime type handling aligned with Info.plist declarations.
@@ -73,10 +61,7 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         }
 
         let decoded = TextDecoding.decode(data) ?? String(decoding: data, as: UTF8.self)
-        storage = Storage(
-            rawText: decoded,
-            markEditedOnFirstDisplay: false
-        )
+        storage = Storage(rawText: decoded)
     }
 
     func snapshot(contentType: UTType) throws -> String {

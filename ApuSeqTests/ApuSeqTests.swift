@@ -400,6 +400,13 @@ struct ApuSeqTests {
         #expect(try document.snapshot(contentType: .plainText) == ">Seq2\nTGCA\n")
     }
 
+    @Test func documentInitializesGeneratedRawTextWithoutMutation() throws {
+        let rawText = ">Translated\nMK*"
+        let document = ApuSeqDocument(rawText: rawText)
+
+        #expect(try document.snapshot(contentType: .plainText) == rawText)
+    }
+
     @MainActor
     private func waitUntil(
         timeout: Duration = .seconds(2),

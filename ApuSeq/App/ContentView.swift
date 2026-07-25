@@ -437,7 +437,6 @@ private struct RootView: View {
             Text(mafftAlignmentErrorMessage)
         }
         .onAppear {
-            markTranslatedDocumentAsEditedIfNeeded()
             parseAndRender()
         }
         .onDisappear {
@@ -674,10 +673,7 @@ private struct RootView: View {
                 guard !Task.isCancelled else { return }
                 finishMAFFTAlignment()
                 newDocument {
-                    ApuSeqDocument(
-                        rawText: aligned,
-                        markEditedOnFirstDisplay: true
-                    )
+                    ApuSeqDocument(rawText: aligned)
                 }
             } catch is CancellationError {
                 finishMAFFTAlignment()
@@ -870,13 +866,6 @@ private struct RootView: View {
         first.elementsEqual(second) { left, right in
             left.name == right.name && left.sequence == right.sequence
         }
-    }
-
-    private func markTranslatedDocumentAsEditedIfNeeded() {
-        guard documentConfiguration?.fileURL == nil else { return }
-        guard document.markEditedOnFirstDisplay else { return }
-        document.markEditedOnFirstDisplay = false
-        document.rawText += "\n"
     }
 }
 

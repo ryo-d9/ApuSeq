@@ -328,10 +328,7 @@ struct AlignmentCommands: Commands {
                 )
                 await MainActor.run {
                     newDocument {
-                        ApuSeqDocument(
-                            rawText: reverseComplemented,
-                            markEditedOnFirstDisplay: true
-                        )
+                        ApuSeqDocument(rawText: reverseComplemented)
                     }
                 }
             } catch {
@@ -352,10 +349,7 @@ struct AlignmentCommands: Commands {
                 )
                 await MainActor.run {
                     newDocument {
-                        ApuSeqDocument(
-                            rawText: translated,
-                            markEditedOnFirstDisplay: true
-                        )
+                        ApuSeqDocument(rawText: translated)
                     }
                 }
             } catch {
