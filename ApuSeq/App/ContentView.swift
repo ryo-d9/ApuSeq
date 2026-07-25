@@ -135,6 +135,7 @@ private struct RootView: View {
         AlignmentEditActions(
             canAddSequence: canAddSequence,
             addSequence: addSequence,
+            addFASTAFromClipboard: addFASTAFromClipboard,
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
             removeAllGapColumns: removeAllGapColumns,
             canTrimTrailingGaps: viewerMode == .edit && AlignmentColumnEditor.hasTrailingGaps(in: model.alignment.rows),
@@ -303,6 +304,7 @@ private struct RootView: View {
                         selectedStartPosition: $selectedStartPosition,
                         selectedEndPosition: $selectedEndPosition,
                         onAddSequence: addSequence,
+                        onAddFASTAFromClipboard: addFASTAFromClipboard,
                         onRenameSequence: renameDisplayedSequence,
                         onDeleteSequence: deleteDisplayedSequence
                     ) { selectedName in
@@ -478,6 +480,25 @@ private struct RootView: View {
         let newLength = max(model.alignment.length, 1)
         rows.append(AlignmentRow(name: name, sequence: String(repeating: "-", count: newLength)))
         applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.addSequenceTitle)
+    }
+
+    private func addFASTAFromClipboard() {
+        guard canAddSequence else { return }
+        guard let clipboardText = NSPasteboard.general.string(forType: .string) else {
+            NSSound.beep()
+            return
+        }
+        let trimmed = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix(">"),
+              let parsed = try? AlignmentParser.parse(trimmed),
+              parsed.format == .fasta,
+              !parsed.rows.isEmpty else {
+            NSSound.beep()
+            return
+        }
+
+        let rows = rowsByAppendingUniqueRows(parsed.rows)
+        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.addFASTAFromClipboard)
     }
 
     private func renameDisplayedSequence(at displayedRowIndex: Int) {
@@ -679,6 +700,34 @@ private struct RootView: View {
             index += 1
         }
         return "Sequence \(index)"
+    }
+
+    private func rowsByAppendingUniqueRows(_ rowsToAppend: [AlignmentRow]) -> [AlignmentRow] {
+        var existingNames = Set(model.alignment.rows.map(\.name))
+        var rows = model.alignment.rows
+        rows.reserveCapacity(rows.count + rowsToAppend.count)
+
+        for row in rowsToAppend {
+            let name = uniqueSequenceName(row.name, existingNames: &existingNames)
+            rows.append(AlignmentRow(name: name, sequence: row.sequence))
+        }
+        return rows
+    }
+
+    private func uniqueSequenceName(_ name: String, existingNames: inout Set<String>) -> String {
+        guard existingNames.contains(name) else {
+            existingNames.insert(name)
+            return name
+        }
+
+        var index = 2
+        var candidate = "\(name) \(index)"
+        while existingNames.contains(candidate) {
+            index += 1
+            candidate = "\(name) \(index)"
+        }
+        existingNames.insert(candidate)
+        return candidate
     }
 
     private func rebuildAlignment(fromEditedSequenceText editedText: String) -> String? {

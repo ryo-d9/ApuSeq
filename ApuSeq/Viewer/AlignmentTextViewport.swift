@@ -26,6 +26,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
     let onAddSequence: () -> Void
+    let onAddFASTAFromClipboard: () -> Void
     let onRenameSequence: (Int) -> Void
     let onDeleteSequence: (Int) -> Void
     let onSetReference: (String?) -> Void
@@ -36,6 +37,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.rowNames = displayedRowNames
         nameColumnView.isEditMode = isEditMode
         nameColumnView.onAddSequence = onAddSequence
+        nameColumnView.onAddFASTAFromClipboard = onAddFASTAFromClipboard
         nameColumnView.onRenameSequence = onRenameSequence
         nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
@@ -66,6 +68,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             onAddSequence: onAddSequence,
+            onAddFASTAFromClipboard: onAddFASTAFromClipboard,
             onRenameSequence: onRenameSequence,
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference
@@ -82,6 +85,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             onAddSequence: onAddSequence,
+            onAddFASTAFromClipboard: onAddFASTAFromClipboard,
             onRenameSequence: onRenameSequence,
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference

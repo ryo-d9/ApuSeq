@@ -86,6 +86,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         sequences: [String],
         isEditMode: Bool,
         onAddSequence: @escaping () -> Void,
+        onAddFASTAFromClipboard: @escaping () -> Void,
         onRenameSequence: @escaping (Int) -> Void,
         onDeleteSequence: @escaping (Int) -> Void,
         onSetReference: @escaping (String?) -> Void
@@ -96,6 +97,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameColumnView.rowSequences = sequences
         nameColumnView.isEditMode = isEditMode
         nameColumnView.onAddSequence = onAddSequence
+        nameColumnView.onAddFASTAFromClipboard = onAddFASTAFromClipboard
         nameColumnView.onRenameSequence = onRenameSequence
         nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference

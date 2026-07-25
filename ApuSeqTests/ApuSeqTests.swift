@@ -7,7 +7,8 @@ struct ApuSeqTests {
     @Test func parsesFASTANormalizesRowsAndInfersNucleotideKind() throws {
         let text = """
         >Beta
-        ACGT
+        AC
+        GT
         >Alpha
         AC
         """

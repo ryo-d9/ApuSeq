@@ -9,6 +9,7 @@ struct SequenceTransformContext {
 struct AlignmentEditActions {
     let canAddSequence: Bool
     let addSequence: () -> Void
+    let addFASTAFromClipboard: () -> Void
     let canRemoveAllGapColumns: Bool
     let removeAllGapColumns: () -> Void
     let canTrimTrailingGaps: Bool
@@ -168,6 +169,12 @@ struct AlignmentEditCommands: Commands {
                 actions?.addSequence()
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+            .disabled(actions?.canAddSequence != true)
+
+            Button(AppStrings.addFASTAFromClipboard) {
+                actions?.addFASTAFromClipboard()
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
             .disabled(actions?.canAddSequence != true)
         }
     }

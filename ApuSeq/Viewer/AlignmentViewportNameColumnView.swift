@@ -17,6 +17,7 @@ final class AlignmentViewportNameColumnView: NSView {
     }
     var isEditMode = false
     var onAddSequence: (() -> Void)?
+    var onAddFASTAFromClipboard: (() -> Void)?
     var onRenameSequence: ((Int) -> Void)?
     var onDeleteSequence: ((Int) -> Void)?
     var onSetReference: ((String?) -> Void)?
@@ -63,6 +64,9 @@ final class AlignmentViewportNameColumnView: NSView {
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self
             menu.addItem(addItem)
+            let addFASTAItem = NSMenuItem(title: AppStrings.addFASTAFromClipboard, action: #selector(addFASTAFromClipboardFromMenu(_:)), keyEquivalent: "")
+            addFASTAItem.target = self
+            menu.addItem(addFASTAItem)
             return menu
         }
 
@@ -71,6 +75,10 @@ final class AlignmentViewportNameColumnView: NSView {
         copyItem.target = self
         copyItem.representedObject = row
         menu.addItem(copyItem)
+        let copyFASTAItem = NSMenuItem(title: AppStrings.copyAsFASTA, action: #selector(copyFASTAFromMenu(_:)), keyEquivalent: "")
+        copyFASTAItem.target = self
+        copyFASTAItem.representedObject = row
+        menu.addItem(copyFASTAItem)
         menu.addItem(.separator())
 
         let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
@@ -87,6 +95,10 @@ final class AlignmentViewportNameColumnView: NSView {
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self
             menu.addItem(addItem)
+
+            let addFASTAItem = NSMenuItem(title: AppStrings.addFASTAFromClipboard, action: #selector(addFASTAFromClipboardFromMenu(_:)), keyEquivalent: "")
+            addFASTAItem.target = self
+            menu.addItem(addFASTAItem)
 
             let renameItem = NSMenuItem(title: AppStrings.renameSequence, action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
             renameItem.target = self
@@ -127,8 +139,24 @@ final class AlignmentViewportNameColumnView: NSView {
         pasteboard.setString(rowSequences[row], forType: .string)
     }
 
+    @objc private func copyFASTAFromMenu(_ sender: NSMenuItem) {
+        guard let row = sender.representedObject as? Int else { return }
+        guard row >= 0, row < rowNames.count, row < rowSequences.count else { return }
+        let fasta = AlignmentSerializer.serialize(
+            rows: [AlignmentRow(name: rowNames[row], sequence: rowSequences[row])],
+            preferredFormat: .fasta
+        )
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(fasta, forType: .string)
+    }
+
     @objc private func addSequenceFromMenu(_ sender: NSMenuItem) {
         onAddSequence?()
+    }
+
+    @objc private func addFASTAFromClipboardFromMenu(_ sender: NSMenuItem) {
+        onAddFASTAFromClipboard?()
     }
 
     @objc private func renameSequenceFromMenu(_ sender: NSMenuItem) {
