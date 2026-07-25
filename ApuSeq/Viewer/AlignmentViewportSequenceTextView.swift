@@ -10,12 +10,6 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         let alignmentLength: Int
     }
 
-    private struct AlignmentEdit {
-        let row: Int
-        let column: Int
-        let length: Int
-    }
-
     var onAddVerticalCursor: ((Int) -> Bool)?
     var onAddSequence: (() -> Void)?
     var columnSelectionAnchor: Int?
@@ -34,45 +28,26 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         guard !replacement.contains("\n") else { return }
 
         let previousState = captureColumnEditState()
-        var lines = sequenceLines()
+        let lines = sequenceLines()
         guard !lines.isEmpty else { return }
         let edits = normalizedEdits(from: ranges, rowCount: lines.count)
         guard !edits.isEmpty else { return }
 
         let replacementLength = (replacement as NSString).length
-        var editGroups: [String: (column: Int, length: Int, rows: Set<Int>)] = [:]
-        for edit in edits {
-            let key = "\(edit.column):\(edit.length)"
-            if editGroups[key] == nil {
-                editGroups[key] = (edit.column, edit.length, [])
-            }
-            editGroups[key]?.rows.insert(edit.row)
+        let rowEdits = edits.map {
+            AlignmentColumnEditor.RowEdit(
+                row: $0.row,
+                column: $0.column,
+                length: $0.length,
+                replacement: replacement
+            )
         }
+        guard let edited = AlignmentColumnEditor.replacingRowsOnly(in: lines, edits: rowEdits) else { return }
 
-        var nextAlignmentLength = alignmentLength
-        let groups = editGroups.values.sorted { lhs, rhs in
-            if lhs.column == rhs.column { return lhs.length > rhs.length }
-            return lhs.column > rhs.column
-        }
-        for group in groups {
-            let extraColumns = max(replacementLength - group.length, 0)
-            for row in lines.indices {
-                if group.rows.contains(row) {
-                    replaceCharacters(in: &lines[row], column: group.column, length: group.length, with: replacement)
-                    if replacementLength < group.length {
-                        lines[row] += String(repeating: "-", count: group.length - replacementLength)
-                    }
-                } else if extraColumns > 0 {
-                    insertCharacters(String(repeating: "-", count: extraColumns), in: &lines[row], column: group.column + group.length)
-                }
-            }
-            nextAlignmentLength += extraColumns
-        }
-
-        alignmentLength = nextAlignmentLength
-        textStorage.setAttributedString(attributedSequenceText(from: lines))
+        alignmentLength = edited.length
+        textStorage.setAttributedString(attributedSequenceText(from: edited.sequences))
         let newSelections = edits.map { edit in
-            let location = (edit.row * (nextAlignmentLength + 1)) + min(edit.column + replacementLength, nextAlignmentLength)
+            let location = (edit.row * (edited.length + 1)) + min(edit.column + replacementLength, edited.length)
             return NSRange(location: location, length: 0)
         }
         setSelectedRanges(
@@ -117,15 +92,16 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         undoManager.setActionName("Edit")
     }
 
-    private func normalizedEdits(from ranges: [NSRange], rowCount: Int) -> [AlignmentEdit] {
+    private func normalizedEdits(from ranges: [NSRange], rowCount: Int) -> [AlignmentColumnEditor.RowEdit] {
         let lineSpan = alignmentLength + 1
         return ranges.compactMap { range in
             guard range.location >= 0 else { return nil }
             let row = range.location / lineSpan
             let column = range.location % lineSpan
-            guard row >= 0, row < rowCount, column < alignmentLength else { return nil }
+            guard row >= 0, row < rowCount, column <= alignmentLength else { return nil }
+            guard column < alignmentLength || range.length == 0 else { return nil }
             let length = min(max(range.length, 0), alignmentLength - column)
-            return AlignmentEdit(row: row, column: column, length: length)
+            return AlignmentColumnEditor.RowEdit(row: row, column: column, length: length, replacement: "")
         }
     }
 
@@ -139,6 +115,10 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         return lines
     }
 
+    private func currentSequenceLineLength() -> Int {
+        sequenceLines().map { ($0 as NSString).length }.max() ?? 0
+    }
+
     private func attributedSequenceText(from lines: [String]) -> NSAttributedString {
         NSAttributedString(
             string: lines.joined(separator: "\n") + "\n",
@@ -147,17 +127,6 @@ final class AlignmentViewportSequenceTextView: NSTextView {
                 .foregroundColor: NSColor.labelColor
             ]
         )
-    }
-
-    private func replaceCharacters(in line: inout String, column: Int, length: Int, with replacement: String) {
-        let start = line.index(line.startIndex, offsetBy: min(column, line.count))
-        let end = line.index(start, offsetBy: min(length, line.distance(from: start, to: line.endIndex)))
-        line.replaceSubrange(start..<end, with: replacement)
-    }
-
-    private func insertCharacters(_ insertion: String, in line: inout String, column: Int) {
-        let index = line.index(line.startIndex, offsetBy: min(max(column, 0), line.count))
-        line.insert(contentsOf: insertion, at: index)
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
@@ -189,6 +158,43 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     @objc func selectColumnDown(_ sender: Any?) {
         _ = onAddVerticalCursor?(1)
+    }
+
+    @objc func insertGapColumn(_ sender: Any?) {
+        guard isEditable else { return }
+        guard let textStorage else { return }
+        let lines = sequenceLines()
+        guard !lines.isEmpty, alignmentLength > 0 else {
+            NSSound.beep()
+            return
+        }
+
+        let selection = selectedRange()
+        let lineSpan = alignmentLength + 1
+        let row = selection.location / lineSpan
+        let column = selection.location % lineSpan
+        guard row >= 0, row < lines.count, column <= alignmentLength else {
+            NSSound.beep()
+            return
+        }
+
+        let previousState = captureColumnEditState()
+        let rows = lines.enumerated().map { index, sequence in
+            AlignmentRow(name: "Row \(index + 1)", sequence: sequence)
+        }
+        guard let editedRows = AlignmentColumnEditor.insertingGapColumn(in: rows, column: column) else {
+            NSSound.beep()
+            return
+        }
+
+        alignmentLength += 1
+        textStorage.setAttributedString(attributedSequenceText(from: editedRows.map(\.sequence)))
+        let nextLocation = row * (alignmentLength + 1) + min(column + 1, alignmentLength)
+        setSelectedRange(NSRange(location: nextLocation, length: 0))
+        columnSelectionRanges = []
+        columnSelectionAnchor = nil
+        registerColumnUndo(toRestore: previousState)
+        didChangeText()
     }
 
     override func keyDown(with event: NSEvent) {
@@ -236,13 +242,16 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         backgroundMode: AlignmentBackgroundMode,
         identityColorThreshold: Double
     ) {
+        let effectiveAlignmentLength = isEditable
+            ? max(alignmentLength, currentSequenceLineLength())
+            : alignmentLength
         let needsRedraw =
-            self.alignmentLength != alignmentLength ||
+            self.alignmentLength != effectiveAlignmentLength ||
             self.identityByColumn.count != identityByColumn.count ||
             self.majorityResidueByColumn.count != majorityResidueByColumn.count ||
             self.backgroundMode != backgroundMode ||
             abs(self.identityColorThreshold - identityColorThreshold) > 0.001
-        self.alignmentLength = alignmentLength
+        self.alignmentLength = effectiveAlignmentLength
         self.identityByColumn = identityByColumn
         self.majorityResidueByColumn = majorityResidueByColumn
         self.backgroundMode = backgroundMode

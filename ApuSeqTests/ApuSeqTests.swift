@@ -254,6 +254,46 @@ struct ApuSeqTests {
         #expect(AlignmentColumnEditor.trimmingTrailingGaps(from: rows) == nil)
     }
 
+    @Test func rowOnlyEditPadsAtRowEndsWithoutChangingOtherColumns() throws {
+        let edited = try #require(
+            AlignmentColumnEditor.replacingRowsOnly(
+                in: ["ACGT", "ACGT"],
+                edits: [
+                    AlignmentColumnEditor.RowEdit(row: 1, column: 2, length: 0, replacement: "-")
+                ]
+            )
+        )
+
+        #expect(edited.length == 5)
+        #expect(edited.sequences == ["ACGT-", "AC-GT"])
+    }
+
+    @Test func rowOnlyDeletionPadsEditedRowAtEnd() throws {
+        let edited = try #require(
+            AlignmentColumnEditor.replacingRowsOnly(
+                in: ["ACGT", "A-GT"],
+                edits: [
+                    AlignmentColumnEditor.RowEdit(row: 1, column: 1, length: 1, replacement: "")
+                ]
+            )
+        )
+
+        #expect(edited.length == 4)
+        #expect(edited.sequences == ["ACGT", "AGT-"])
+    }
+
+    @Test func gapColumnInsertionAddsGapToEveryRowAtColumn() throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "ACGT"),
+            AlignmentRow(name: "B", sequence: "A-GT")
+        ]
+
+        let editedRows = try #require(AlignmentColumnEditor.insertingGapColumn(in: rows, column: 2))
+
+        #expect(editedRows.map(\.name) == ["A", "B"])
+        #expect(editedRows.map(\.sequence) == ["AC-GT", "A--GT"])
+    }
+
     @Test @MainActor func viewModelRendersNameOrderWithoutChangingOriginalAlignment() async throws {
         let viewModel = AlignmentViewModel()
         viewModel.alignment = AlignmentData(

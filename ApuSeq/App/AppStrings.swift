@@ -11,6 +11,7 @@ enum AppStrings {
     static let renameSequence = String(localized: "Rename Sequence...")
     static let renameSequenceTitle = String(localized: "Rename Sequence")
     static let deleteSequence = String(localized: "Delete Sequence")
+    static let insertGapColumn = String(localized: "Insert Gap Column")
     static let removeAllGapColumns = String(localized: "Remove All-Gap Columns")
     static let trimTrailingGaps = String(localized: "Trim Trailing Gaps")
     static let sortSequences = String(localized: "Sort Sequences")

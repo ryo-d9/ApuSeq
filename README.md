@@ -14,8 +14,9 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - None, Residue, Different, and Identity background coloring modes
 - View-only display ordering with Original, Name, and UPGMA modes for alignments with 3 to 300 sequences
 - Column selection and multi-range editing
-- Sequence add, rename, and deletion from Edit mode
-- Remove All-Gap Columns, Trim Trailing Gaps, and Sort Sequences commands, treating `-` and `.` as gaps where applicable
+- Sequence add, FASTA clipboard import, rename, and deletion from Edit mode
+- Copy Sequence and Copy as FASTA from the sequence name context menu
+- Insert Gap Column, Remove All-Gap Columns, Trim Trailing Gaps, and Sort Sequences commands, treating `-` and `.` as gaps where applicable
 - Nucleotide translation with selectable codon tables
 - Reverse complement generation for nucleotide alignments
 - Bundled MAFFT 7.526 `--auto` alignment that creates a new FASTA document
@@ -36,7 +37,11 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 
 Edit mode follows the macOS document model. Changes can be autosaved and are managed by the system versions workflow.
 
-When inserting or deleting residues, ApuSeq preserves alignment shape by adding gap characters to other sequences as needed. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
+Typing and deletion in the alignment viewport edit only the selected sequence rows, matching normal text editing behavior. ApuSeq pads shorter rows with trailing `-` characters so the alignment remains rectangular.
+
+Use Edit > Insert Gap Column, or Command-Shift-Hyphen, to insert a gap column at the current cursor position across all sequences. Removing all-gap columns is undoable and is disabled when it would make the alignment empty.
+
+Use Edit > Add FASTA from Clipboard, or Command-Shift-V, to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.
 
 Use Alignment > Trim Trailing Gaps in Edit mode to remove trailing `-` and `.` characters from each sequence. ApuSeq may still display temporary padding gaps to keep alignment columns visually aligned.
 

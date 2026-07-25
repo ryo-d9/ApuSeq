@@ -230,6 +230,20 @@ enum AlignmentSerializer {
 }
 
 enum AlignmentColumnEditor {
+    struct RowEdit: Sendable {
+        let row: Int
+        let column: Int
+        let length: Int
+        let replacement: String
+
+        init(row: Int, column: Int, length: Int, replacement: String) {
+            self.row = row
+            self.column = column
+            self.length = length
+            self.replacement = replacement
+        }
+    }
+
     nonisolated static func hasTrailingGaps(in rows: [AlignmentRow]) -> Bool {
         rows.contains { row in
             guard let last = row.sequence.unicodeScalars.last else { return false }
@@ -247,6 +261,51 @@ enum AlignmentColumnEditor {
             return AlignmentRow(name: row.name, sequence: trimmedSequence)
         }
         return didTrim ? trimmedRows : nil
+    }
+
+    nonisolated static func replacingRowsOnly(in sequences: [String], edits: [RowEdit]) -> (sequences: [String], length: Int)? {
+        guard !sequences.isEmpty, !edits.isEmpty else { return nil }
+
+        var editedSequences = sequences
+        let editsByRow = Dictionary(grouping: edits) { $0.row }
+        for (row, rowEdits) in editsByRow {
+            guard editedSequences.indices.contains(row) else { continue }
+            let sortedEdits = rowEdits.sorted {
+                if $0.column == $1.column { return $0.length > $1.length }
+                return $0.column > $1.column
+            }
+            for edit in sortedEdits {
+                replaceCharacters(
+                    in: &editedSequences[row],
+                    column: edit.column,
+                    length: edit.length,
+                    with: edit.replacement
+                )
+            }
+        }
+
+        let maxLength = editedSequences.map { ($0 as NSString).length }.max() ?? 0
+        let paddedSequences = editedSequences.map { sequence in
+            let paddingCount = maxLength - (sequence as NSString).length
+            return sequence + String(repeating: "-", count: max(paddingCount, 0))
+        }
+        return (paddedSequences, maxLength)
+    }
+
+    nonisolated static func insertingGapColumn(in rows: [AlignmentRow], column: Int) -> [AlignmentRow]? {
+        guard !rows.isEmpty else { return nil }
+        let maxLength = rows.map { ($0.sequence as NSString).length }.max() ?? 0
+        guard column >= 0, column <= maxLength else { return nil }
+
+        return rows.map { row in
+            var sequence = row.sequence
+            let paddingCount = maxLength - (sequence as NSString).length
+            if paddingCount > 0 {
+                sequence += String(repeating: "-", count: paddingCount)
+            }
+            insertCharacters("-", in: &sequence, column: column)
+            return AlignmentRow(name: row.name, sequence: sequence)
+        }
     }
 
     nonisolated static func removingAllGapColumns(from rows: [AlignmentRow], length: Int) -> [AlignmentRow]? {
@@ -302,6 +361,17 @@ enum AlignmentColumnEditor {
             endIndex = previousIndex
         }
         return String(scalars[..<endIndex])
+    }
+
+    nonisolated private static func replaceCharacters(in sequence: inout String, column: Int, length: Int, with replacement: String) {
+        let source = sequence as NSString
+        let start = min(max(column, 0), source.length)
+        let safeLength = min(max(length, 0), source.length - start)
+        sequence = source.replacingCharacters(in: NSRange(location: start, length: safeLength), with: replacement)
+    }
+
+    nonisolated private static func insertCharacters(_ insertion: String, in sequence: inout String, column: Int) {
+        replaceCharacters(in: &sequence, column: column, length: 0, with: insertion)
     }
 
     nonisolated private static func isGap(_ scalar: UnicodeScalar) -> Bool {

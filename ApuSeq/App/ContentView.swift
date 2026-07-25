@@ -136,6 +136,7 @@ private struct RootView: View {
             canAddSequence: canAddSequence,
             addSequence: addSequence,
             addFASTAFromClipboard: addFASTAFromClipboard,
+            canInsertGapColumn: canEditRenderedRows && !model.alignment.rows.isEmpty,
             canRemoveAllGapColumns: viewerMode == .edit && !model.alignment.rows.isEmpty && model.alignment.length > 0,
             removeAllGapColumns: removeAllGapColumns,
             canTrimTrailingGaps: viewerMode == .edit && AlignmentColumnEditor.hasTrailingGaps(in: model.alignment.rows),

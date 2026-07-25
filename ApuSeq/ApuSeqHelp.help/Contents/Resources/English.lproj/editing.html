@@ -18,12 +18,14 @@
 
     <section>
       <h2>Alignment length</h2>
-      <p>When text is inserted or deleted, ApuSeq keeps sequences aligned by adding gap characters to the affected columns as needed.</p>
+      <p>Typing and deletion in the alignment viewport edit only the selected sequence rows, following normal text editing behavior. ApuSeq pads shorter rows with trailing <code>-</code> characters so the alignment remains rectangular.</p>
+      <p>Choose Edit &gt; Insert Gap Column, or press Command-Shift-Hyphen, to insert a gap column at the current cursor position across all sequences.</p>
     </section>
 
     <section>
       <h2>Adding and renaming sequences</h2>
       <p>In Edit mode, choose Edit &gt; Add Sequence or Control-click the sequence name area and choose Add Sequence. ApuSeq adds a gap-filled row that can be edited directly in the alignment view.</p>
+      <p>Choose Edit &gt; Add FASTA from Clipboard, or press Command-Shift-V, to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.</p>
       <p>To rename a sequence, Control-click or right-click its name and choose Rename Sequence.</p>
     </section>
 

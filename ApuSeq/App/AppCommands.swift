@@ -10,6 +10,7 @@ struct AlignmentEditActions {
     let canAddSequence: Bool
     let addSequence: () -> Void
     let addFASTAFromClipboard: () -> Void
+    let canInsertGapColumn: Bool
     let canRemoveAllGapColumns: Bool
     let removeAllGapColumns: () -> Void
     let canTrimTrailingGaps: Bool
@@ -176,6 +177,12 @@ struct AlignmentEditCommands: Commands {
             }
             .keyboardShortcut("v", modifiers: [.command, .shift])
             .disabled(actions?.canAddSequence != true)
+
+            Button(AppStrings.insertGapColumn) {
+                _ = NSApp.sendAction(NSSelectorFromString("insertGapColumn:"), to: nil, from: nil)
+            }
+            .keyboardShortcut("-", modifiers: [.command, .shift])
+            .disabled(actions?.canInsertGapColumn != true)
         }
     }
 }

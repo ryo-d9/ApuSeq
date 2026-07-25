@@ -108,12 +108,23 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         if context.coordinator.lastContentVersion != contentVersion ||
             context.coordinator.lastRenderedFingerprint != fingerprint {
-            let selectedRanges = containerView.sequenceTextView.selectedRanges.map(\.rangeValue)
-            let columnSelectionRanges = containerView.sequenceTextView.columnSelectionRanges
-            let columnSelectionAnchor = containerView.sequenceTextView.columnSelectionAnchor
+            let previousAlignmentLength = containerView.sequenceTextView.alignmentLength
+            let selectedRanges = context.coordinator.logicalRanges(
+                from: containerView.sequenceTextView.selectedRanges.map(\.rangeValue),
+                alignmentLength: previousAlignmentLength
+            )
+            let columnSelectionRanges = context.coordinator.logicalRanges(
+                from: containerView.sequenceTextView.columnSelectionRanges,
+                alignmentLength: previousAlignmentLength
+            )
+            let columnSelectionAnchor = context.coordinator.logicalLocation(
+                from: containerView.sequenceTextView.columnSelectionAnchor,
+                alignmentLength: previousAlignmentLength
+            )
             let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
             containerView.nameColumnView.rowNames = displayedRowNames
             containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
+            containerView.sequenceTextView.alignmentLength = alignmentLength
             context.coordinator.restoreSelection(
                 selectedRanges,
                 columnSelectionRanges: columnSelectionRanges,
@@ -175,6 +186,17 @@ struct AlignmentTextViewport: NSViewRepresentable {
             let sequenceCount: Int
             let startPosition: Int?
             let endPosition: Int?
+        }
+
+        struct LogicalRange {
+            let row: Int
+            let column: Int
+            let length: Int
+        }
+
+        struct LogicalLocation {
+            let row: Int
+            let column: Int
         }
 
         private let selectedResidueCount: Binding<Int>
@@ -437,15 +459,40 @@ struct AlignmentTextViewport: NSViewRepresentable {
             lastAppliedSelectionSummary = summary
         }
 
+        func logicalRanges(from ranges: [NSRange], alignmentLength: Int) -> [LogicalRange] {
+            guard alignmentLength >= 0 else { return [] }
+            let lineSpan = alignmentLength + 1
+            guard lineSpan > 0 else { return [] }
+            return ranges.compactMap { range in
+                guard range.location != NSNotFound, range.location >= 0 else { return nil }
+                let row = range.location / lineSpan
+                let column = min(range.location % lineSpan, alignmentLength)
+                let length = min(max(range.length, 0), max(alignmentLength - column, 0))
+                return LogicalRange(row: row, column: column, length: length)
+            }
+        }
+
+        func logicalLocation(from location: Int?, alignmentLength: Int) -> LogicalLocation? {
+            guard let location, location != NSNotFound, location >= 0 else { return nil }
+            let lineSpan = alignmentLength + 1
+            guard lineSpan > 0 else { return nil }
+            return LogicalLocation(
+                row: location / lineSpan,
+                column: min(location % lineSpan, alignmentLength)
+            )
+        }
+
         func restoreSelection(
-            _ selectedRanges: [NSRange],
-            columnSelectionRanges: [NSRange],
-            columnSelectionAnchor: Int?,
+            _ selectedRanges: [LogicalRange],
+            columnSelectionRanges: [LogicalRange],
+            columnSelectionAnchor: LogicalLocation?,
             columnSelectionWidth: Int,
             in textView: AlignmentViewportSequenceTextView
         ) {
             let textLength = (textView.string as NSString).length
-            let restoredRanges = selectedRanges.compactMap { clampedRange($0, textLength: textLength) }
+            let restoredRanges = selectedRanges.compactMap {
+                range(from: $0, alignmentLength: textView.alignmentLength, textLength: textLength)
+            }
             guard !restoredRanges.isEmpty else { return }
 
             textView.setSelectedRanges(
@@ -453,16 +500,30 @@ struct AlignmentTextViewport: NSViewRepresentable {
                 affinity: .downstream,
                 stillSelecting: false
             )
-            textView.columnSelectionRanges = columnSelectionRanges.compactMap { clampedRange($0, textLength: textLength) }
-            textView.columnSelectionAnchor = columnSelectionAnchor.map { min(max($0, 0), textLength) }
+            textView.columnSelectionRanges = columnSelectionRanges.compactMap {
+                range(from: $0, alignmentLength: textView.alignmentLength, textLength: textLength)
+            }
+            textView.columnSelectionAnchor = columnSelectionAnchor.flatMap {
+                location(from: $0, alignmentLength: textView.alignmentLength, textLength: textLength)
+            }
             textView.columnSelectionWidth = columnSelectionWidth
         }
 
-        private func clampedRange(_ range: NSRange, textLength: Int) -> NSRange? {
-            guard range.location != NSNotFound else { return nil }
-            let location = min(max(range.location, 0), textLength)
-            let maxLength = max(textLength - location, 0)
-            return NSRange(location: location, length: min(range.length, maxLength))
+        private func range(from logicalRange: LogicalRange, alignmentLength: Int, textLength: Int) -> NSRange? {
+            guard logicalRange.row >= 0, logicalRange.column >= 0 else { return nil }
+            let lineSpan = alignmentLength + 1
+            let location = logicalRange.row * lineSpan + min(logicalRange.column, alignmentLength)
+            guard location <= textLength else { return nil }
+            let length = min(logicalRange.length, max(alignmentLength - logicalRange.column, 0))
+            return NSRange(location: location, length: min(length, max(textLength - location, 0)))
+        }
+
+        private func location(from logicalLocation: LogicalLocation, alignmentLength: Int, textLength: Int) -> Int? {
+            guard logicalLocation.row >= 0, logicalLocation.column >= 0 else { return nil }
+            let lineSpan = alignmentLength + 1
+            let location = logicalLocation.row * lineSpan + min(logicalLocation.column, alignmentLength)
+            guard location <= textLength else { return nil }
+            return location
         }
 
 
