@@ -32,6 +32,7 @@ struct ViewerModeActions {
 
 struct AlignmentDisplayActions {
     let backgroundMode: AlignmentBackgroundMode
+    let availableBackgroundModes: [AlignmentBackgroundMode]
     let setBackgroundMode: (AlignmentBackgroundMode) -> Void
     let displayOrderMode: AlignmentDisplayOrderMode
     let canChangeDisplayOrder: Bool
@@ -202,7 +203,7 @@ struct ViewPanelCommands: Commands {
 
             Divider()
             Picker(String(localized: "Background Color"), selection: backgroundModeBinding) {
-                ForEach(AlignmentBackgroundMode.allCases) { mode in
+                ForEach(displayActions?.availableBackgroundModes ?? [.residue]) { mode in
                     Text(mode.localizedName).tag(mode)
                 }
             }

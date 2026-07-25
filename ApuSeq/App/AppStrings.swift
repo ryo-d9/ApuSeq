@@ -57,8 +57,10 @@ enum AppStrings {
             return String(localized: "None")
         case .residue:
             return String(localized: "Residue")
-        case .different:
-            return String(localized: "Different")
+        case .minority:
+            return String(localized: "Minority")
+        case .reference:
+            return String(localized: "Reference")
         case .identity:
             return String(localized: "Identity")
         }

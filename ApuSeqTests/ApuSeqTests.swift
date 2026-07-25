@@ -166,6 +166,14 @@ struct ApuSeqTests {
         #expect(rendered.majorityResidueByColumn.isEmpty)
     }
 
+    @Test func referenceDifferenceColoringNormalizesCaseAndGapCharacters() {
+        #expect(ReferenceDifferencePalette.backgroundColor(for: 65, referenceResidue: 65) == nil)
+        #expect(ReferenceDifferencePalette.backgroundColor(for: 97, referenceResidue: 65) == nil)
+        #expect(ReferenceDifferencePalette.backgroundColor(for: 46, referenceResidue: 45) == nil)
+        #expect(ReferenceDifferencePalette.backgroundColor(for: 67, referenceResidue: 65) != nil)
+        #expect(ReferenceDifferencePalette.backgroundColor(for: 67, referenceResidue: nil) == nil)
+    }
+
     @Test func upgmaOrderingGroupsMostSimilarRows() throws {
         let rows = [
             AlignmentRow(name: "Distant", sequence: "TTTT"),

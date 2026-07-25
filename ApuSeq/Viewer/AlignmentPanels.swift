@@ -8,6 +8,7 @@ struct FooterBar: View {
     let selectedStartPosition: Int?
     let selectedEndPosition: Int?
     @Binding var backgroundMode: AlignmentBackgroundMode
+    let availableBackgroundModes: [AlignmentBackgroundMode]
     @Binding var displayOrderMode: AlignmentDisplayOrderMode
     let canChangeDisplayOrder: Bool
     let canDisplayUPGMAOrder: Bool
@@ -21,7 +22,7 @@ struct FooterBar: View {
             }
             Spacer()
             Picker(String(localized: "Background"), selection: $backgroundMode) {
-                ForEach(AlignmentBackgroundMode.allCases) { mode in
+                ForEach(availableBackgroundModes) { mode in
                     Text(mode.localizedName).tag(mode)
                 }
             }

@@ -20,6 +20,8 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     private var identityByColumn: [Double] = []
     private var majorityResidueByColumn: [UInt16] = []
     private var backgroundMode: AlignmentBackgroundMode = .residue
+    private var referenceSequenceForBackground: String?
+    private var referenceTextForBackground: NSString?
     private var identityColorThreshold = 0.5
 
     func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
@@ -240,6 +242,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         identityByColumn: [Double],
         majorityResidueByColumn: [UInt16],
         backgroundMode: AlignmentBackgroundMode,
+        referenceSequenceForBackground: String?,
         identityColorThreshold: Double
     ) {
         let effectiveAlignmentLength = isEditable
@@ -250,11 +253,14 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             self.identityByColumn.count != identityByColumn.count ||
             self.majorityResidueByColumn.count != majorityResidueByColumn.count ||
             self.backgroundMode != backgroundMode ||
+            self.referenceSequenceForBackground != referenceSequenceForBackground ||
             abs(self.identityColorThreshold - identityColorThreshold) > 0.001
         self.alignmentLength = effectiveAlignmentLength
         self.identityByColumn = identityByColumn
         self.majorityResidueByColumn = majorityResidueByColumn
         self.backgroundMode = backgroundMode
+        self.referenceSequenceForBackground = referenceSequenceForBackground
+        self.referenceTextForBackground = referenceSequenceForBackground.map { $0 as NSString }
         self.identityColorThreshold = identityColorThreshold
         if needsRedraw {
             needsDisplay = true
@@ -328,11 +334,17 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             return nil
         case .residue:
             return ResiduePalette.backgroundColor(for: text.character(at: textIndex))
-        case .different:
+        case .minority:
             let residue = normalizedResidueCode(text.character(at: textIndex))
             guard let majorityResidue = majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
             guard residue != majorityResidue else { return nil }
             return ResiduePalette.backgroundColor(for: residue)
+        case .reference:
+            guard let referenceTextForBackground, column < referenceTextForBackground.length else { return nil }
+            return ReferenceDifferencePalette.backgroundColor(
+                for: text.character(at: textIndex),
+                referenceResidue: referenceTextForBackground.character(at: column)
+            )
         case .identity:
             return identityByColumn[safe: column].flatMap {
                 IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)

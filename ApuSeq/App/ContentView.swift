@@ -69,7 +69,25 @@ private struct RootView: View {
     }
 
     private var needsMajorityResidueByColumn: Bool {
-        backgroundMode == .different
+        backgroundMode == .minority
+    }
+
+    private var canDisplayReferenceBackground: Bool {
+        selectedReferenceSequence != nil
+    }
+
+    private var selectedReferenceSequence: String? {
+        model.row(named: selectedReferenceName)?.sequence
+    }
+
+    private var referenceSequenceForBackground: String? {
+        backgroundMode == .reference ? selectedReferenceSequence : nil
+    }
+
+    private var availableBackgroundModes: [AlignmentBackgroundMode] {
+        canDisplayReferenceBackground
+            ? AlignmentBackgroundMode.allCases
+            : AlignmentBackgroundMode.allCases.filter { $0 != .reference }
     }
 
     private var displayRows: [AlignmentRow] {
@@ -88,6 +106,13 @@ private struct RootView: View {
             set: { newValue in
                 displayOrderMode = newValue
             }
+        )
+    }
+
+    private var backgroundModeBinding: Binding<AlignmentBackgroundMode> {
+        Binding(
+            get: { backgroundMode },
+            set: { setBackgroundMode($0) }
         )
     }
 
@@ -164,7 +189,8 @@ private struct RootView: View {
     private var alignmentDisplayActions: AlignmentDisplayActions {
         AlignmentDisplayActions(
             backgroundMode: backgroundMode,
-            setBackgroundMode: { backgroundMode = $0 },
+            availableBackgroundModes: availableBackgroundModes,
+            setBackgroundMode: setBackgroundMode,
             displayOrderMode: effectiveDisplayOrderMode,
             canChangeDisplayOrder: viewerMode == .view,
             canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count),
@@ -223,14 +249,19 @@ private struct RootView: View {
             ]
         )
         for range in content.coloredRanges {
-            applyAuxiliaryBackground(to: attributed, in: range)
+            applyAuxiliaryBackground(to: attributed, in: range, referenceSequence: referenceSequenceForBackground)
         }
         return attributed
     }
 
-    private func applyAuxiliaryBackground(to attributed: NSMutableAttributedString, in range: NSRange) {
+    private func applyAuxiliaryBackground(
+        to attributed: NSMutableAttributedString,
+        in range: NSRange,
+        referenceSequence: String?
+    ) {
         guard range.length > 0 else { return }
         let text = attributed.string as NSString
+        let referenceText = referenceSequence.map { $0 as NSString }
         var runStart: Int?
         var runColor: NSColor?
 
@@ -245,7 +276,12 @@ private struct RootView: View {
 
         for offset in 0..<range.length {
             let location = range.location + offset
-            let color = auxiliaryBackgroundColor(for: text.character(at: location), column: offset)
+            let referenceResidue = referenceText.flatMap { offset < $0.length ? $0.character(at: offset) : nil }
+            let color = auxiliaryBackgroundColor(
+                for: text.character(at: location),
+                column: offset,
+                referenceResidue: referenceResidue
+            )
             guard let color else {
                 flushRun(endOffset: offset)
                 runStart = nil
@@ -264,22 +300,58 @@ private struct RootView: View {
         flushRun(endOffset: range.length)
     }
 
-    private func auxiliaryBackgroundColor(for residue: UInt16, column: Int) -> NSColor? {
+    private func auxiliaryBackgroundColor(for residue: UInt16, column: Int, referenceResidue: UInt16?) -> NSColor? {
         switch backgroundMode {
         case .none:
             return nil
         case .residue:
             return ResiduePalette.backgroundColor(for: residue)
-        case .different:
+        case .minority:
             let normalizedResidue = normalizedResidueCode(residue)
             guard let majorityResidue = model.renderedAlignment.majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
             guard normalizedResidue != majorityResidue else { return nil }
             return ResiduePalette.backgroundColor(for: normalizedResidue)
+        case .reference:
+            return ReferenceDifferencePalette.backgroundColor(for: residue, referenceResidue: referenceResidue)
         case .identity:
             return model.renderedAlignment.identityByColumn[safe: column].flatMap {
                 IdentityPalette.backgroundColor(for: $0, threshold: identityColorThreshold)
             }
         }
+    }
+
+    private var alignmentViewport: AlignmentTextViewport {
+        AlignmentTextViewport(
+            nameAttributedText: model.renderedAlignment.nameAttributedText,
+            sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
+            namesChecksum: model.renderedAlignment.namesChecksum,
+            sequenceChecksum: model.renderedAlignment.sequenceChecksum,
+            alignmentLength: displayAlignment.length,
+            identityByColumn: model.renderedAlignment.identityByColumn,
+            majorityResidueByColumn: model.renderedAlignment.majorityResidueByColumn,
+            backgroundMode: backgroundMode,
+            referenceSequenceForBackground: referenceSequenceForBackground,
+            identityColorThreshold: identityColorThreshold,
+            fontSize: alignmentFontSize,
+            contentVersion: model.contentVersion,
+            defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
+            displayedRowNames: displayRows.map(\.name),
+            displayedRowSequences: displayRows.map(\.sequence),
+            auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
+            auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
+            auxiliaryLineCount: auxiliaryPanel.lineCount,
+            isEditMode: canEditRenderedRows,
+            onSequenceEdited: applyEditedSequenceText,
+            selectedResidueCount: $selectedResidueCount,
+            selectedSequenceCount: $selectedSequenceCount,
+            selectedStartPosition: $selectedStartPosition,
+            selectedEndPosition: $selectedEndPosition,
+            onAddSequence: addSequence,
+            onAddFASTAFromClipboard: addFASTAFromClipboard,
+            onRenameSequence: renameDisplayedSequence,
+            onDeleteSequence: deleteDisplayedSequence,
+            onSetReference: setReference
+        )
     }
 
     var body: some View {
@@ -292,40 +364,7 @@ private struct RootView: View {
                 )
             } else {
                 VStack(spacing: 0) {
-                    AlignmentTextViewport(
-                        nameAttributedText: model.renderedAlignment.nameAttributedText,
-                        sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
-                        namesChecksum: model.renderedAlignment.namesChecksum,
-                        sequenceChecksum: model.renderedAlignment.sequenceChecksum,
-                        alignmentLength: displayAlignment.length,
-                        identityByColumn: model.renderedAlignment.identityByColumn,
-                        majorityResidueByColumn: model.renderedAlignment.majorityResidueByColumn,
-                        backgroundMode: backgroundMode,
-                        identityColorThreshold: identityColorThreshold,
-                        fontSize: alignmentFontSize,
-                        contentVersion: model.contentVersion,
-                        defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
-                        displayedRowNames: displayRows.map(\.name),
-                        displayedRowSequences: displayRows.map(\.sequence),
-                        auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
-                        auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
-                        auxiliaryLineCount: auxiliaryPanel.lineCount,
-                        isEditMode: canEditRenderedRows,
-                        onSequenceEdited: applyEditedSequenceText,
-                        selectedResidueCount: $selectedResidueCount,
-                        selectedSequenceCount: $selectedSequenceCount,
-                        selectedStartPosition: $selectedStartPosition,
-                        selectedEndPosition: $selectedEndPosition,
-                        onAddSequence: addSequence,
-                        onAddFASTAFromClipboard: addFASTAFromClipboard,
-                        onRenameSequence: renameDisplayedSequence,
-                        onDeleteSequence: deleteDisplayedSequence
-                    ) { selectedName in
-                        selectedReferenceName = selectedName
-                        if selectedName != nil {
-                            showsReferencePanel = true
-                        }
-                    }
+                    alignmentViewport
                     Divider()
                     FooterBar(
                         sequenceCount: displayAlignment.rows.count,
@@ -334,7 +373,8 @@ private struct RootView: View {
                         selectedSequenceCount: selectedSequenceCount,
                         selectedStartPosition: selectedStartPosition,
                         selectedEndPosition: selectedEndPosition,
-                        backgroundMode: $backgroundMode,
+                        backgroundMode: backgroundModeBinding,
+                        availableBackgroundModes: availableBackgroundModes,
                         displayOrderMode: footerDisplayOrderMode,
                         canChangeDisplayOrder: viewerMode == .view,
                         canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
@@ -396,7 +436,7 @@ private struct RootView: View {
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
         .onChange(of: model.alignment.rows.count) { _, _ in validateDisplayOrderMode() }
         .onChange(of: backgroundMode) { _, newValue in
-            if newValue == .identity || newValue == .different {
+            if newValue == .identity || newValue == .minority {
                 rerender()
             }
         }
@@ -424,6 +464,19 @@ private struct RootView: View {
         setViewerMode(viewerMode == .edit ? .view : .edit)
     }
 
+    private func setBackgroundMode(_ mode: AlignmentBackgroundMode) {
+        guard mode != .reference || canDisplayReferenceBackground else { return }
+        backgroundMode = mode
+    }
+
+    private func setReference(_ selectedName: String?) {
+        selectedReferenceName = selectedName
+        if selectedName != nil {
+            showsReferencePanel = true
+        }
+        validateReferenceBackgroundMode()
+    }
+
     private func confirmEnteringEditMode() -> Bool {
         let alert = NSAlert()
         alert.messageText = String(localized: "Changes in Edit mode are autosaved with versions.")
@@ -446,6 +499,7 @@ private struct RootView: View {
         if selectedReferenceName != nil, !model.containsRow(named: selectedReferenceName) {
             selectedReferenceName = nil
         }
+        validateReferenceBackgroundMode()
         model.parseAndRender(
             rawText: document.rawText,
             fontSize: alignmentFontSize,
@@ -470,6 +524,12 @@ private struct RootView: View {
         guard displayOrderMode == .upgma else { return }
         guard !AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count) else { return }
         displayOrderMode = .original
+    }
+
+    private func validateReferenceBackgroundMode() {
+        if backgroundMode == .reference && !canDisplayReferenceBackground {
+            backgroundMode = .residue
+        }
     }
 
     private func applyEditedSequenceText(_ editedText: String) {

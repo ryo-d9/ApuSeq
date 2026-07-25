@@ -248,6 +248,15 @@ enum IdentityPalette {
     }
 }
 
+enum ReferenceDifferencePalette {
+    static func backgroundColor(for residue: UInt16, referenceResidue: UInt16?) -> NSColor? {
+        let normalizedResidue = normalizedResidueCode(residue)
+        guard let referenceResidue else { return nil }
+        guard normalizedResidue != normalizedResidueCode(referenceResidue) else { return nil }
+        return ResiduePalette.backgroundColor(for: normalizedResidue)
+    }
+}
+
 extension Array {
     subscript(safe index: Int) -> Element? {
         guard indices.contains(index) else { return nil }

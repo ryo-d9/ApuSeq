@@ -10,6 +10,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let identityByColumn: [Double]
     let majorityResidueByColumn: [UInt16]
     let backgroundMode: AlignmentBackgroundMode
+    let referenceSequenceForBackground: String?
     let identityColorThreshold: Double
     let fontSize: Double
     let contentVersion: Int
@@ -156,6 +157,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             identityByColumn: identityByColumn,
             majorityResidueByColumn: majorityResidueByColumn,
             backgroundMode: backgroundMode,
+            referenceSequenceForBackground: referenceSequenceForBackground,
             identityColorThreshold: identityColorThreshold
         )
         containerView.rulerView.update(

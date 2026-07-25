@@ -271,7 +271,8 @@ final class AlignmentViewModel {
 enum AlignmentBackgroundMode: String, CaseIterable, Identifiable {
     case none = "None"
     case residue = "Residue"
-    case different = "Different"
+    case minority = "Minority"
+    case reference = "Reference"
     case identity = "Identity"
 
     var id: String { rawValue }

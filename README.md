@@ -11,7 +11,7 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - TextKit 2 based alignment viewport
 - View and Edit modes
 - Reference, Consensus, and Identity panels
-- None, Residue, Different, and Identity background coloring modes
+- None, Residue, Minority, Reference, and Identity background coloring modes
 - View-only display ordering with Original, Name, and UPGMA modes for alignments with 3 to 300 sequences
 - Column selection and multi-range editing
 - Sequence add, FASTA clipboard import, rename, and deletion from Edit mode
@@ -32,6 +32,10 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Avoid modifying files in View mode
 - Keep derived outputs, such as translated or reverse-complemented sequences, as new unsaved documents until the user saves them
 - Keep domain logic independent from platform UI where practical
+
+## Viewing Behavior
+
+Use the footer controls or View > Background Color to change background coloring. Minority colors residues that differ from the column majority. Reference colors residues that differ from the selected reference sequence and appears after a reference is selected.
 
 ## Editing Behavior
 
