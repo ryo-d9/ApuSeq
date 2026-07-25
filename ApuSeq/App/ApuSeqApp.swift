@@ -14,7 +14,7 @@ struct ApuSeqApp: App {
             ContentView(document: file.document)
         }
         .commands {
-            FindCommands()
+            TextEditingCommands()
             AlignmentCommands()
             ViewerModeCommands()
             ViewPanelCommands()

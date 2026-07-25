@@ -104,28 +104,6 @@ extension FocusedValues {
     }
 }
 
-struct FindCommands: Commands {
-    var body: some Commands {
-        CommandGroup(after: .pasteboard) {
-            Divider()
-            Button(String(localized: "Find")) {
-                FindActionDispatcher.perform(.showFindInterface)
-            }
-            .keyboardShortcut("f", modifiers: .command)
-
-            Button(String(localized: "Find Next")) {
-                FindActionDispatcher.perform(.nextMatch)
-            }
-            .keyboardShortcut("g", modifiers: .command)
-
-            Button(String(localized: "Find Previous")) {
-                FindActionDispatcher.perform(.previousMatch)
-            }
-            .keyboardShortcut("g", modifiers: [.command, .shift])
-        }
-    }
-}
-
 struct ColumnSelectionCommands: Commands {
     @FocusedValue(\.alignmentCopyActions) private var actions
 
@@ -264,14 +242,6 @@ struct OpenSourceLicenseCommands: Commands {
                 openWindow(id: OpenSourceLicensesView.windowID)
             }
         }
-    }
-}
-
-private enum FindActionDispatcher {
-    static func perform(_ action: NSTextFinder.Action) {
-        let item = NSMenuItem()
-        item.tag = action.rawValue
-        NSApp.sendAction(#selector(NSResponder.performTextFinderAction(_:)), to: nil, from: item)
     }
 }
 
