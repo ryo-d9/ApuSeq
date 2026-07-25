@@ -24,6 +24,13 @@
         "identifier" : "2AD865A33012185700872719",
         "name" : "ApuSeqTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:ApuSeq.xcodeproj",
+        "identifier" : "2AD865B130121D1C00872719",
+        "name" : "ApuSeqUITests"
+      }
     }
   ],
   "version" : 1

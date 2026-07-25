@@ -167,10 +167,12 @@ enum AlignmentSerializer {
 
     nonisolated static func serialize(rows: [AlignmentRow], preferredFormat: AlignmentFormat) -> String {
         switch preferredFormat {
+        case .fasta:
+            return serializeFASTA(rows: rows)
         case .clustal:
             return serializeCLUSTAL(rows: rows)
-        case .fasta, .plainText:
-            return serializeFASTA(rows: rows)
+        case .plainText:
+            return serializePlainText(rows: rows)
         }
     }
 
@@ -187,6 +189,11 @@ enum AlignmentSerializer {
             output += "\n"
         }
         return output
+    }
+
+    nonisolated private static func serializePlainText(rows: [AlignmentRow]) -> String {
+        guard !rows.isEmpty else { return "" }
+        return rows.map(\.sequence).joined(separator: "\n") + "\n"
     }
 
     nonisolated private static func serializeCLUSTAL(rows: [AlignmentRow]) -> String {

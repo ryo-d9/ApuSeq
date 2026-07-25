@@ -55,6 +55,17 @@ struct ApuSeqTests {
         #expect(clustal.contains("A-GT"))
     }
 
+    @Test func serializesRowsAsPlainTextSequencesOnly() {
+        let rows = [
+            AlignmentRow(name: "Seq 1", sequence: "ACGT"),
+            AlignmentRow(name: "Seq2", sequence: "A-GT")
+        ]
+
+        let plainText = AlignmentSerializer.serialize(rows: rows, preferredFormat: .plainText)
+
+        #expect(plainText == "ACGT\nA-GT\n")
+    }
+
     @Test func reverseComplementPreservesNamesAndHandlesAmbiguousBases() throws {
         let text = """
         >Mixed

@@ -12,6 +12,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     var onAddVerticalCursor: ((Int) -> Bool)?
     var onAddSequence: (() -> Void)?
+    var canAddSequenceFromMenu = true
     var columnSelectionAnchor: Int?
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
@@ -223,7 +224,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let menu = super.menu(for: event) ?? NSMenu(title: AppStrings.sequenceMenu)
-        guard isEditable else { return menu }
+        guard isEditable && canAddSequenceFromMenu else { return menu }
         if !menu.items.isEmpty {
             menu.addItem(.separator())
         }

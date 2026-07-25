@@ -120,8 +120,16 @@ private struct RootView: View {
         viewerMode == .edit && model.renderedDisplayOrderMode == .original
     }
 
+    private var isPlainTextAlignment: Bool {
+        model.alignment.format == .plainText
+    }
+
+    private var canUseNamedSequenceEditing: Bool {
+        viewerMode == .edit && !isPlainTextAlignment
+    }
+
     private var canAddSequence: Bool {
-        viewerMode == .edit && model.parseErrorMessage == nil
+        canUseNamedSequenceEditing && model.parseErrorMessage == nil
     }
 
     private var displayAlignment: AlignmentData {
@@ -166,8 +174,8 @@ private struct RootView: View {
             removeAllGapColumns: removeAllGapColumns,
             canTrimTrailingGaps: viewerMode == .edit && AlignmentColumnEditor.hasTrailingGaps(in: model.alignment.rows),
             trimTrailingGaps: trimTrailingGaps,
-            canSortSequencesByName: viewerMode == .edit && model.alignment.rows.count > 1,
-            canSortSequencesByUPGMA: viewerMode == .edit && AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count),
+            canSortSequencesByName: canUseNamedSequenceEditing && model.alignment.rows.count > 1,
+            canSortSequencesByUPGMA: canUseNamedSequenceEditing && AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count),
             sortSequences: sortSequences
         )
     }
@@ -215,6 +223,7 @@ private struct RootView: View {
 
     private var canAlignSelectedColumnsWithMAFFT: Bool {
         guard viewerMode == .edit,
+              !isPlainTextAlignment,
               !isRunningMAFFTAlignment,
               model.alignment.rows.count >= 2,
               selectedColumnRange != nil else {
@@ -341,6 +350,7 @@ private struct RootView: View {
             auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
             auxiliaryLineCount: auxiliaryPanel.lineCount,
             isEditMode: canEditRenderedRows,
+            canEditSequenceNames: canUseNamedSequenceEditing,
             onSequenceEdited: applyEditedSequenceText,
             selectedResidueCount: $selectedResidueCount,
             selectedSequenceCount: $selectedSequenceCount,
@@ -575,7 +585,7 @@ private struct RootView: View {
     }
 
     private func renameDisplayedSequence(at displayedRowIndex: Int) {
-        guard viewerMode == .edit else { return }
+        guard canUseNamedSequenceEditing else { return }
         guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
 
         var rows = model.alignment.rows
@@ -599,7 +609,7 @@ private struct RootView: View {
     }
 
     private func deleteDisplayedSequence(at displayedRowIndex: Int) {
-        guard viewerMode == .edit else { return }
+        guard canUseNamedSequenceEditing else { return }
         guard model.alignment.rows.count > 1 else { return }
         guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
 
@@ -629,7 +639,7 @@ private struct RootView: View {
     }
 
     private func sortSequences(_ mode: AlignmentDisplayOrderMode) {
-        guard viewerMode == .edit, model.alignment.rows.count > 1 else { return }
+        guard canUseNamedSequenceEditing, model.alignment.rows.count > 1 else { return }
 
         let rows: [AlignmentRow]
         switch mode {

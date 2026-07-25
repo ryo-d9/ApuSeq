@@ -1,0 +1,367 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%" : {
+
+    },
+    "%@: " : {
+
+    },
+    "A sequence named \"%@\" already exists." : {
+
+    },
+    "Add a sequence" : {
+
+    },
+    "Add FASTA from Clipboard" : {
+
+    },
+    "Add Sequence" : {
+
+    },
+    "Add Sequence..." : {
+
+    },
+    "Align Selected Columns with MAFFT Auto" : {
+
+    },
+    "Align with MAFFT" : {
+
+    },
+    "Align with MAFFT Auto" : {
+
+    },
+    "Aligning with MAFFT..." : {
+
+    },
+    "Alignment" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "At least two selected sequences must contain residues in the selected columns." : {
+
+    },
+    "At least two sequences are required for MAFFT alignment." : {
+
+    },
+    "Background" : {
+
+    },
+    "Background Color" : {
+
+    },
+    "By Name" : {
+
+    },
+    "By UPGMA" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cannot Parse Alignment" : {
+
+    },
+    "Change background coloring" : {
+
+    },
+    "Change sequence display order in view mode" : {
+
+    },
+    "Changes in Edit mode are autosaved with versions." : {
+
+    },
+    "Choose whether ApuSeq follows the system appearance or uses a fixed light or dark appearance." : {
+
+    },
+    "Clear Reference" : {
+
+    },
+    "CLUSTAL" : {
+
+    },
+    "Codon Table" : {
+
+    },
+    "Columns" : {
+
+    },
+    "Copy as FASTA" : {
+
+    },
+    "Copy Consensus" : {
+
+    },
+    "Copy Sequence" : {
+
+    },
+    "Dark" : {
+
+    },
+    "Delete Sequence" : {
+
+    },
+    "Display Order" : {
+
+    },
+    "Do not show again" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit Mode" : {
+
+    },
+    "Edit Mode Warning" : {
+
+    },
+    "Editing" : {
+
+    },
+    "Editing can modify the document contents. macOS may autosave those changes and keep prior versions for recovery." : {
+
+    },
+    "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added." : {
+
+    },
+    "Enter a new name for this sequence." : {
+
+    },
+    "Enter Edit Mode" : {
+
+    },
+    "Entire Alignment" : {
+
+    },
+    "Exit Edit Mode" : {
+
+    },
+    "FASTA" : {
+
+    },
+    "Font Size" : {
+
+    },
+    "Format" : {
+
+    },
+    "Frame +0" : {
+
+    },
+    "Frame +1" : {
+
+    },
+    "Frame +2" : {
+
+    },
+    "General" : {
+
+    },
+    "Hide Consensus Panel" : {
+
+    },
+    "Hide Identity Panel" : {
+
+    },
+    "Hide Reference Panel" : {
+
+    },
+    "Identity" : {
+
+    },
+    "Identity Threshold" : {
+
+    },
+    "Information" : {
+
+    },
+    "Input data is not in FASTA, CLUSTAL, or plain-text sequence format." : {
+
+    },
+    "Insert Gap Column" : {
+
+    },
+    "License text could not be loaded." : {
+
+    },
+    "Light" : {
+
+    },
+    "MAFFT Alignment Failed" : {
+
+    },
+    "MAFFT completed but did not produce an alignment." : {
+
+    },
+    "MAFFT did not return all selected sequences." : {
+
+    },
+    "MAFFT failed with exit status %d: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MAFFT failed with exit status %1$d: %2$@"
+          }
+        }
+      }
+    },
+    "MAFFT failed with exit status %d." : {
+
+    },
+    "Minority" : {
+
+    },
+    "Mode" : {
+
+    },
+    "Multiple sequence alignment program" : {
+
+    },
+    "Name" : {
+
+    },
+    "None" : {
+
+    },
+    "OK" : {
+
+    },
+    "Open Source Licenses" : {
+
+    },
+    "Open Source Licenses..." : {
+
+    },
+    "Original" : {
+
+    },
+    "Plain Text" : {
+
+    },
+    "pt" : {
+
+    },
+    "Reference" : {
+
+    },
+    "Remove All-Gap Columns" : {
+
+    },
+    "Rename Sequence" : {
+
+    },
+    "Rename Sequence..." : {
+
+    },
+    "Residue" : {
+
+    },
+    "Residues" : {
+
+    },
+    "Reverse Complement" : {
+
+    },
+    "Reverse complement is available only for nucleotide alignments." : {
+
+    },
+    "Select" : {
+
+    },
+    "Select Column Down" : {
+
+    },
+    "Select Column Up" : {
+
+    },
+    "Select Line" : {
+
+    },
+    "Select one or more alignment columns to realign." : {
+
+    },
+    "Select Ungapped Chunk" : {
+
+    },
+    "Selected Columns" : {
+
+    },
+    "Sequence" : {
+
+    },
+    "Sequence name cannot be empty." : {
+
+    },
+    "Sequences" : {
+
+    },
+    "Set as Reference" : {
+
+    },
+    "Show a warning before entering Edit mode because edits can be autosaved with document versions." : {
+
+    },
+    "Show alignment information" : {
+
+    },
+    "Show Consensus Panel" : {
+
+    },
+    "Show Identity Panel" : {
+
+    },
+    "Show Reference Panel" : {
+
+    },
+    "Sites" : {
+
+    },
+    "Sort Sequences" : {
+
+    },
+    "Source Chars" : {
+
+    },
+    "Standard" : {
+
+    },
+    "Switch between read-only view and edit mode" : {
+
+    },
+    "System" : {
+
+    },
+    "The bundled MAFFT executable could not be found." : {
+
+    },
+    "Translation" : {
+
+    },
+    "Translation is available only for nucleotide alignments." : {
+
+    },
+    "Trim Trailing Gaps" : {
+
+    },
+    "UPGMA" : {
+
+    },
+    "Version %@" : {
+
+    },
+    "Vertebrate Mitochondrial" : {
+
+    },
+    "View" : {
+
+    },
+    "Website" : {
+
+    }
+  },
+  "version" : "1.0"
+}

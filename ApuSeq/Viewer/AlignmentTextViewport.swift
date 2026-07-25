@@ -21,6 +21,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
     let isEditMode: Bool
+    let canEditSequenceNames: Bool
     let onSequenceEdited: (String) -> Void
     @Binding var selectedResidueCount: Int
     @Binding var selectedSequenceCount: Int
@@ -37,6 +38,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
         nameColumnView.isEditMode = isEditMode
+        nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
         nameColumnView.onAddFASTAFromClipboard = onAddFASTAFromClipboard
         nameColumnView.onRenameSequence = onRenameSequence
@@ -51,6 +53,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             return coordinator.addVerticalCursors(in: sequenceTextView, direction: direction)
         }
         sequenceTextView.onAddSequence = onAddSequence
+        sequenceTextView.canAddSequenceFromMenu = canEditSequenceNames
 
         let auxiliaryNameTextView = NSTextView(usingTextLayoutManager: true)
         configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize)
@@ -68,6 +71,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             displayedRowNames,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
+            canEditSequenceNames: canEditSequenceNames,
             onAddSequence: onAddSequence,
             onAddFASTAFromClipboard: onAddFASTAFromClipboard,
             onRenameSequence: onRenameSequence,
@@ -85,6 +89,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             displayedRowNames,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
+            canEditSequenceNames: canEditSequenceNames,
             onAddSequence: onAddSequence,
             onAddFASTAFromClipboard: onAddFASTAFromClipboard,
             onRenameSequence: onRenameSequence,

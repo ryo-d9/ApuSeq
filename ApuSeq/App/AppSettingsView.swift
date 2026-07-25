@@ -24,6 +24,10 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 }
 
 struct AppSettingsView: View {
+    private static let alignmentFontSizeRange = 8.0...24.0
+    private static let identityThresholdRange = 0.1...0.9
+    private static let identityThresholdTicks = Array(stride(from: 0.1, through: 0.9, by: 0.1))
+
     @AppStorage("alignmentFontSize") private var alignmentFontSize = 12.0
     @AppStorage("identityColorThreshold") private var identityColorThreshold = 0.5
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
@@ -48,30 +52,60 @@ struct AppSettingsView: View {
                 }
         }
         .padding(20)
-        .frame(width: 500, height: 280)
+        .frame(width: 540, height: 280)
         .preferredColorScheme((AppAppearanceMode(rawValue: appearanceMode) ?? .system).colorScheme)
     }
 
     private var generalSettings: some View {
         Form {
             Section(String(localized: "Alignment")) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 14) {
                     LabeledContent(String(localized: "Font Size")) {
                         HStack {
-                            Slider(value: $alignmentFontSize, in: 8...24, step: 1)
+                            Slider(value: alignmentFontSizeBinding, in: Self.alignmentFontSizeRange, step: 1)
                                 .frame(width: 220)
-                            Text("\(Int(alignmentFontSize)) pt")
-                                .frame(width: 56, alignment: .trailing)
+                            HStack(spacing: 4) {
+                                TextField(
+                                    value: alignmentFontSizeBinding,
+                                    format: .number.precision(.fractionLength(0)),
+                                    prompt: Text(12, format: .number),
+                                    label: EmptyView.init
+                                )
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 42)
+                                    .multilineTextAlignment(.trailing)
+                                Text("pt")
+                                    .foregroundStyle(.secondary)
+                            }
+                                .frame(width: 64, alignment: .trailing)
                                 .monospacedDigit()
                         }
                     }
 
                     LabeledContent(String(localized: "Identity Threshold")) {
                         HStack {
-                            Slider(value: $identityColorThreshold, in: 0.1...0.9, step: 0.01)
+                            Slider(value: identityColorThresholdBinding, in: Self.identityThresholdRange) {
+                                EmptyView()
+                            } ticks: {
+                                SliderTickContentForEach(Self.identityThresholdTicks, id: \.self) { value in
+                                    SliderTick(value)
+                                }
+                            }
                                 .frame(width: 220)
-                            Text("\(Int(identityColorThreshold * 100))%")
-                                .frame(width: 56, alignment: .trailing)
+                            HStack(spacing: 4) {
+                                TextField(
+                                    value: identityColorThresholdPercentageBinding,
+                                    format: .number,
+                                    prompt: Text(50, format: .number),
+                                    label: EmptyView.init
+                                )
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 42)
+                                    .multilineTextAlignment(.trailing)
+                                Text("%")
+                                    .foregroundStyle(.secondary)
+                            }
+                                .frame(width: 64, alignment: .trailing)
                                 .monospacedDigit()
                         }
                     }
@@ -119,5 +153,44 @@ struct AppSettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var alignmentFontSizeBinding: Binding<Double> {
+        Binding(
+            get: {
+                min(max(alignmentFontSize, Self.alignmentFontSizeRange.lowerBound), Self.alignmentFontSizeRange.upperBound)
+            },
+            set: { newValue in
+                let roundedValue = newValue.rounded()
+                alignmentFontSize = min(max(roundedValue, Self.alignmentFontSizeRange.lowerBound), Self.alignmentFontSizeRange.upperBound)
+            }
+        )
+    }
+
+    private var identityColorThresholdBinding: Binding<Double> {
+        Binding(
+            get: {
+                min(max(identityColorThreshold, Self.identityThresholdRange.lowerBound), Self.identityThresholdRange.upperBound)
+            },
+            set: { newValue in
+                let roundedValue = (newValue * 100).rounded() / 100
+                identityColorThreshold = min(max(roundedValue, Self.identityThresholdRange.lowerBound), Self.identityThresholdRange.upperBound)
+            }
+        )
+    }
+
+    private var identityColorThresholdPercentage: Int {
+        Int((identityColorThresholdBinding.wrappedValue * 100).rounded())
+    }
+
+    private var identityColorThresholdPercentageBinding: Binding<Int> {
+        Binding(
+            get: {
+                identityColorThresholdPercentage
+            },
+            set: { newValue in
+                identityColorThresholdBinding.wrappedValue = Double(newValue) / 100
+            }
+        )
     }
 }

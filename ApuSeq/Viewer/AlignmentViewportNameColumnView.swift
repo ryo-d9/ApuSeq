@@ -16,6 +16,7 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var isEditMode = false
+    var canEditSequenceNames = true
     var onAddSequence: (() -> Void)?
     var onAddFASTAFromClipboard: (() -> Void)?
     var onRenameSequence: ((Int) -> Void)?
@@ -59,7 +60,7 @@ final class AlignmentViewportNameColumnView: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
         guard row >= 0, row < rowNames.count else {
-            guard isEditMode else { return super.menu(for: event) }
+            guard isEditMode && canEditSequenceNames else { return super.menu(for: event) }
             let menu = NSMenu(title: AppStrings.sequenceMenu)
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self
@@ -90,7 +91,7 @@ final class AlignmentViewportNameColumnView: NSView {
         clearItem.target = self
         menu.addItem(clearItem)
 
-        if isEditMode {
+        if isEditMode && canEditSequenceNames {
             menu.addItem(.separator())
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
             addItem.target = self

@@ -85,6 +85,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         _ names: [String],
         sequences: [String],
         isEditMode: Bool,
+        canEditSequenceNames: Bool,
         onAddSequence: @escaping () -> Void,
         onAddFASTAFromClipboard: @escaping () -> Void,
         onRenameSequence: @escaping (Int) -> Void,
@@ -96,12 +97,14 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         }
         nameColumnView.rowSequences = sequences
         nameColumnView.isEditMode = isEditMode
+        nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
         nameColumnView.onAddFASTAFromClipboard = onAddFASTAFromClipboard
         nameColumnView.onRenameSequence = onRenameSequence
         nameColumnView.onDeleteSequence = onDeleteSequence
         nameColumnView.onSetReference = onSetReference
         sequenceTextView.onAddSequence = onAddSequence
+        sequenceTextView.canAddSequenceFromMenu = canEditSequenceNames
     }
 
     func updateAuxiliaryPanel(
