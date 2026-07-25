@@ -19,48 +19,26 @@
 			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.apuseq.fasta</string>
 				<string>org.fasta</string>
 				<string>aliview.fa</string>
 				<string>aliview.fas</string>
 				<string>aliview.fasta</string>
 				<string>org.clustal</string>
-				<string>public.plain-text</string>
 			</array>
 			<key>NSUbiquitousDocumentUserActivityType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).alignmentdocument</string>
 		</dict>
-	</array>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
 		<dict>
-			<key>UTTypeConformsTo</key>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.plain-text</string>
 			</array>
-			<key>UTTypeDescription</key>
-			<string>FASTA Alignment</string>
-			<key>UTTypeIdentifier</key>
-			<string>com.apuseq.fasta</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>fa</string>
-					<string>fas</string>
-					<string>fasta</string>
-					<string>fna</string>
-					<string>ffn</string>
-					<string>faa</string>
-					<string>frn</string>
-					<string>fsa</string>
-					<string>fsa_nt</string>
-					<string>fsa_aa</string>
-					<string>mpfa</string>
-				</array>
-				<key>public.mime-type</key>
-				<string>text/x-fasta</string>
-			</dict>
+			<key>NSUbiquitousDocumentUserActivityType</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).plaintextdocument</string>
 		</dict>
 	</array>
 	<key>UTImportedTypeDeclarations</key>

@@ -28,7 +28,6 @@
 			<true/>
 			<key>QLSupportedContentTypes</key>
 			<array>
-				<string>com.apuseq.fasta</string>
 				<string>org.fasta</string>
 				<string>aliview.fa</string>
 				<string>aliview.fas</string>

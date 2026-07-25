@@ -18,8 +18,8 @@ struct ApuSeqTests {
         #expect(alignment.format == .fasta)
         #expect(alignment.length == 4)
         #expect(alignment.sequenceKind == .nucleotide)
-        #expect(alignment.rows.map(\.name) == ["Beta", "Alpha"])
-        #expect(alignment.rows.map(\.sequence) == ["ACGT", "AC--"])
+        #expect(alignment.rows.map { $0.name } == ["Beta", "Alpha"])
+        #expect(alignment.rows.map { $0.sequence } == ["ACGT", "AC--"])
     }
 
     @Test func parsesCLUSTALBlocksInOriginalSequenceOrder() throws {
@@ -36,8 +36,8 @@ struct ApuSeqTests {
         let alignment = try AlignmentParser.parse(text)
 
         #expect(alignment.format == .clustal)
-        #expect(alignment.rows.map(\.name) == ["Seq1", "Seq2"])
-        #expect(alignment.rows.map(\.sequence) == ["ACGTTGCA", "AC-TTG-A"])
+        #expect(alignment.rows.map { $0.name } == ["Seq1", "Seq2"])
+        #expect(alignment.rows.map { $0.sequence } == ["ACGTTGCA", "AC-TTG-A"])
     }
 
     @Test func serializesRowsAsFASTAAndCLUSTAL() {
@@ -181,7 +181,7 @@ struct ApuSeqTests {
             AlignmentRow(name: "Similar", sequence: "AAAT")
         ]
 
-        let orderedNames = AlignmentClusterer.upgmaOrderedRows(rows).map(\.name)
+        let orderedNames = AlignmentClusterer.upgmaOrderedRows(rows).map { $0.name }
 
         let referenceIndex = try #require(orderedNames.firstIndex(of: "Reference"))
         let similarIndex = try #require(orderedNames.firstIndex(of: "Similar"))
@@ -197,7 +197,7 @@ struct ApuSeqTests {
 
         let orderedRows = AlignmentRowOrdering.nameOrderedRows(rows)
 
-        #expect(orderedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
+        #expect(orderedRows.map { $0.name } == ["sample 1", "sample 2", "sample 10"])
     }
 
     @Test func upgmaOrderingIsLimitedToThreeThroughThreeHundredRows() {
@@ -208,7 +208,7 @@ struct ApuSeqTests {
         #expect(!AlignmentRowOrdering.canOrderWithUPGMA(rowCount: twoRows.count))
         #expect(AlignmentRowOrdering.canOrderWithUPGMA(rowCount: threeHundredRows.count))
         #expect(!AlignmentRowOrdering.canOrderWithUPGMA(rowCount: threeHundredOneRows.count))
-        #expect(AlignmentRowOrdering.upgmaOrderedRows(threeHundredOneRows).map(\.name) == threeHundredOneRows.map(\.name))
+        #expect(AlignmentRowOrdering.upgmaOrderedRows(threeHundredOneRows).map { $0.name } == threeHundredOneRows.map { $0.name })
     }
 
     @Test func allGapColumnRemovalRemovesOnlySharedGapColumns() throws {
@@ -220,8 +220,8 @@ struct ApuSeqTests {
 
         let editedRows = try #require(AlignmentColumnEditor.removingAllGapColumns(from: rows, length: 4))
 
-        #expect(editedRows.map(\.name) == ["A", "B", "C"])
-        #expect(editedRows.map(\.sequence) == ["AC", "TG", "CT"])
+        #expect(editedRows.map { $0.name } == ["A", "B", "C"])
+        #expect(editedRows.map { $0.sequence } == ["AC", "TG", "CT"])
     }
 
     @Test func allGapColumnRemovalLeavesNoOpAndAllGapAlignmentsUnchanged() {
@@ -248,8 +248,8 @@ struct ApuSeqTests {
         #expect(AlignmentColumnEditor.hasTrailingGaps(in: rows))
         let trimmedRows = try #require(AlignmentColumnEditor.trimmingTrailingGaps(from: rows))
 
-        #expect(trimmedRows.map(\.name) == ["A", "B", "C"])
-        #expect(trimmedRows.map(\.sequence) == ["AC", "A-C", "--AC"])
+        #expect(trimmedRows.map { $0.name } == ["A", "B", "C"])
+        #expect(trimmedRows.map { $0.sequence } == ["AC", "A-C", "--AC"])
     }
 
     @Test func trailingGapTrimReturnsNilWhenNoRowsChange() {
@@ -298,8 +298,8 @@ struct ApuSeqTests {
 
         let editedRows = try #require(AlignmentColumnEditor.insertingGapColumn(in: rows, column: 2))
 
-        #expect(editedRows.map(\.name) == ["A", "B"])
-        #expect(editedRows.map(\.sequence) == ["AC-GT", "A--GT"])
+        #expect(editedRows.map { $0.name } == ["A", "B"])
+        #expect(editedRows.map { $0.sequence } == ["AC-GT", "A--GT"])
     }
 
     @Test func selectedColumnRealignmentRestoresOnlySelectedRegion() async throws {
@@ -313,16 +313,21 @@ struct ApuSeqTests {
             rows: rows,
             columnRange: 3..<6
         ) { rows in
-            #expect(rows.map(\.name) == ["ApuSeq_Row_0", "ApuSeq_Row_2"])
-            #expect(rows.map(\.sequence) == ["CC", "TTT"])
+            #expect(rows == [
+                AlignmentRow(name: "ApuSeq_Row_0", sequence: "CC"),
+                AlignmentRow(name: "ApuSeq_Row_2", sequence: "TTT")
+            ])
             return [
                 AlignmentRow(name: "ApuSeq_Row_0", sequence: "C-C-"),
                 AlignmentRow(name: "ApuSeq_Row_2", sequence: "TT-T")
             ]
         }
 
-        #expect(realignedRows.map(\.name) == ["A", "B", "C"])
-        #expect(realignedRows.map(\.sequence) == ["AAAC-C-GG", "AAA----GG", "AAATT-TGG"])
+        #expect(realignedRows == [
+            AlignmentRow(name: "A", sequence: "AAAC-C-GG"),
+            AlignmentRow(name: "B", sequence: "AAA----GG"),
+            AlignmentRow(name: "C", sequence: "AAATT-TGG")
+        ])
     }
 
     @Test func selectedColumnRealignmentRejectsInsufficientNonEmptyRows() async throws {
@@ -367,8 +372,8 @@ struct ApuSeqTests {
         )
         try await waitUntil { viewModel.contentVersion > 0 }
 
-        #expect(viewModel.displayedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
-        #expect(viewModel.alignment.rows.map(\.name) == ["sample 10", "sample 2", "sample 1"])
+        #expect(viewModel.displayedRows.map { $0.name } == ["sample 1", "sample 2", "sample 10"])
+        #expect(viewModel.alignment.rows.map { $0.name } == ["sample 10", "sample 2", "sample 1"])
         #expect(viewModel.renderedDisplayOrderMode == .name)
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-struct AlignmentData: Sendable {
+nonisolated struct AlignmentData: Sendable {
     let format: AlignmentFormat
     let rows: [AlignmentRow]
     let length: Int
@@ -9,9 +9,9 @@ struct AlignmentData: Sendable {
     nonisolated static let empty = AlignmentData(format: .plainText, rows: [], length: 0, sequenceKind: .nucleotide)
 }
 
-struct AlignmentRow: Sendable {
-    let name: String
-    let sequence: String
+nonisolated struct AlignmentRow: Equatable, Sendable {
+    nonisolated let name: String
+    nonisolated let sequence: String
 }
 
 enum SequenceKind: String, Sendable {
