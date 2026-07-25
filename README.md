@@ -19,7 +19,7 @@ The project focuses on fast viewing, simple editing, and standard macOS document
 - Insert Gap Column, Remove All-Gap Columns, Trim Trailing Gaps, and Sort Sequences commands, treating `-` and `.` as gaps where applicable
 - Nucleotide translation with selectable codon tables
 - Reverse complement generation for nucleotide alignments
-- Bundled MAFFT 7.526 `--auto` alignment that creates a new FASTA document
+- Bundled MAFFT 7.526 `--auto` alignment for whole documents and selected columns
 - Quick Look preview extension with lightweight residue coloring
 - Apple Help Book
 - Open source license viewer for bundled third-party components
@@ -51,7 +51,9 @@ Use Alignment > Reverse Complement to create a new unsaved FASTA document contai
 
 Use Alignment > Translation to create a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2. The source document is not modified.
 
-Use Alignment > Align with MAFFT Auto to create a new unsaved FASTA document aligned by the bundled MAFFT executable using `--auto`. ApuSeq shows an indeterminate progress sheet while MAFFT is running and provides a Cancel button for long-running alignments. The source document is not modified.
+Use Alignment > Align with MAFFT > Entire Alignment to create a new unsaved FASTA document aligned by the bundled MAFFT executable using `--auto`. ApuSeq shows an indeterminate progress sheet while MAFFT is running and provides a Cancel button for long-running alignments. The source document is not modified.
+
+In Edit mode, select one or more columns and use Alignment > Align with MAFFT > Selected Columns to realign only those columns across all sequences. ApuSeq removes gaps from the selected region before sending it to MAFFT, then restores the aligned region between the unchanged prefix and suffix columns. The command is undoable and leaves the document unchanged if alignment fails.
 
 ## Quick Look
 

@@ -294,6 +294,49 @@ struct ApuSeqTests {
         #expect(editedRows.map(\.sequence) == ["AC-GT", "A--GT"])
     }
 
+    @Test func selectedColumnRealignmentRestoresOnlySelectedRegion() async throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "AAAC-CGG"),
+            AlignmentRow(name: "B", sequence: "AAA---GG"),
+            AlignmentRow(name: "C", sequence: "AAATTTGG")
+        ]
+
+        let realignedRows = try await AlignmentRangeRealigner.realignSelectedColumns(
+            rows: rows,
+            columnRange: 3..<6
+        ) { rows in
+            #expect(rows.map(\.name) == ["ApuSeq_Row_0", "ApuSeq_Row_2"])
+            #expect(rows.map(\.sequence) == ["CC", "TTT"])
+            return [
+                AlignmentRow(name: "ApuSeq_Row_0", sequence: "C-C-"),
+                AlignmentRow(name: "ApuSeq_Row_2", sequence: "TT-T")
+            ]
+        }
+
+        #expect(realignedRows.map(\.name) == ["A", "B", "C"])
+        #expect(realignedRows.map(\.sequence) == ["AAAC-C-GG", "AAA----GG", "AAATT-TGG"])
+    }
+
+    @Test func selectedColumnRealignmentRejectsInsufficientNonEmptyRows() async throws {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "AAA---GG"),
+            AlignmentRow(name: "B", sequence: "AAAC--GG")
+        ]
+
+        do {
+            _ = try await AlignmentRangeRealigner.realignSelectedColumns(
+                rows: rows,
+                columnRange: 3..<6
+            ) { rows in
+                rows
+            }
+            Issue.record("Expected selected column realignment to reject one non-empty selected fragment")
+        } catch AlignmentRangeRealignmentError.insufficientNonEmptyRows {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test @MainActor func viewModelRendersNameOrderWithoutChangingOriginalAlignment() async throws {
         let viewModel = AlignmentViewModel()
         viewModel.alignment = AlignmentData(

@@ -176,6 +176,8 @@ private struct RootView: View {
         MAFFTAlignmentActions(
             canAlign: canAlignWithMAFFT,
             align: startMAFFTAlignment,
+            canAlignSelection: canAlignSelectedColumnsWithMAFFT,
+            alignSelection: startSelectedColumnsMAFFTAlignment,
             cancel: cancelMAFFTAlignment,
             isRunning: isRunningMAFFTAlignment
         )
@@ -183,6 +185,16 @@ private struct RootView: View {
 
     private var canAlignWithMAFFT: Bool {
         !isRunningMAFFTAlignment && !document.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var canAlignSelectedColumnsWithMAFFT: Bool {
+        guard viewerMode == .edit,
+              !isRunningMAFFTAlignment,
+              model.alignment.rows.count >= 2,
+              selectedColumnRange != nil else {
+            return false
+        }
+        return true
     }
 
     private var viewerModeBinding: Binding<ViewerMode> {
@@ -607,6 +619,33 @@ private struct RootView: View {
         }
     }
 
+    private func startSelectedColumnsMAFFTAlignment() {
+        guard canAlignSelectedColumnsWithMAFFT else { return }
+        guard let columnRange = selectedColumnRange else { return }
+        let rows = model.alignment.rows
+        isRunningMAFFTAlignment = true
+        mafftAlignmentTask = Task { @MainActor in
+            do {
+                let realignedRows = try await AlignmentRangeRealigner.realignSelectedColumns(
+                    rows: rows,
+                    columnRange: columnRange
+                )
+                guard !Task.isCancelled else { return }
+                finishMAFFTAlignment()
+                applyDocumentRawText(
+                    rebuildAlignment(fromRows: realignedRows),
+                    undoActionName: AppStrings.alignSelectedColumnsWithMAFFTAuto
+                )
+            } catch is CancellationError {
+                finishMAFFTAlignment()
+            } catch {
+                finishMAFFTAlignment()
+                mafftAlignmentErrorMessage = error.localizedDescription
+                showsMAFFTAlignmentError = true
+            }
+        }
+    }
+
     private func cancelMAFFTAlignment() {
         mafftAlignmentTask?.cancel()
     }
@@ -614,6 +653,14 @@ private struct RootView: View {
     private func finishMAFFTAlignment() {
         isRunningMAFFTAlignment = false
         mafftAlignmentTask = nil
+    }
+
+    private var selectedColumnRange: Range<Int>? {
+        guard let selectedStartPosition, let selectedEndPosition else { return nil }
+        let lower = min(selectedStartPosition, selectedEndPosition) - 1
+        let upper = max(selectedStartPosition, selectedEndPosition)
+        guard lower >= 0, lower < upper, upper <= model.alignment.length else { return nil }
+        return lower..<upper
     }
 
     private func applyDocumentRawText(_ newText: String, undoActionName: String) {

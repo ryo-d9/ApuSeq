@@ -42,6 +42,8 @@ struct AlignmentDisplayActions {
 struct MAFFTAlignmentActions {
     let canAlign: Bool
     let align: () -> Void
+    let canAlignSelection: Bool
+    let alignSelection: () -> Void
     let cancel: () -> Void
     let isRunning: Bool
 }
@@ -282,10 +284,18 @@ struct AlignmentCommands: Commands {
 
     var body: some Commands {
         CommandMenu(AppStrings.alignment) {
-            Button(AppStrings.alignWithMAFFTAuto) {
-                mafftActions?.align()
+            Menu(AppStrings.alignWithMAFFT) {
+                Button(AppStrings.alignEntireAlignment) {
+                    mafftActions?.align()
+                }
+                .disabled(mafftActions?.canAlign != true)
+
+                Button(AppStrings.alignSelectedColumns) {
+                    mafftActions?.alignSelection()
+                }
+                .disabled(mafftActions?.canAlignSelection != true)
             }
-            .disabled(mafftActions?.canAlign != true)
+            .disabled(mafftActions?.canAlign != true && mafftActions?.canAlignSelection != true)
 
             Button(AppStrings.removeAllGapColumns) {
                 editActions?.removeAllGapColumns()

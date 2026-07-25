@@ -36,14 +36,33 @@ enum MAFFTAligner {
         }
     }
 
+    nonisolated static func alignAuto(rows: [AlignmentRow]) async throws -> [AlignmentRow] {
+        let processBox = MAFFTProcessBox()
+        return try await withTaskCancellationHandler {
+            try await Task.detached(priority: .userInitiated) {
+                try alignAutoSynchronously(rows: rows, processBox: processBox)
+            }.value
+        } onCancel: {
+            processBox.terminate()
+        }
+    }
+
     nonisolated private static func alignAutoSynchronously(rawText: String, processBox: MAFFTProcessBox) throws -> String {
         let alignment = try AlignmentParser.parse(rawText)
-        guard alignment.rows.count >= 2 else {
+        let alignedRows = try alignAutoSynchronously(rows: alignment.rows, processBox: processBox)
+        return AlignmentSerializer.serialize(rows: alignedRows, preferredFormat: .fasta)
+    }
+
+    nonisolated private static func alignAutoSynchronously(rows: [AlignmentRow], processBox: MAFFTProcessBox) throws -> [AlignmentRow] {
+        guard rows.count >= 2 else {
             throw MAFFTAlignmentError.invalidInput
         }
         try Task.checkCancellation()
 
-        let fasta = AlignmentSerializer.serialize(rows: alignment.rows, preferredFormat: .fasta)
+        let temporaryRows = rows.enumerated().map { index, row in
+            AlignmentRow(name: temporaryName(for: index), sequence: row.sequence)
+        }
+        let fasta = AlignmentSerializer.serialize(rows: temporaryRows, preferredFormat: .fasta)
         let mafftURL = try bundledMAFFTScriptURL()
         let temporaryDirectory = try makeTemporaryDirectory()
         defer {
@@ -63,8 +82,19 @@ enum MAFFTAligner {
         guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw MAFFTAlignmentError.emptyOutput
         }
-        _ = try AlignmentParser.parse(output)
-        return output
+        let parsed = try AlignmentParser.parse(output)
+        let sequencesByName = Dictionary(uniqueKeysWithValues: parsed.rows.map { ($0.name, $0.sequence) })
+        return try rows.indices.map { index in
+            let name = temporaryName(for: index)
+            guard let sequence = sequencesByName[name] else {
+                throw MAFFTAlignmentError.emptyOutput
+            }
+            return AlignmentRow(name: rows[index].name, sequence: sequence)
+        }
+    }
+
+    nonisolated private static func temporaryName(for index: Int) -> String {
+        "ApuSeq_Row_\(index)"
     }
 
     nonisolated private static func bundledMAFFTScriptURL() throws -> URL {
@@ -155,6 +185,106 @@ enum MAFFTAligner {
             defer { lock.unlock() }
             return data
         }
+    }
+}
+
+enum AlignmentRangeRealignmentError: LocalizedError {
+    case invalidRange
+    case insufficientNonEmptyRows
+    case missingAlignedRow
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidRange:
+            return String(localized: "Select one or more alignment columns to realign.")
+        case .insufficientNonEmptyRows:
+            return String(localized: "At least two selected sequences must contain residues in the selected columns.")
+        case .missingAlignedRow:
+            return String(localized: "MAFFT did not return all selected sequences.")
+        }
+    }
+}
+
+enum AlignmentRangeRealigner {
+    typealias Aligner = @Sendable ([AlignmentRow]) async throws -> [AlignmentRow]
+
+    nonisolated static func realignSelectedColumns(
+        rows: [AlignmentRow],
+        columnRange: Range<Int>,
+        aligner: Aligner = MAFFTAligner.alignAuto(rows:)
+    ) async throws -> [AlignmentRow] {
+        guard !rows.isEmpty,
+              columnRange.lowerBound >= 0,
+              columnRange.lowerBound < columnRange.upperBound else {
+            throw AlignmentRangeRealignmentError.invalidRange
+        }
+        let alignmentLength = rows.map { ($0.sequence as NSString).length }.max() ?? 0
+        guard columnRange.upperBound <= alignmentLength else {
+            throw AlignmentRangeRealignmentError.invalidRange
+        }
+
+        let fragments = rows.enumerated().map { index, row in
+            RegionFragment(
+                rowIndex: index,
+                name: row.name,
+                prefix: substring(row.sequence, start: 0, end: columnRange.lowerBound),
+                selected: substring(row.sequence, start: columnRange.lowerBound, end: columnRange.upperBound),
+                suffix: substring(row.sequence, start: columnRange.upperBound, end: alignmentLength)
+            )
+        }
+        let nonEmptyFragments = fragments.compactMap { fragment -> AlignmentRow? in
+            let sequence = degapped(fragment.selected)
+            guard !sequence.isEmpty else { return nil }
+            return AlignmentRow(name: temporaryName(for: fragment.rowIndex), sequence: sequence)
+        }
+        guard nonEmptyFragments.count >= 2 else {
+            throw AlignmentRangeRealignmentError.insufficientNonEmptyRows
+        }
+
+        let alignedRows = try await aligner(nonEmptyFragments)
+        let alignedByName = Dictionary(uniqueKeysWithValues: alignedRows.map { ($0.name, $0.sequence) })
+        let alignedLength = alignedRows.map { ($0.sequence as NSString).length }.max() ?? 0
+
+        return try fragments.map { fragment in
+            let selectedSequence: String
+            if degapped(fragment.selected).isEmpty {
+                selectedSequence = String(repeating: "-", count: alignedLength)
+            } else {
+                guard let aligned = alignedByName[temporaryName(for: fragment.rowIndex)] else {
+                    throw AlignmentRangeRealignmentError.missingAlignedRow
+                }
+                selectedSequence = aligned
+            }
+            return AlignmentRow(
+                name: fragment.name,
+                sequence: fragment.prefix + selectedSequence + fragment.suffix
+            )
+        }
+    }
+
+    private struct RegionFragment {
+        let rowIndex: Int
+        let name: String
+        let prefix: String
+        let selected: String
+        let suffix: String
+    }
+
+    nonisolated private static func temporaryName(for index: Int) -> String {
+        "ApuSeq_Row_\(index)"
+    }
+
+    nonisolated private static func degapped(_ sequence: String) -> String {
+        sequence.filter { character in
+            character != "-" && character != "."
+        }
+    }
+
+    nonisolated private static func substring(_ sequence: String, start: Int, end: Int) -> String {
+        let source = sequence as NSString
+        let safeStart = min(max(start, 0), source.length)
+        let safeEnd = min(max(end, safeStart), source.length)
+        return source.substring(with: NSRange(location: safeStart, length: safeEnd - safeStart))
     }
 }
 

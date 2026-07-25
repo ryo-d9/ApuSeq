@@ -64,8 +64,9 @@
 
     <section>
       <h2>MAFFT alignment</h2>
-      <p>Alignment &gt; Align with MAFFT Auto creates a new unsaved FASTA document aligned by the bundled MAFFT executable using its automatic strategy selection.</p>
+      <p>Alignment &gt; Align with MAFFT &gt; Entire Alignment creates a new unsaved FASTA document aligned by the bundled MAFFT executable using its automatic strategy selection.</p>
       <p>The original document is not changed. While MAFFT is running, ApuSeq shows a progress sheet with a Cancel button.</p>
+      <p>In Edit mode, select one or more columns and choose Alignment &gt; Align with MAFFT &gt; Selected Columns to realign only those columns across all sequences. ApuSeq removes gaps from the selected region before sending it to MAFFT, then restores the aligned region between the unchanged prefix and suffix columns. The command is undoable and leaves the document unchanged if alignment fails.</p>
     </section>
   </main>
 </body>
