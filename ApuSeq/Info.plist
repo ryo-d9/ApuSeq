@@ -13,6 +13,8 @@
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Sequence Alignment Document</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
@@ -26,6 +28,8 @@
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).alignmentdocument</string>
 		</dict>
 		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Plain Text Document</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
