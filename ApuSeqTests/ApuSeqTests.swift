@@ -180,7 +180,7 @@ struct ApuSeqTests {
     @Test func translatesNucleotideFASTAWithFramesAndCodonTables() throws {
         let text = """
         >Coding
-        ATGAAATGATAA
+        ATGAAATGATAACTTTGAATAAGAAGG
         """
 
         let standard = try AlignmentTranslator.translateFASTA(
@@ -188,10 +188,30 @@ struct ApuSeqTests {
             frameOffset: 0,
             codonTable: .standard
         )
-        let mitochondrial = try AlignmentTranslator.translateFASTA(
+        let vertebrateMitochondrial = try AlignmentTranslator.translateFASTA(
             rawText: text,
             frameOffset: 0,
             codonTable: .vertebrateMitochondrial
+        )
+        let yeastMitochondrial = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .yeastMitochondrial
+        )
+        let moldProtozoanMitochondrial = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .moldProtozoanMitochondrial
+        )
+        let invertebrateMitochondrial = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .invertebrateMitochondrial
+        )
+        let bacterialArchaealPlastid = try AlignmentTranslator.translateFASTA(
+            rawText: text,
+            frameOffset: 0,
+            codonTable: .bacterialArchaealPlastid
         )
         let shifted = try AlignmentTranslator.translateFASTA(
             rawText: text,
@@ -199,9 +219,13 @@ struct ApuSeqTests {
             codonTable: .standard
         )
 
-        #expect(standard == ">Coding\nMK**")
-        #expect(mitochondrial == ">Coding\nMKW*")
-        #expect(shifted == ">Coding\n*ND")
+        #expect(standard == ">Coding\nMK**L*IRR")
+        #expect(vertebrateMitochondrial == ">Coding\nMKW*LWM**")
+        #expect(yeastMitochondrial == ">Coding\nMKW*TWMRR")
+        #expect(moldProtozoanMitochondrial == ">Coding\nMKW*LWIRR")
+        #expect(invertebrateMitochondrial == ">Coding\nMKW*LWMSS")
+        #expect(bacterialArchaealPlastid == standard)
+        #expect(shifted == ">Coding\n*NDNFE*E")
     }
 
     @Test func textDecodingReadsUTF8UTF16AndShiftJIS() throws {

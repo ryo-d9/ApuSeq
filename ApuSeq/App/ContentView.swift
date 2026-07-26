@@ -491,8 +491,8 @@ private struct RootView: View {
 
     private func confirmEnteringEditMode() -> Bool {
         let alert = NSAlert()
-        alert.messageText = String(localized: "Changes in Edit mode are autosaved with versions.")
-        alert.informativeText = String(localized: "Editing can modify the document contents. macOS may autosave those changes and keep prior versions for recovery.")
+        alert.messageText = AppStrings.editModeAutosaveWarningTitle
+        alert.informativeText = AppStrings.editModeAutosaveWarningMessage
         alert.alertStyle = .warning
         alert.addButton(withTitle: String(localized: "Enter Edit Mode"))
         alert.addButton(withTitle: AppStrings.cancel)

@@ -22,6 +22,8 @@ enum AppStrings {
     static let selectUngappedChunk = String(localized: "Select Ungapped Chunk")
     static let enterEditMode = String(localized: "Enter Edit Mode")
     static let exitEditMode = String(localized: "Exit Edit Mode")
+    static let editModeAutosaveWarningTitle = String(localized: "Changes in Edit mode are autosaved with versions.")
+    static let editModeAutosaveWarningMessage = String(localized: "Editing can modify the file. Use File > Revert To to restore an earlier version when available.")
     static let alignWithMAFFT = String(localized: "Align with MAFFT")
     static let alignEntireAlignment = String(localized: "Entire Alignment")
     static let alignWithMAFFTAuto = String(localized: "Align with MAFFT Auto")

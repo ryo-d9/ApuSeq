@@ -3,6 +3,10 @@ import Foundation
 enum TranslationCodonTable: String, CaseIterable, Identifiable {
     case standard
     case vertebrateMitochondrial
+    case yeastMitochondrial
+    case moldProtozoanMitochondrial
+    case invertebrateMitochondrial
+    case bacterialArchaealPlastid
 
     var id: String { rawValue }
 
@@ -12,6 +16,14 @@ enum TranslationCodonTable: String, CaseIterable, Identifiable {
             return String(localized: "Standard")
         case .vertebrateMitochondrial:
             return String(localized: "Vertebrate Mitochondrial")
+        case .yeastMitochondrial:
+            return String(localized: "Yeast Mitochondrial")
+        case .moldProtozoanMitochondrial:
+            return String(localized: "Mold/Protozoan Mitochondrial")
+        case .invertebrateMitochondrial:
+            return String(localized: "Invertebrate Mitochondrial")
+        case .bacterialArchaealPlastid:
+            return String(localized: "Bacterial/Archaeal/Plastid")
         }
     }
 }
@@ -67,12 +79,32 @@ enum AlignmentTranslator {
 
     private static func codonMapping(_ table: TranslationCodonTable) -> [String: Character] {
         switch table {
-        case .standard:
+        case .standard, .bacterialArchaealPlastid:
             return standardTable
         case .vertebrateMitochondrial:
             var table = standardTable
             table["AGA"] = "*"
             table["AGG"] = "*"
+            table["ATA"] = "M"
+            table["TGA"] = "W"
+            return table
+        case .yeastMitochondrial:
+            var table = standardTable
+            table["ATA"] = "M"
+            table["TGA"] = "W"
+            table["CTT"] = "T"
+            table["CTC"] = "T"
+            table["CTA"] = "T"
+            table["CTG"] = "T"
+            return table
+        case .moldProtozoanMitochondrial:
+            var table = standardTable
+            table["TGA"] = "W"
+            return table
+        case .invertebrateMitochondrial:
+            var table = standardTable
+            table["AGA"] = "S"
+            table["AGG"] = "S"
             table["ATA"] = "M"
             table["TGA"] = "W"
             return table
