@@ -41,7 +41,7 @@ enum AlignmentParser {
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return .empty }
 
-        if normalized.hasPrefix(">") {
+        if firstContentLine(in: normalized)?.hasPrefix(">") == true {
             return try parseFASTA(normalized)
         }
         if isCLUSTALHeader(normalized) {
@@ -65,13 +65,14 @@ enum AlignmentParser {
         for rawLine in lines {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
+            guard !isFASTACommentLine(line) else { continue }
             if line.hasPrefix(">") {
                 commitCurrent()
                 let title = String(line.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
                 currentName = title.isEmpty ? "Unnamed Sequence" : title
                 currentSequenceParts = []
             } else {
-                let cleaned = line.replacingOccurrences(of: " ", with: "")
+                let cleaned = removingSequenceWhitespace(from: line)
                 currentSequenceParts.append(cleaned)
             }
         }
@@ -95,11 +96,14 @@ enum AlignmentParser {
             if isCLUSTALConsensusLine(line) {
                 continue
             }
+            if isCLUSTALCommentLine(line) {
+                continue
+            }
 
             let columns = line.split(whereSeparator: \.isWhitespace)
             guard columns.count >= 2 else { continue }
             let name = String(columns[0])
-            let chunk = String(columns[1])
+            let chunk = removingSequenceWhitespace(from: String(columns[1]))
             guard isValidCLUSTALSequenceChunk(chunk) else { continue }
 
             if sequencesByName[name] == nil {
@@ -127,6 +131,24 @@ enum AlignmentParser {
         }
     }
 
+    nonisolated private static func isCLUSTALCommentLine(_ line: String) -> Bool {
+        line.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("#")
+    }
+
+    nonisolated private static func isFASTACommentLine(_ line: String) -> Bool {
+        line.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(";")
+    }
+
+    nonisolated private static func firstContentLine(in text: String) -> String? {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty && !isFASTACommentLine($0) }
+    }
+
+    nonisolated private static func removingSequenceWhitespace(from text: String) -> String {
+        text.filter { !$0.isWhitespace }
+    }
+
     nonisolated private static func isValidCLUSTALSequenceChunk(_ chunk: String) -> Bool {
         var hasResidueOrGap = false
         for scalar in chunk.unicodeScalars {
@@ -152,7 +174,7 @@ enum AlignmentParser {
         let rows = lines.enumerated().map { index, line in
             AlignmentRow(
                 name: "Sequence \(index + 1)",
-                sequence: line.replacingOccurrences(of: " ", with: "")
+                sequence: removingSequenceWhitespace(from: line)
             )
         }
 
