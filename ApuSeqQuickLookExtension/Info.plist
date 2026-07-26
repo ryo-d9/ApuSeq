@@ -29,9 +29,6 @@
 			<key>QLSupportedContentTypes</key>
 			<array>
 				<string>org.fasta</string>
-				<string>aliview.fa</string>
-				<string>aliview.fas</string>
-				<string>aliview.fasta</string>
 				<string>org.clustal</string>
 			</array>
 		</dict>

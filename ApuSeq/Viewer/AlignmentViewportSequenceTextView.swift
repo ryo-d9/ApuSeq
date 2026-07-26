@@ -59,7 +59,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             stillSelecting: false
         )
         columnSelectionRanges = newSelections.count > 1 ? newSelections : []
-        registerColumnUndo(toRestore: previousState)
+        registerColumnUndo(toRestore: previousState, actionName: String(localized: "Edit"))
         didChangeText()
     }
 
@@ -85,14 +85,14 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         didChangeText()
     }
 
-    private func registerColumnUndo(toRestore restoreState: ColumnEditState) {
+    private func registerColumnUndo(toRestore restoreState: ColumnEditState, actionName: String) {
         guard allowsUndo, let undoManager else { return }
         undoManager.registerUndo(withTarget: self) { target in
             let redoState = target.captureColumnEditState()
             target.applyColumnEditState(restoreState)
-            target.registerColumnUndo(toRestore: redoState)
+            target.registerColumnUndo(toRestore: redoState, actionName: actionName)
         }
-        undoManager.setActionName("Edit")
+        undoManager.setActionName(actionName)
     }
 
     private func normalizedEdits(from ranges: [NSRange], rowCount: Int) -> [AlignmentColumnEditor.RowEdit] {
@@ -196,7 +196,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         setSelectedRange(NSRange(location: nextLocation, length: 0))
         columnSelectionRanges = []
         columnSelectionAnchor = nil
-        registerColumnUndo(toRestore: previousState)
+        registerColumnUndo(toRestore: previousState, actionName: AppStrings.insertGapColumn)
         didChangeText()
     }
 

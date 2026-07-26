@@ -40,6 +40,48 @@ struct ApuSeqTests {
         #expect(alignment.rows.map { $0.sequence } == ["ACGTTGCA", "AC-TTG-A"])
     }
 
+    @Test func parsesCLUSTALWithConsensusLinesAndResidueCounts() throws {
+        let text = """
+        CLUSTAL W (1.83) multiple sequence alignment
+
+        Seq1    ACGT--AC    6
+        Seq2    AC-TGGAC    7
+                ** *  **
+
+        Seq1    TTAA    10
+        Seq2    T-AA    10
+                * **
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.format == .clustal)
+        #expect(alignment.rows.map { $0.name } == ["Seq1", "Seq2"])
+        #expect(alignment.rows.map { $0.sequence } == ["ACGT--ACTTAA", "AC-TGGACT-AA"])
+    }
+
+    @Test func parsesMUSCLEAsCLUSTALStyleAlignment() throws {
+        let text = """
+        MUSCLE (3.8) multiple sequence alignment
+
+        Alpha    ACGT
+        Beta     A-GT
+                 * **
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.format == .clustal)
+        #expect(alignment.rows.map { $0.name } == ["Alpha", "Beta"])
+        #expect(alignment.rows.map { $0.sequence } == ["ACGT", "A-GT"])
+    }
+
+    @Test func rejectsCLUSTALHeaderWithoutSequenceRows() throws {
+        #expect(throws: AlignmentParseError.unsupportedFormat) {
+            try AlignmentParser.parse("CLUSTAL W\n\n        *:*:\n")
+        }
+    }
+
     @Test func serializesRowsAsFASTAAndCLUSTAL() {
         let rows = [
             AlignmentRow(name: "Seq 1", sequence: "ACGT"),
@@ -75,6 +117,17 @@ struct ApuSeqTests {
         let output = try AlignmentReverseComplementer.reverseComplementFASTA(rawText: text)
 
         #expect(output == ">Mixed\nacgt.-DHBVKMRYAACGT")
+    }
+
+    @Test func reverseComplementExplicitlyHandlesIUPACSelfComplementAndUnknownBases() throws {
+        let text = """
+        >IUPAC
+        SWNsvnA?T
+        """
+
+        let output = try AlignmentReverseComplementer.reverseComplementFASTA(rawText: text)
+
+        #expect(output == ">IUPAC\nA?TnbsNWS")
     }
 
     @Test func reverseComplementRejectsAminoAcidAlignments() throws {

@@ -31,7 +31,7 @@ enum AlignmentParseError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat:
-            return String(localized: "Input data is not in FASTA, CLUSTAL, or plain-text sequence format.")
+            return String(localized: "Input data is not in FASTA, CLUSTAL, MUSCLE, or plain-text sequence format.")
         }
     }
 }
@@ -44,7 +44,7 @@ enum AlignmentParser {
         if normalized.hasPrefix(">") {
             return try parseFASTA(normalized)
         }
-        if normalized.uppercased().hasPrefix("CLUSTAL") {
+        if isCLUSTALHeader(normalized) {
             return try parseCLUSTAL(normalized)
         }
         return try parsePlainText(normalized)
@@ -89,10 +89,10 @@ enum AlignmentParser {
         for rawLine in lines {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
-            if line.uppercased().hasPrefix("CLUSTAL") || line.uppercased().hasPrefix("MUSCLE") {
+            if isCLUSTALHeader(line) {
                 continue
             }
-            if let first = line.first, first == "*" || first == ":" || first == "." {
+            if isCLUSTALConsensusLine(line) {
                 continue
             }
 
@@ -100,6 +100,7 @@ enum AlignmentParser {
             guard columns.count >= 2 else { continue }
             let name = String(columns[0])
             let chunk = String(columns[1])
+            guard isValidCLUSTALSequenceChunk(chunk) else { continue }
 
             if sequencesByName[name] == nil {
                 order.append(name)
@@ -111,6 +112,35 @@ enum AlignmentParser {
         let rows = order.map { AlignmentRow(name: $0, sequence: sequencesByName[$0, default: ""]) }
         guard !rows.isEmpty else { throw AlignmentParseError.unsupportedFormat }
         return normalize(rows: rows, format: .clustal)
+    }
+
+    nonisolated private static func isCLUSTALHeader(_ line: String) -> Bool {
+        let uppercaseLine = line.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return uppercaseLine.hasPrefix("CLUSTAL") || uppercaseLine.hasPrefix("MUSCLE")
+    }
+
+    nonisolated private static func isCLUSTALConsensusLine(_ line: String) -> Bool {
+        let characters = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !characters.isEmpty else { return false }
+        return characters.allSatisfy { character in
+            character == "*" || character == ":" || character == "." || character.isWhitespace
+        }
+    }
+
+    nonisolated private static func isValidCLUSTALSequenceChunk(_ chunk: String) -> Bool {
+        var hasResidueOrGap = false
+        for scalar in chunk.unicodeScalars {
+            if isASCIILetter(scalar) || scalar == "-" || scalar == "." || scalar == "*" || scalar == "?" {
+                hasResidueOrGap = true
+                continue
+            }
+            return false
+        }
+        return hasResidueOrGap
+    }
+
+    nonisolated private static func isASCIILetter(_ scalar: UnicodeScalar) -> Bool {
+        (scalar.value >= 65 && scalar.value <= 90) || (scalar.value >= 97 && scalar.value <= 122)
     }
 
     nonisolated private static func parsePlainText(_ text: String) throws -> AlignmentData {

@@ -46,10 +46,13 @@ enum AlignmentReverseComplementer {
         case 89: return "R" // Y
         case 75: return "M" // K
         case 77: return "K" // M
+        case 83: return "S" // S
+        case 87: return "W" // W
         case 66: return "V" // B
         case 86: return "B" // V
         case 68: return "H" // D
         case 72: return "D" // H
+        case 78: return "N" // N
         case 97: return "t" // a
         case 116, 117: return "a" // t, u
         case 99: return "g" // c
@@ -58,10 +61,13 @@ enum AlignmentReverseComplementer {
         case 121: return "r" // y
         case 107: return "m" // k
         case 109: return "k" // m
+        case 115: return "s" // s
+        case 119: return "w" // w
         case 98: return "v" // b
         case 118: return "b" // v
         case 100: return "h" // d
         case 104: return "d" // h
+        case 110: return "n" // n
         default: return scalar
         }
     }

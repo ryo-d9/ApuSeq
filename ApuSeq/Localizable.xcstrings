@@ -178,7 +178,7 @@
     "Information" : {
 
     },
-    "Input data is not in FASTA, CLUSTAL, or plain-text sequence format." : {
+    "Input data is not in FASTA, CLUSTAL, MUSCLE, or plain-text sequence format." : {
 
     },
     "Insert Gap Column" : {
