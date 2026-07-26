@@ -35,6 +35,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
     func makeNSView(context: Context) -> AlignmentViewportContainerView {
         let nameColumnView = AlignmentViewportNameColumnView()
+        nameColumnView.setAccessibilityIdentifier("alignment-name-column")
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
         nameColumnView.isEditMode = isEditMode
@@ -46,6 +47,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.onSetReference = onSetReference
 
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
+        sequenceTextView.setAccessibilityIdentifier("alignment-sequence-text")
         configureMainTextView(sequenceTextView, fontSize: fontSize)
         sequenceTextView.delegate = context.coordinator
         sequenceTextView.onAddVerticalCursor = { [weak coordinator = context.coordinator, weak sequenceTextView] direction in
@@ -56,9 +58,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
         sequenceTextView.canAddSequenceFromMenu = canEditSequenceNames
 
         let auxiliaryNameTextView = NSTextView(usingTextLayoutManager: true)
+        auxiliaryNameTextView.setAccessibilityIdentifier("alignment-auxiliary-name-text")
         configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize)
 
         let auxiliarySequenceTextView = NSTextView(usingTextLayoutManager: true)
+        auxiliarySequenceTextView.setAccessibilityIdentifier("alignment-auxiliary-sequence-text")
         configureAuxiliaryTextView(auxiliarySequenceTextView, fontSize: fontSize)
 
         let containerView = AlignmentViewportContainerView(

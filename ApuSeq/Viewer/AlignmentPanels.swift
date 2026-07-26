@@ -15,10 +15,22 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            statusItem(label: String(localized: "Sequences"), value: "\(sequenceCount)\(selectedSequenceSuffix)")
-            statusItem(label: String(localized: "Sites"), value: "\(residueCount)\(selectedResidueSuffix)")
+            statusItem(
+                label: String(localized: "Sequences"),
+                value: "\(sequenceCount)\(selectedSequenceSuffix)",
+                identifier: "alignment-sequence-count"
+            )
+            statusItem(
+                label: String(localized: "Sites"),
+                value: "\(residueCount)\(selectedResidueSuffix)",
+                identifier: "alignment-site-count"
+            )
             if let selectedStartPosition, let selectedEndPosition, selectedResidueCount > 0 {
-                statusItem(label: String(localized: "Columns"), value: "\(selectedStartPosition)-\(selectedEndPosition)")
+                statusItem(
+                    label: String(localized: "Columns"),
+                    value: "\(selectedStartPosition)-\(selectedEndPosition)",
+                    identifier: "alignment-column-selection"
+                )
             }
             Spacer()
             Picker(String(localized: "Background"), selection: $backgroundMode) {
@@ -28,6 +40,7 @@ struct FooterBar: View {
             }
             .pickerStyle(.menu)
             .labelsVisibility(.hidden)
+            .accessibilityIdentifier("alignment-background-picker")
             .fixedSize()
             .help(String(localized: "Change background coloring"))
             Divider()
@@ -39,6 +52,7 @@ struct FooterBar: View {
             }
             .pickerStyle(.menu)
             .labelsVisibility(.hidden)
+            .accessibilityIdentifier("alignment-display-order-picker")
             .fixedSize()
             .disabled(!canChangeDisplayOrder)
             .help(String(localized: "Change sequence display order in view mode"))
@@ -60,7 +74,7 @@ struct FooterBar: View {
         selectedResidueCount > 0 ? " (\(selectedResidueCount))" : ""
     }
 
-    private func statusItem(label: String, value: String) -> some View {
+    private func statusItem(label: String, value: String, identifier: String) -> some View {
         HStack(spacing: 0) {
             Text("\(label): ")
                 .foregroundStyle(.secondary)
@@ -68,6 +82,10 @@ struct FooterBar: View {
                 .foregroundStyle(.primary)
         }
         .fixedSize(horizontal: true, vertical: false)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityValue(value)
+        .accessibilityIdentifier(identifier)
     }
 }
 

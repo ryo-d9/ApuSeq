@@ -401,6 +401,7 @@ private struct RootView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .accessibilityIdentifier("viewer-mode-picker")
                 .help(String(localized: "Switch between read-only view and edit mode"))
 
                 Button {
@@ -408,6 +409,7 @@ private struct RootView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier("add-sequence-toolbar-button")
                 .help(String(localized: "Add a sequence"))
                 .disabled(!canAddSequence)
 
@@ -416,6 +418,7 @@ private struct RootView: View {
                 } label: {
                     Image(systemName: "info.circle")
                 }
+                .accessibilityIdentifier("alignment-inspector-button")
                 .help(String(localized: "Show alignment information"))
             }
         }
@@ -545,7 +548,7 @@ private struct RootView: View {
         guard viewerMode == .edit else { return }
         guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
         guard document.rawText != rebuilt else { return }
-        document.rawText = rebuilt
+        applyDocumentRawText(rebuilt, undoActionName: String(localized: "Edit"))
     }
 
     private func addSequence() {
