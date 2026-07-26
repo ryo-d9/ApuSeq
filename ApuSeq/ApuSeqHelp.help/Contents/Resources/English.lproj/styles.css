@@ -26,6 +26,13 @@ main {
   padding: 36px 28px 48px;
 }
 
+.help-home-icon {
+  float: right;
+  margin: 0 0 12px 16px;
+  width: 128px;
+  height: auto;
+}
+
 h1 {
   margin: 0 0 18px;
   font: -apple-system-title1;
@@ -44,6 +51,14 @@ p {
 
 a {
   color: var(--link-color);
+}
+
+section ul {
+	list-style-type: none;
+	padding-inline-start: 0;
+}
+section ul li a::after {
+	content: ' ›';
 }
 
 code {
@@ -68,27 +83,6 @@ dt {
 dd {
   margin: 0;
   color: var(--secondary-color);
-}
-
-.topic-list {
-  margin: 20px 0 28px;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--rule-color);
-}
-
-.topic-list li {
-  border-bottom: 1px solid var(--rule-color);
-}
-
-.topic-list a {
-  display: block;
-  padding: 10px 0;
-  text-decoration: none;
-}
-
-.topic-list a:hover {
-  text-decoration: underline;
 }
 
 .back-link {

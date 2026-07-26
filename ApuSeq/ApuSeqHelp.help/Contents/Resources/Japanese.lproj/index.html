@@ -9,35 +9,38 @@
 </head>
 <body>
   <main>
+    <img class="help-home-icon" src="../Shared/Images/ApuSeqIcon_1x.png" alt="ApuSeqのアイコン">
     <h1>ApuSeqヘルプ</h1>
-    <p>ApuSeqは、シーケンスアラインメントを表示・編集するための軽量なmacOSネイティブアプリです。</p>
+    <p>macOS向けのシーケンスアラインメント表示・編集アプリです。</p>
+    <p>FASTA、CLUSTAL、CLUSTAL W、MUSCLE、およびプレーンテキストのアラインメントファイルに対応しています。</p>
 
-    <nav aria-label="ヘルプ項目">
-      <ul class="topic-list">
-        <li><a href="view.html">アラインメントを表示する</a></li>
-        <li><a href="editing.html">アラインメントを編集する</a></li>
-        <li><a href="quicklook.html">Quick Lookプレビュー</a></li>
+    <section>
+      <h2>アラインメントを表示する</h2>
+      <p>表示モードではファイルを変更せず、色分け、パネル、表示順を確認できます。</p>
+      <ul>
+        <li><a href="view.html">アラインメントの表示方法</a></li>
       </ul>
-    </nav>
-
-    <section>
-      <h2>対応ファイル</h2>
-      <p>ApuSeqはFASTA、CLUSTAL、CLUSTAL W、MUSCLE、およびプレーンテキストのアラインメントファイルを開けます。</p>
     </section>
 
     <section>
-      <h2>表示モードと編集モード</h2>
-      <p>表示モードではファイルを変更せず、色分け、パネル、表示順を確認できます。編集モードでは、ギャップのトリムやシーケンスの並べ替えなど、書類を変更するコマンドをmacOSの書類モデルによる取り消し対応付きで使用できます。</p>
+      <h2>アラインメントを編集する</h2>
+      <p>編集モードでは、ギャップのトリムやシーケンスの並べ替えなど、書類を変更するコマンドを取り消し対応付きで使用できます。</p>
+      <ul>
+        <li><a href="editing.html">アラインメントの編集方法</a></li>
+      </ul>
     </section>
 
     <section>
-      <h2>MAFFTアラインメント</h2>
-      <p>アラインメント &gt; MAFFT Autoでアラインを選ぶと、同梱のMAFFT実行ファイルによりアラインされた新しいFASTA書類を作成します。元の書類は変更されません。</p>
+      <h2>Quick Lookプレビュー</h2>
+      <p>FinderのQuick Lookで、対応するアラインメントファイルをプレビューできます。</p>
+      <ul>
+        <li><a href="quicklook.html">Quick Lookプレビューの使い方</a></li>
+      </ul>
     </section>
 
     <section>
       <h2>オープンソースライセンス</h2>
-      <p>同梱しているMAFFTなどの第三者コンポーネントの通知は、ヘルプ &gt; オープンソースライセンスで確認できます。</p>
+      <p>ApuSeqは複数配列アラインメントツールとしてMAFFT v7.526を同梱しています。通知は、ヘルプ &gt; オープンソースライセンスで確認できます。</p>
     </section>
   </main>
 </body>

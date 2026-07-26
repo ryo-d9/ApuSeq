@@ -13,27 +13,15 @@
 
     <section>
       <h2>Edit mode</h2>
-      <p>Edit mode uses the macOS document model, including autosave and versions. Use File &gt; Revert To to browse previous versions when available.</p>
-      <p>Plain-text documents save back as plain text. Commands that change sequence names or named sequence order are available for FASTA, CLUSTAL, CLUSTAL W, and MUSCLE documents.</p>
+      <p>Edit mode can modify the contents and uses a system feature to autosave. Use File &gt; Revert To to browse previous versions when available.</p>
+      <p>Commands that change sequence names or named sequence order are available for FASTA, CLUSTAL, CLUSTAL W, and MUSCLE documents.</p>
       <p>Very large alignments are best edited in small steps because each edit may take longer to update the document view.</p>
     </section>
 
     <section>
       <h2>Alignment length</h2>
-      <p>Typing and deletion in the alignment viewport edit only the selected sequence rows, following normal text editing behavior. ApuSeq pads shorter rows with trailing <code>-</code> characters so the alignment remains rectangular.</p>
-      <p>Choose Edit &gt; Insert Gap Column, or press Command-Shift-Hyphen, to insert a gap column at the current cursor position across all sequences.</p>
-    </section>
-
-    <section>
-      <h2>Adding and renaming sequences</h2>
-      <p>In Edit mode, choose Edit &gt; Add Sequence or Control-click the sequence name area and choose Add Sequence. ApuSeq adds a gap-filled row that can be edited directly in the alignment view.</p>
-      <p>Choose Edit &gt; Add FASTA from Clipboard, or press Command-Shift-V, to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.</p>
-      <p>To rename a sequence, Control-click or right-click its name and choose Rename Sequence.</p>
-    </section>
-
-    <section>
-      <h2>Sequence deletion</h2>
-      <p>In Edit mode, Control-click or right-click a sequence name and choose Delete Sequence. If the deleted sequence is the reference, the reference selection is cleared.</p>
+      <p>Typing and deletion in the alignment viewport edit only the selected sequence rows. ApuSeq pads shorter rows with trailing <code>-</code> characters so the alignment remains rectangular.</p>
+      <p>Choose Edit &gt; Insert Gap Column, or press <code>⌘ ⇧ -</code> to insert a gap column at the current cursor position across all sequences.</p>
     </section>
 
     <section>
@@ -43,32 +31,49 @@
 
     <section>
       <h2>Trim trailing gaps</h2>
-      <p>Alignment &gt; Trim Trailing Gaps removes trailing <code>-</code> and <code>.</code> characters from each sequence in Edit mode. The command is undoable. ApuSeq may still display temporary padding gaps after trimming to keep alignment columns visually aligned.</p>
+      <p>Alignment &gt; Trim Trailing Gaps removes trailing <code>-</code> and <code>.</code> characters from each sequence in Edit mode. ApuSeq may still display temporary padding gaps after trimming to keep alignment columns visually aligned.</p>
+    </section>
+
+    <section>
+      <h2>Adding and renaming sequences</h2>
+      <p>In Edit mode, choose Edit &gt; Add Sequence or Control-click the sequence name area and choose Add Sequence. ApuSeq adds a gap-filled row that can be edited directly in the alignment view.</p>
+      <p>Choose Edit &gt; Add FASTA from Clipboard, or press <code>⌘ ⇧ V</code> to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.</p>
+      <p>To rename a sequence, Control-click or right-click its name and choose Rename Sequence.</p>
+    </section>
+
+    <section>
+      <h2>Sequence deletion</h2>
+      <p>In Edit mode, Control-click or right-click a sequence name and choose Delete Sequence. If the deleted sequence is the reference, the reference selection is cleared.</p>
     </section>
 
     <section>
       <h2>Sort sequences</h2>
-      <p>Alignment &gt; Sort Sequences reorders the document contents by sequence name or UPGMA in Edit mode. UPGMA sorting is available for alignments with 3 to 300 sequences. The command is undoable.</p>
+      <p>Alignment &gt; Sort Sequences reorders the document contents by sequence name or UPGMA in Edit mode. UPGMA sorting is available for alignments with 3 to 300 sequences.</p>
       <p>Use View &gt; Display Order to change only the displayed order without modifying the document.</p>
     </section>
 
     <section>
       <h2>Reverse complement</h2>
-      <p>Alignment &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence. The original document is not changed.</p>
+      <p>Alignment &gt; Reverse Complement creates a new unsaved FASTA document from the reverse complement of each nucleotide sequence.</p>
       <p>ApuSeq preserves lowercase residues as lowercase. Ambiguous nucleotide codes are complemented when possible, and gap characters remain in place after the sequence order is reversed.</p>
     </section>
 
     <section>
       <h2>Translation</h2>
-      <p>Alignment &gt; Translation creates a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2. The original document is not changed.</p>
+      <p>Alignment &gt; Translation creates a new unsaved FASTA document translated from nucleotide sequences in frame +0, +1, or +2.</p>
       <p>The codon table is selected in Settings &gt; General &gt; Translation.</p>
     </section>
 
     <section>
       <h2>MAFFT alignment</h2>
-      <p>Alignment &gt; Align with MAFFT &gt; Entire Alignment creates a new unsaved FASTA document aligned by the bundled MAFFT executable using its automatic strategy selection.</p>
-      <p>The original document is not changed. While MAFFT is running, ApuSeq shows a progress sheet with a Cancel button.</p>
+      <p>Alignment &gt; Align with MAFFT &gt; Entire Alignment creates a new unsaved FASTA document aligned by the bundled MAFFT executable using the <code>mafft --auto</code> command.</p>
+      <p>While MAFFT is running, ApuSeq shows a progress sheet with a Cancel button.</p>
       <p>In Edit mode, select one or more columns and choose Alignment &gt; Align with MAFFT &gt; Selected Columns to realign only those columns across all sequences. ApuSeq removes gaps from the selected region before sending it to MAFFT, then restores the aligned region between the unchanged prefix and suffix columns. The command is undoable and leaves the document unchanged if alignment fails.</p>
+    </section>
+
+    <section>
+      <h2>Sequence display</h2>
+      <p>For information about background coloring, reference sequences, and display options, see <a href="view.html">Viewing Alignments</a>.</p>
     </section>
   </main>
 </body>

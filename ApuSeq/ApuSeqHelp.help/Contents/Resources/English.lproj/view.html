@@ -22,29 +22,57 @@
       <p>Reference, Consensus, and Identity panels can be shown from the View menu.</p>
       <dl>
         <dt>Reference</dt>
-        <dd>Shows the selected reference sequence while keeping it in the main alignment display.</dd>
+        <dd>Shows the reference sequence. The reference can be selected by right-clicking the name of the sequence, and is kept in the main alignment display.</dd>
         <dt>Consensus</dt>
         <dd>Shows the majority residue at each site.</dd>
         <dt>Identity</dt>
         <dd>Shows per-column identity using the selected threshold.</dd>
       </dl>
+      <p>Identity threshold can be adjusted in Settings &gt; General &gt; Identity Threshold.</p>
     </section>
 
     <section>
-      <h2>Coloring and order</h2>
+      <h2>Coloring</h2>
       <p>Use the footer controls or the View menu to change background coloring and display order.</p>
-      <p>View &gt; Background Color offers None, Residue, Minority, Reference, and Identity modes. Reference colors residues that differ from the selected reference sequence and is available after a reference is selected.</p>
-      <p>View &gt; Display Order offers Original, Name, and UPGMA. Original follows the file, Name sorts by sequence name, and UPGMA is a view-only clustering order for alignments with 3 to 300 sequences. Display order changes do not modify the file and are disabled in Edit mode.</p>
+      <p>View &gt; Background Color offers None, Residue, Minority, Reference, and Identity modes.</p>
+      <dl>
+        <dt>Residue</dt>
+        <dd>Colors all residues by type.</dd>
+        <dt>Minority</dt>
+        <dd>Colors residues by type that differ from the majority residue.</dd>
+        <dt>Reference</dt>
+        <dd>Colors residues that differ from the selected reference sequence.</dd>
+        <dt>Identity</dt>
+        <dd>Colors columns using the selected identity threshold.</dd>
+      </dl>
+    </section>
+    <section>
+      <h2>Display order</h2>
+      <p>View &gt; Display Order offers Original, Name, and UPGMA.</p>
+      <dl>
+        <dt>Original</dt>
+        <dd>Follows the sequence order in the original file.</dd>
+        <dt>Name</dt>
+        <dd>Sorts by sequence name.</dd>
+        <dt>UPGMA</dt>
+        <dd>View-only clustering order for alignments with 3 to 300 sequences.</dd>
+      </dl>
     </section>
 
     <section>
       <h2>Status bar</h2>
-      <p>The status bar summarizes the visible document, for example <code>Sequences: 12 (1) Sites: 1240 (42) Columns: 120-161</code>.</p>
+      <p>The status bar summarizes the visible document, for example <code>Sequences: 12 (1) Sites: 1240 (42) Columns: 120-161</code>. The number in the parentheses indicates the number of selected sequences or sites.</p>
     </section>
 
     <section>
       <h2>Copying sequences</h2>
       <p>Control-click or right-click a sequence name and choose Copy Sequence to copy only the sequence text, or Copy as FASTA to copy the sequence name and sequence in FASTA format.</p>
+      <p>Consensus sequences can be copied using Edit &gt; Copy Consensus.</p>
+    </section>
+
+    <section>
+      <h2>Additional sequence operations</h2>
+      <p>Translation, Reverse Complement, and MAFFT alignment are available in both View and Edit modes. For more information, see <a href="editing.html">Editing Alignments</a>.</p>
     </section>
   </main>
 </body>
