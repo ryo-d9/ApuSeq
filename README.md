@@ -79,8 +79,7 @@ ApuSeq is released under the MIT License. See `LICENSE` for details.
 The following materials are not covered by the MIT License unless explicitly stated otherwise:
 
 - Screenshots, App Store images, icons, and other branding or promotional assets.
-- GenBank-derived example sequence data in `SampleData/RealData/`.
 
-GenBank-derived example data is provided for documentation, screenshots, and manual testing only. See `SampleData/RealData/README.md` for accession numbers and source information.
+Documentation screenshots may use alignments derived from public NCBI sequence records. See `SampleData/README.md` for accession numbers and source information.
 
 MAFFT 7.526 (2024/Apr/26) is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or Help > Open Source Licenses in the app.
