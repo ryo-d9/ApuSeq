@@ -210,6 +210,55 @@ final class ApuSeqUITests: XCTestCase {
     }
 
     @MainActor
+    func testNewDocumentEnablesInitialSequenceCreationCommands() throws {
+        launchApp()
+        app.typeKey("n", modifierFlags: [.command])
+        XCTAssertTrue(app.windows["Untitled"].waitForExistence(timeout: 5))
+
+        enterEditMode()
+        openMenu("Edit")
+
+        XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Add Sequence..."].isEnabled)
+        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].isEnabled)
+
+        dismissMenu()
+    }
+
+    @MainActor
+    func testNewDocumentAddFASTAFromClipboardCreatesEditableFASTAAlignment() throws {
+        launchApp()
+        app.typeKey("n", modifierFlags: [.command])
+        XCTAssertTrue(app.windows["Untitled"].waitForExistence(timeout: 5))
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(
+            """
+            >Alpha
+            ACGT
+            >Beta
+            A-GT
+            """,
+            forType: .string
+        )
+
+        enterEditMode()
+        app.typeKey("v", modifierFlags: [.command, .shift])
+
+        waitForStaticText("alignment-sequence-count", containing: "2")
+        waitForStaticText("alignment-site-count", containing: "4")
+
+        openMenu("Edit")
+        XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Add Sequence..."].isEnabled)
+        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].isEnabled)
+
+        dismissMenu()
+    }
+
+    @MainActor
     func testAddSequenceUpdatesFooterCount() throws {
         let fileURL = try makeTemporaryAlignmentFile(
             name: "add-sequence-ui.fasta",
@@ -365,6 +414,9 @@ final class ApuSeqUITests: XCTestCase {
 
     @MainActor
     private func launchApp() {
+        if !app.launchArguments.contains("-ApplePersistenceIgnoreState") {
+            app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"] + app.launchArguments
+        }
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
     }

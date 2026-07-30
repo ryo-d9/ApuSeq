@@ -106,10 +106,12 @@ final class AlignmentViewportNameColumnView: NSView {
             renameItem.representedObject = row
             menu.addItem(renameItem)
 
-            let deleteItem = NSMenuItem(title: AppStrings.deleteSequence, action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
-            deleteItem.target = self
-            deleteItem.representedObject = row
-            menu.addItem(deleteItem)
+            if rowNames.count > 1 {
+                let deleteItem = NSMenuItem(title: AppStrings.deleteSequence, action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
+                deleteItem.target = self
+                deleteItem.representedObject = row
+                menu.addItem(deleteItem)
+            }
         }
         return menu
     }

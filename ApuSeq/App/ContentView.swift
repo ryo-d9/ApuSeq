@@ -124,12 +124,28 @@ private struct RootView: View {
         model.alignment.format == .plainText
     }
 
-    private var canUseNamedSequenceEditing: Bool {
+    private var isEmptyDocument: Bool {
+        document.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var canCreateNamedAlignment: Bool {
+        viewerMode == .edit && isEmptyDocument
+    }
+
+    private var canEditNamedAlignment: Bool {
         viewerMode == .edit && !isPlainTextAlignment
+    }
+
+    private var canUseNamedSequenceEditing: Bool {
+        canCreateNamedAlignment || canEditNamedAlignment
     }
 
     private var canAddSequence: Bool {
         canUseNamedSequenceEditing && model.parseErrorMessage == nil
+    }
+
+    private var preferredFormatForNamedSequenceEditing: AlignmentFormat {
+        isEmptyDocument ? .fasta : model.alignment.format
     }
 
     private var displayAlignment: AlignmentData {
@@ -862,7 +878,7 @@ private struct RootView: View {
     }
 
     private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {
-        AlignmentSerializer.serialize(rows: rows, preferredFormat: model.alignment.format)
+        AlignmentSerializer.serialize(rows: rows, preferredFormat: preferredFormatForNamedSequenceEditing)
     }
 
     private func sameRowOrder(_ first: [AlignmentRow], _ second: [AlignmentRow]) -> Bool {
