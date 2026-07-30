@@ -228,6 +228,8 @@ private struct RootView: View {
             align: startMAFFTAlignment,
             canAlignSelection: canAlignSelectedColumnsWithMAFFT,
             alignSelection: startSelectedColumnsMAFFTAlignment,
+            canAlignAminoAcidGuidedNucleotide: canAlignAminoAcidGuidedNucleotide,
+            alignAminoAcidGuidedNucleotide: startAminoAcidGuidedNucleotideAlignment,
             cancel: cancelMAFFTAlignment,
             isRunning: isRunningMAFFTAlignment
         )
@@ -246,6 +248,13 @@ private struct RootView: View {
             return false
         }
         return true
+    }
+
+    private var canAlignAminoAcidGuidedNucleotide: Bool {
+        !isRunningMAFFTAlignment &&
+        model.alignment.format == .fasta &&
+        model.alignment.sequenceKind == .nucleotide &&
+        model.alignment.rows.count >= 2
     }
 
     private var viewerModeBinding: Binding<ViewerMode> {
@@ -721,6 +730,32 @@ private struct RootView: View {
                     rebuildAlignment(fromRows: realignedRows),
                     undoActionName: AppStrings.alignSelectedColumnsWithMAFFTAuto
                 )
+            } catch is CancellationError {
+                finishMAFFTAlignment()
+            } catch {
+                finishMAFFTAlignment()
+                mafftAlignmentErrorMessage = error.localizedDescription
+                showsMAFFTAlignmentError = true
+            }
+        }
+    }
+
+    private func startAminoAcidGuidedNucleotideAlignment(frameOffset: Int, codonTable: TranslationCodonTable) {
+        guard canAlignAminoAcidGuidedNucleotide else { return }
+        let rawText = document.rawText
+        isRunningMAFFTAlignment = true
+        mafftAlignmentTask = Task { @MainActor in
+            do {
+                let aligned = try await AminoAcidGuidedNucleotideAligner.align(
+                    rawText: rawText,
+                    frameOffset: frameOffset,
+                    codonTable: codonTable
+                )
+                guard !Task.isCancelled else { return }
+                finishMAFFTAlignment()
+                newDocument {
+                    ApuSeqDocument(rawText: aligned)
+                }
             } catch is CancellationError {
                 finishMAFFTAlignment()
             } catch {

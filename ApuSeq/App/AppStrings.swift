@@ -29,6 +29,7 @@ enum AppStrings {
     static let alignWithMAFFTAuto = String(localized: "Align with MAFFT Auto")
     static let alignSelectedColumns = String(localized: "Selected Columns")
     static let alignSelectedColumnsWithMAFFTAuto = String(localized: "Align Selected Columns with MAFFT Auto")
+    static let aminoAcidGuidedNucleotideAlignment = String(localized: "Amino-Acid-Guided Nucleotide Alignment")
     static let aligningWithMAFFT = String(localized: "Aligning with MAFFT...")
     static let mafftAlignmentFailed = String(localized: "MAFFT Alignment Failed")
     static let openSourceLicenses = String(localized: "Open Source Licenses")

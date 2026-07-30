@@ -228,6 +228,79 @@ struct ApuSeqTests {
         #expect(shifted == ">Coding\n*NDNFE*E")
     }
 
+    @Test func translatedCodingSequenceKeepsSourceCodons() throws {
+        let translated = try AlignmentTranslator.translatedCodingSequence(
+            "ATG-AAR-TTY",
+            sequenceName: "Coding",
+            frameOffset: 0,
+            codonTable: .standard,
+            requiresCompleteCodons: true
+        )
+
+        #expect(translated.aminoAcids == "MXX")
+        #expect(translated.codons == ["ATG", "AAR", "TTY"])
+    }
+
+    @Test func translatedCodingSequenceRejectsIncompleteCodonsWhenRequired() throws {
+        do {
+            _ = try AlignmentTranslator.translatedCodingSequence(
+                "ATGAA",
+                sequenceName: "Coding",
+                frameOffset: 0,
+                codonTable: .standard,
+                requiresCompleteCodons: true
+            )
+            Issue.record("Expected incomplete codon error")
+        } catch AlignmentTranslationError.incompleteCodon(let sequenceName) {
+            #expect(sequenceName == "Coding")
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test func aminoAcidGuidedBackMapRestoresCodonGaps() throws {
+        let nucleotide = try AminoAcidGuidedNucleotideAligner.backMapCodons(
+            alignedAminoAcidSequence: "M-KF",
+            codons: ["ATG", "AAA", "TTT"],
+            sequenceName: "Coding"
+        )
+
+        #expect(nucleotide == "ATG---AAATTT")
+    }
+
+    @Test func aminoAcidGuidedBackMapRejectsUnusedCodons() throws {
+        do {
+            _ = try AminoAcidGuidedNucleotideAligner.backMapCodons(
+                alignedAminoAcidSequence: "M-",
+                codons: ["ATG", "AAA"],
+                sequenceName: "Coding"
+            )
+            Issue.record("Expected codon mapping error")
+        } catch AminoAcidGuidedNucleotideAlignmentError.codonMappingFailed(let sequenceName) {
+            #expect(sequenceName == "Coding")
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test func aminoAcidGuidedAlignmentPreservesStopCodons() async throws {
+        let rawText = """
+        >seq1
+        ATGTAAATG
+        >seq2
+        ATGTAGATG
+        """
+
+        let aligned = try await AminoAcidGuidedNucleotideAligner.align(
+            rawText: rawText,
+            frameOffset: 0,
+            codonTable: .standard
+        )
+
+        #expect(aligned.contains("ATGTAAATG"))
+        #expect(aligned.contains("ATGTAGATG"))
+    }
+
     @Test func textDecodingReadsUTF8UTF16AndShiftJIS() throws {
         let utf8Data = Data("ACGT".utf8)
         let utf16Data = try #require("ACGT".data(using: .utf16LittleEndian))

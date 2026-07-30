@@ -70,6 +70,7 @@
       <p>Alignment &gt; Align with MAFFT &gt; Entire Alignment creates a new unsaved FASTA document aligned by the bundled MAFFT executable using the <code>mafft --auto</code> command.</p>
       <p>While MAFFT is running, ApuSeq shows a progress sheet with a Cancel button.</p>
       <p>In Edit mode, select one or more columns and choose Alignment &gt; Align with MAFFT &gt; Selected Columns to realign only those columns across all sequences. ApuSeq removes gaps from the selected region before sending it to MAFFT, then restores the aligned region between the unchanged prefix and suffix columns. The command is undoable and leaves the document unchanged if alignment fails.</p>
+      <p>For coding nucleotide FASTA files, choose Alignment &gt; Align with MAFFT &gt; Amino-Acid-Guided Nucleotide Alignment, then select frame +0, +1, or +2. ApuSeq translates each sequence, aligns the amino acid sequences with MAFFT, and maps the result back to nucleotide codons. The command creates a new unsaved FASTA document and requires at least two nucleotide sequences with complete codons in the selected frame.</p>
     </section>
 
     <section>
