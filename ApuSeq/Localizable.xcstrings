@@ -139,6 +139,16 @@
         }
       }
     },
+    "Amino acid": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸"
+          }
+        }
+      }
+    },
     "Appearance": {
       "localizations": {
         "ja": {
@@ -385,6 +395,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "今後表示しない"
+          }
+        }
+      }
+    },
+    "Document": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書類"
           }
         }
       }
@@ -785,6 +805,16 @@
         }
       }
     },
+    "Nucleotide": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "塩基配列"
+          }
+        }
+      }
+    },
     "OK": {
       "localizations": {
         "ja": {
@@ -841,6 +871,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "参照"
+          }
+        }
+      }
+    },
+    "Reference Sequence": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参照シーケンス"
           }
         }
       }
@@ -985,12 +1025,52 @@
         }
       }
     },
+    "Selected Sequences": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したシーケンス"
+          }
+        }
+      }
+    },
+    "Selected Sites": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したサイト"
+          }
+        }
+      }
+    },
+    "Selection": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択範囲"
+          }
+        }
+      }
+    },
     "Sequence": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "シーケンス"
+          }
+        }
+      }
+    },
+    "Sequence Kind": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス種別"
           }
         }
       }
@@ -1091,6 +1171,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "シーケンスを並べ替え"
+          }
+        }
+      }
+    },
+    "Source Characters": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元の文字数"
           }
         }
       }

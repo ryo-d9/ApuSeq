@@ -89,4 +89,13 @@ enum AppStrings {
             return String(localized: "Plain Text")
         }
     }
+
+    static func sequenceKindName(_ kind: SequenceKind) -> String {
+        switch kind {
+        case .nucleotide:
+            return String(localized: "Nucleotide")
+        case .aminoAcid:
+            return String(localized: "Amino acid")
+        }
+    }
 }

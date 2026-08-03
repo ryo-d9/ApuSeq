@@ -441,9 +441,17 @@ private struct RootView: View {
         .inspector(isPresented: $showsInspector) {
             FileInformationView(
                 format: AppStrings.alignmentFormatName(model.alignment.format),
+                sequenceKind: AppStrings.sequenceKindName(model.alignment.sequenceKind),
                 sequenceCount: displayAlignment.rows.count,
-                residueCount: displayAlignment.length,
-                sourceCharacterCount: document.rawText.count
+                siteCount: displayAlignment.length,
+                sourceCharacterCount: document.rawText.count,
+                selectedSequenceCount: selectedSequenceCount,
+                selectedSiteCount: selectedResidueCount,
+                selectedStartPosition: selectedStartPosition,
+                selectedEndPosition: selectedEndPosition,
+                referenceName: selectedReferenceName,
+                displayOrder: AppStrings.displayOrderName(effectiveDisplayOrderMode),
+                background: AppStrings.backgroundName(backgroundMode)
             )
         }
         .sheet(isPresented: $isRunningMAFFTAlignment) {
