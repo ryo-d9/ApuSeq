@@ -171,7 +171,7 @@ struct SequenceNameCommands: Commands {
             Button(AppStrings.findSequenceName) {
                 actions?.findSequenceName()
             }
-            .keyboardShortcut("f", modifiers: [.command, .option])
+            .keyboardShortcut("f", modifiers: [.command, .shift])
             .disabled(actions?.canFindSequenceName != true)
         }
     }

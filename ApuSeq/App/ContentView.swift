@@ -55,6 +55,8 @@ private struct RootView: View {
     @State private var sequenceNameSearchText = ""
     @State private var highlightedNameRowIndex: Int?
     @State private var nameSearchRequestID = 0
+    @State private var showsSequenceNameSearchPopover = false
+    @State private var sequenceNameSearchMessage: String?
     @State private var isRunningMAFFTAlignment = false
     @State private var mafftAlignmentTask: Task<Void, Never>?
     @State private var mafftAlignmentErrorMessage = ""
@@ -95,6 +97,14 @@ private struct RootView: View {
 
     private var displayRows: [AlignmentRow] {
         model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
+    }
+
+    private var sequenceNameSearchMatchCount: Int? {
+        let query = sequenceNameSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return nil }
+        return displayRows.reduce(0) { count, row in
+            count + (row.name.localizedCaseInsensitiveContains(query) ? 1 : 0)
+        }
     }
 
     private var effectiveDisplayOrderMode: AlignmentDisplayOrderMode {
@@ -397,6 +407,23 @@ private struct RootView: View {
     var body: some View {
         contentBody
         .navigationTitle(documentTitle)
+        .popover(isPresented: $showsSequenceNameSearchPopover, arrowEdge: .top) {
+            SequenceNameSearchPopover(
+                searchText: $sequenceNameSearchText,
+                matchCount: sequenceNameSearchMatchCount,
+                message: sequenceNameSearchMessage,
+                onSearch: searchSequenceName,
+                onClose: { showsSequenceNameSearchPopover = false }
+            )
+            .onChange(of: sequenceNameSearchText) {
+                sequenceNameSearchMessage = nil
+            }
+        }
+        .onChange(of: showsSequenceNameSearchPopover) { _, isPresented in
+            guard !isPresented else { return }
+            highlightedNameRowIndex = nil
+            sequenceNameSearchMessage = nil
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Picker(String(localized: "Mode"), selection: viewerModeBinding) {
@@ -713,21 +740,30 @@ private struct RootView: View {
 
     private func findSequenceName() {
         guard !displayRows.isEmpty else { return }
-        guard let searchText = promptForSequenceNameSearch(defaultSearchText: sequenceNameSearchText) else { return }
+        sequenceNameSearchMessage = nil
+        showsSequenceNameSearchPopover = true
+    }
+
+    private func searchSequenceName() {
+        guard !displayRows.isEmpty else { return }
+        let searchText = sequenceNameSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         sequenceNameSearchText = searchText
-        let lowercasedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !lowercasedSearchText.isEmpty else { return }
+        guard !searchText.isEmpty else {
+            sequenceNameSearchMessage = String(localized: "Enter part of a sequence name.")
+            return
+        }
 
         let startIndex = highlightedNameRowIndex.map { min($0 + 1, displayRows.count) } ?? 0
         let orderedIndices = Array(startIndex..<displayRows.count) + Array(0..<startIndex)
         guard let matchedIndex = orderedIndices.first(where: {
-            displayRows[$0].name.localizedCaseInsensitiveContains(lowercasedSearchText)
+            displayRows[$0].name.localizedCaseInsensitiveContains(searchText)
         }) else {
             NSSound.beep()
-            showSequenceNameNotFoundAlert(searchText: lowercasedSearchText)
+            sequenceNameSearchMessage = nil
             return
         }
 
+        sequenceNameSearchMessage = nil
         highlightedNameRowIndex = matchedIndex
         nameSearchRequestID += 1
     }
@@ -876,31 +912,6 @@ private struct RootView: View {
         }
     }
 
-    private func promptForSequenceNameSearch(defaultSearchText: String) -> String? {
-        let alert = NSAlert()
-        alert.messageText = AppStrings.findSequenceNameTitle
-        alert.informativeText = String(localized: "Enter part of a sequence name.")
-        alert.addButton(withTitle: AppStrings.ok)
-        alert.addButton(withTitle: AppStrings.cancel)
-
-        let textField = NSTextField(string: defaultSearchText)
-        textField.frame = NSRect(x: 0, y: 0, width: 280, height: 24)
-        alert.accessoryView = textField
-        textField.selectText(nil)
-
-        let response = alert.runModal()
-        guard response == .alertFirstButtonReturn else { return nil }
-        return textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func showSequenceNameNotFoundAlert(searchText: String) {
-        let alert = NSAlert()
-        alert.messageText = AppStrings.sequenceNameNotFound
-        alert.informativeText = String(format: String(localized: "No sequence name contains \"%@\"."), searchText)
-        alert.addButton(withTitle: AppStrings.ok)
-        alert.runModal()
-    }
-
     private func nextSequenceName() -> String {
         let existingNames = Set(model.alignment.rows.map(\.name))
         var index = model.alignment.rows.count + 1
@@ -959,6 +970,125 @@ private struct RootView: View {
     private func sameRowOrder(_ first: [AlignmentRow], _ second: [AlignmentRow]) -> Bool {
         first.elementsEqual(second) { left, right in
             left.name == right.name && left.sequence == right.sequence
+        }
+    }
+}
+
+private struct SequenceNameSearchPopover: View {
+    @Binding var searchText: String
+    let matchCount: Int?
+    let message: String?
+    let onSearch: () -> Void
+    let onClose: () -> Void
+
+    private var statusText: String? {
+        if let message {
+            return message
+        }
+        guard let matchCount else { return nil }
+        switch matchCount {
+        case 0:
+            return String(localized: "No matches")
+        case 1:
+            return String(localized: "1 match")
+        default:
+            return String(format: String(localized: "%d matches"), matchCount)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(AppStrings.findSequenceNameTitle)
+                .font(.headline)
+
+            SequenceNameSearchField(text: $searchText, onSubmit: onSearch)
+                .frame(width: 260, height: 28)
+
+            if let statusText {
+                Text(statusText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Spacer()
+                Button(String(localized: "Done")) {
+                    onClose()
+                }
+                .keyboardShortcut(.cancelAction)
+                Button(String(localized: "Next")) {
+                    onSearch()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(12)
+        .frame(width: 300)
+    }
+}
+
+private struct SequenceNameSearchField: NSViewRepresentable {
+    @Binding var text: String
+    let onSubmit: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, onSubmit: onSubmit)
+    }
+
+    func makeNSView(context: Context) -> NSSearchField {
+        let searchField = NSSearchField(frame: .zero)
+        searchField.placeholderString = String(localized: "Sequence name")
+        searchField.target = context.coordinator
+        searchField.action = #selector(Coordinator.submitSearch(_:))
+        searchField.delegate = context.coordinator
+        searchField.controlSize = .regular
+        searchField.sendsSearchStringImmediately = false
+        searchField.sendsWholeSearchString = true
+        return searchField
+    }
+
+    func updateNSView(_ searchField: NSSearchField, context: Context) {
+        context.coordinator.text = $text
+        context.coordinator.onSubmit = onSubmit
+        if searchField.stringValue != text {
+            searchField.stringValue = text
+        }
+        guard !context.coordinator.didFocus else { return }
+        context.coordinator.didFocus = true
+        DispatchQueue.main.async {
+            searchField.window?.makeFirstResponder(searchField)
+            searchField.selectText(nil)
+        }
+    }
+
+    final class Coordinator: NSObject, NSSearchFieldDelegate {
+        var text: Binding<String>
+        var onSubmit: () -> Void
+        var didFocus = false
+
+        init(text: Binding<String>, onSubmit: @escaping () -> Void) {
+            self.text = text
+            self.onSubmit = onSubmit
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let searchField = notification.object as? NSSearchField else { return }
+            text.wrappedValue = searchField.stringValue
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                text.wrappedValue = control.stringValue
+                onSubmit()
+                return true
+            }
+            return false
+        }
+
+        @objc func submitSearch(_ sender: NSSearchField) {
+            text.wrappedValue = sender.stringValue
+            onSubmit()
         }
     }
 }

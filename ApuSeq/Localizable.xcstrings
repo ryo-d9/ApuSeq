@@ -1304,6 +1304,66 @@
           }
         }
       }
+    },
+    "%d matches": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d件一致"
+          }
+        }
+      }
+    },
+    "1 match": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1件一致"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        }
+      }
+    },
+    "No matches": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一致なし"
+          }
+        }
+      }
+    },
+    "Sequence name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
