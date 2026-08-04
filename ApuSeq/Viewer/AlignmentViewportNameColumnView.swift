@@ -5,6 +5,9 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var rowSequences: [String] = []
+    var highlightedRowIndex: Int? {
+        didSet { needsDisplay = true }
+    }
     var verticalOffset: CGFloat = 0 {
         didSet {
             if abs(verticalOffset - oldValue) > 0.5 {
@@ -22,6 +25,7 @@ final class AlignmentViewportNameColumnView: NSView {
     var onRenameSequence: ((Int) -> Void)?
     var onDeleteSequence: ((Int) -> Void)?
     var onSetReference: ((String?) -> Void)?
+    var onScrollWheel: ((NSEvent) -> Void)?
 
     private let textInset = NSSize(width: 12, height: 12)
 
@@ -53,8 +57,20 @@ final class AlignmentViewportNameColumnView: NSView {
                 width: max(bounds.width - (textInset.width * 2), 0),
                 height: lineHeight
             )
+            if row == highlightedRowIndex {
+                NSColor.selectedContentBackgroundColor.withAlphaComponent(0.16).setFill()
+                NSRect(x: 0, y: y, width: bounds.width, height: lineHeight).fill()
+            }
             (rowNames[row] as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
         }
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX) else {
+            super.scrollWheel(with: event)
+            return
+        }
+        onScrollWheel?(event)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {

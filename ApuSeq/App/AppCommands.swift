@@ -23,6 +23,13 @@ struct AlignmentEditActions {
 struct AlignmentCopyActions {
     let canCopyConsensus: Bool
     let copyConsensus: () -> Void
+    let canCopySelectionAsFASTA: Bool
+    let copySelectionAsFASTA: () -> Void
+}
+
+struct SequenceNameActions {
+    let canFindSequenceName: Bool
+    let findSequenceName: () -> Void
 }
 
 struct ViewerModeActions {
@@ -61,6 +68,10 @@ private struct AlignmentCopyActionsKey: FocusedValueKey {
     typealias Value = AlignmentCopyActions
 }
 
+private struct SequenceNameActionsKey: FocusedValueKey {
+    typealias Value = SequenceNameActions
+}
+
 private struct ViewerModeActionsKey: FocusedValueKey {
     typealias Value = ViewerModeActions
 }
@@ -89,6 +100,11 @@ extension FocusedValues {
         set { self[AlignmentCopyActionsKey.self] = newValue }
     }
 
+    var sequenceNameActions: SequenceNameActions? {
+        get { self[SequenceNameActionsKey.self] }
+        set { self[SequenceNameActionsKey.self] = newValue }
+    }
+
     var viewerModeActions: ViewerModeActions? {
         get { self[ViewerModeActionsKey.self] }
         set { self[ViewerModeActionsKey.self] = newValue }
@@ -110,6 +126,11 @@ struct ColumnSelectionCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .pasteboard) {
+            Button(AppStrings.copySelectionAsFASTA) {
+                actions?.copySelectionAsFASTA()
+            }
+            .disabled(actions?.canCopySelectionAsFASTA != true)
+
             Button(AppStrings.copyConsensus) {
                 actions?.copyConsensus()
             }
@@ -138,6 +159,20 @@ struct ColumnSelectionCommands: Commands {
                 }
                 .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
             }
+        }
+    }
+}
+
+struct SequenceNameCommands: Commands {
+    @FocusedValue(\.sequenceNameActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button(AppStrings.findSequenceName) {
+                actions?.findSequenceName()
+            }
+            .keyboardShortcut("f", modifiers: [.command, .option])
+            .disabled(actions?.canFindSequenceName != true)
         }
     }
 }

@@ -17,6 +17,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let defaultNameColumnWidth: CGFloat
     let displayedRowNames: [String]
     let displayedRowSequences: [String]
+    let highlightedNameRowIndex: Int?
+    let nameSearchRequestID: Int
     let auxiliaryNameAttributedText: NSAttributedString
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
@@ -38,6 +40,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.setAccessibilityIdentifier("alignment-name-column")
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
+        nameColumnView.highlightedRowIndex = highlightedNameRowIndex
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
@@ -83,6 +86,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             onSetReference: onSetReference
         )
         context.coordinator.installScrollSync(for: containerView)
+        context.coordinator.lastNameSearchRequestID = nameSearchRequestID
         return containerView
     }
 
@@ -100,6 +104,13 @@ struct AlignmentTextViewport: NSViewRepresentable {
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference
         )
+        containerView.updateHighlightedNameRow(highlightedNameRowIndex)
+        if context.coordinator.lastNameSearchRequestID != nameSearchRequestID {
+            context.coordinator.lastNameSearchRequestID = nameSearchRequestID
+            if let highlightedNameRowIndex {
+                containerView.scrollNameRowToVisible(highlightedNameRowIndex)
+            }
+        }
         containerView.updateNameColumnVerticalOffset()
         containerView.updateAuxiliaryPanel(
             nameText: auxiliaryNameAttributedText,
@@ -189,6 +200,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var lastContentVersion = -1
         var lastFontSize = -1.0
         var lastRenderedFingerprint = RenderedFingerprint.empty
+        var lastNameSearchRequestID = -1
         var onSequenceEdited: ((String) -> Void)?
         var isProgrammaticTextUpdate = false
 

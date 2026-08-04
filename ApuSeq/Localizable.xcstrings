@@ -339,6 +339,16 @@
         }
       }
     },
+    "Copy Selection as FASTA": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択範囲をFASTAとしてコピー"
+          }
+        }
+      }
+    },
     "Copy as FASTA": {
       "localizations": {
         "ja": {
@@ -469,6 +479,16 @@
         }
       }
     },
+    "Enter part of a sequence name.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名の一部を入力してください。"
+          }
+        }
+      }
+    },
     "Entire Alignment": {
       "localizations": {
         "ja": {
@@ -495,6 +515,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "FASTA"
+          }
+        }
+      }
+    },
+    "Find Sequence Name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名を検索"
+          }
+        }
+      }
+    },
+    "Find Sequence Name...": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名を検索..."
           }
         }
       }
@@ -795,6 +835,16 @@
         }
       }
     },
+    "No sequence name contains \"%@\".": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" を含むシーケンス名はありません。"
+          }
+        }
+      }
+    },
     "Open Source Licenses": {
       "localizations": {
         "ja": {
@@ -1001,6 +1051,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "シーケンス名は空にできません。"
+          }
+        }
+      }
+    },
+    "Sequence name not found.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名が見つかりません。"
           }
         }
       }

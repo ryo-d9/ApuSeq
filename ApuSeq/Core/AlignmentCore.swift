@@ -288,6 +288,62 @@ enum AlignmentSerializer {
     }
 }
 
+enum AlignmentSelectionExporter {
+    nonisolated static func selectedFASTAString(
+        text: String,
+        rowNames: [String],
+        alignmentLength: Int,
+        selectedRanges: [NSRange]
+    ) -> String? {
+        guard alignmentLength > 0 else { return nil }
+        let text = text as NSString
+        let textLength = text.length
+        guard textLength > 0 else { return nil }
+
+        let lineSpan = alignmentLength + 1
+        var selectedColumnsByRow: [Int: Set<Int>] = [:]
+        for range in selectedRanges {
+            guard range.location != NSNotFound, range.length > 0 else { continue }
+            let upperBound = min(NSMaxRange(range), textLength)
+            guard range.location < upperBound else { continue }
+
+            var location = max(range.location, 0)
+            while location < upperBound {
+                let row = location / lineSpan
+                let column = location % lineSpan
+                if column < alignmentLength, row >= 0 {
+                    selectedColumnsByRow[row, default: []].insert(column)
+                }
+                location += 1
+            }
+        }
+
+        let rows = selectedColumnsByRow.keys.sorted().compactMap { row -> AlignmentRow? in
+            guard row >= 0 else { return nil }
+            let rowStart = row * lineSpan
+            guard rowStart < textLength else { return nil }
+            let selectedColumns = selectedColumnsByRow[row, default: []].sorted()
+            guard !selectedColumns.isEmpty else { return nil }
+
+            var sequence = ""
+            sequence.reserveCapacity(selectedColumns.count)
+            for column in selectedColumns {
+                let location = rowStart + column
+                guard location < textLength else { continue }
+                sequence += text.substring(with: NSRange(location: location, length: 1))
+            }
+            guard !sequence.isEmpty else { return nil }
+            let name = rowNames.indices.contains(row) ? rowNames[row] : "Sequence \(row + 1)"
+            let startColumn = (selectedColumns.first ?? 0) + 1
+            let endColumn = (selectedColumns.last ?? 0) + 1
+            return AlignmentRow(name: "\(name) [\(startColumn)-\(endColumn)]", sequence: sequence)
+        }
+
+        guard !rows.isEmpty else { return nil }
+        return AlignmentSerializer.serialize(rows: rows, preferredFormat: .fasta)
+    }
+}
+
 enum AlignmentColumnEditor {
     struct RowEdit: Sendable {
         let row: Int

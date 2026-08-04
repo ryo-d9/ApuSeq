@@ -13,6 +13,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     var onAddVerticalCursor: ((Int) -> Bool)?
     var onAddSequence: (() -> Void)?
     var canAddSequenceFromMenu = true
+    var rowNames: [String] = []
     var columnSelectionAnchor: Int?
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
@@ -224,6 +225,14 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let menu = super.menu(for: event) ?? NSMenu(title: AppStrings.sequenceMenu)
+        if canCopySelectionAsFASTA {
+            if !menu.items.isEmpty {
+                menu.addItem(.separator())
+            }
+            let copySelectionItem = NSMenuItem(title: AppStrings.copySelectionAsFASTA, action: #selector(copySelectionAsFASTA(_:)), keyEquivalent: "")
+            copySelectionItem.target = self
+            menu.addItem(copySelectionItem)
+        }
         guard isEditable && canAddSequenceFromMenu else { return menu }
         if !menu.items.isEmpty {
             menu.addItem(.separator())
@@ -236,6 +245,25 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     @objc private func addSequenceFromMenu(_ sender: NSMenuItem) {
         onAddSequence?()
+    }
+
+    @objc func copySelectionAsFASTA(_ sender: Any?) {
+        guard let fasta = AlignmentSelectionExporter.selectedFASTAString(
+            text: string,
+            rowNames: rowNames,
+            alignmentLength: alignmentLength,
+            selectedRanges: selectedRanges.map(\.rangeValue)
+        ), !fasta.isEmpty else {
+            NSSound.beep()
+            return
+        }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(fasta, forType: .string)
+    }
+
+    private var canCopySelectionAsFASTA: Bool {
+        selectedRanges.contains { $0.rangeValue.length > 0 } && alignmentLength > 0
     }
 
     func updateAlignmentDisplay(

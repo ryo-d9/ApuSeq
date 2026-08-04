@@ -52,6 +52,9 @@ private struct RootView: View {
     @State private var selectedSequenceCount = 0
     @State private var selectedStartPosition: Int?
     @State private var selectedEndPosition: Int?
+    @State private var sequenceNameSearchText = ""
+    @State private var highlightedNameRowIndex: Int?
+    @State private var nameSearchRequestID = 0
     @State private var isRunningMAFFTAlignment = false
     @State private var mafftAlignmentTask: Task<Void, Never>?
     @State private var mafftAlignmentErrorMessage = ""
@@ -199,7 +202,16 @@ private struct RootView: View {
     private var alignmentCopyActions: AlignmentCopyActions {
         AlignmentCopyActions(
             canCopyConsensus: !model.alignment.rows.isEmpty && model.alignment.length > 0,
-            copyConsensus: copyConsensus
+            copyConsensus: copyConsensus,
+            canCopySelectionAsFASTA: selectedResidueCount > 0 && !displayRows.isEmpty,
+            copySelectionAsFASTA: copySelectionAsFASTA
+        )
+    }
+
+    private var sequenceNameActions: SequenceNameActions {
+        SequenceNameActions(
+            canFindSequenceName: !displayRows.isEmpty,
+            findSequenceName: findSequenceName
         )
     }
 
@@ -362,6 +374,8 @@ private struct RootView: View {
             defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
             displayedRowNames: displayRows.map(\.name),
             displayedRowSequences: displayRows.map(\.sequence),
+            highlightedNameRowIndex: highlightedNameRowIndex,
+            nameSearchRequestID: nameSearchRequestID,
             auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
             auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
             auxiliaryLineCount: auxiliaryPanel.lineCount,
@@ -381,33 +395,7 @@ private struct RootView: View {
     }
 
     var body: some View {
-        Group {
-            if let parseErrorMessage = model.parseErrorMessage {
-                ContentUnavailableView(
-                    String(localized: "Cannot Parse Alignment"),
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(parseErrorMessage)
-                )
-            } else {
-                VStack(spacing: 0) {
-                    alignmentViewport
-                    Divider()
-                    FooterBar(
-                        sequenceCount: displayAlignment.rows.count,
-                        residueCount: displayAlignment.length,
-                        selectedResidueCount: selectedResidueCount,
-                        selectedSequenceCount: selectedSequenceCount,
-                        selectedStartPosition: selectedStartPosition,
-                        selectedEndPosition: selectedEndPosition,
-                        backgroundMode: backgroundModeBinding,
-                        availableBackgroundModes: availableBackgroundModes,
-                        displayOrderMode: footerDisplayOrderMode,
-                        canChangeDisplayOrder: viewerMode == .view,
-                        canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
-                    )
-                }
-            }
-        }
+        contentBody
         .navigationTitle(documentTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -475,9 +463,39 @@ private struct RootView: View {
         .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
         .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
         .focusedSceneValue(\.alignmentCopyActions, alignmentCopyActions)
+        .focusedSceneValue(\.sequenceNameActions, sequenceNameActions)
         .focusedSceneValue(\.viewerModeActions, viewerModeActions)
         .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
         .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
+    }
+
+    @ViewBuilder
+    private var contentBody: some View {
+        if let parseErrorMessage = model.parseErrorMessage {
+            ContentUnavailableView(
+                String(localized: "Cannot Parse Alignment"),
+                systemImage: "exclamationmark.triangle",
+                description: Text(parseErrorMessage)
+            )
+        } else {
+            VStack(spacing: 0) {
+                alignmentViewport
+                Divider()
+                FooterBar(
+                    sequenceCount: displayAlignment.rows.count,
+                    residueCount: displayAlignment.length,
+                    selectedResidueCount: selectedResidueCount,
+                    selectedSequenceCount: selectedSequenceCount,
+                    selectedStartPosition: selectedStartPosition,
+                    selectedEndPosition: selectedEndPosition,
+                    backgroundMode: backgroundModeBinding,
+                    availableBackgroundModes: availableBackgroundModes,
+                    displayOrderMode: footerDisplayOrderMode,
+                    canChangeDisplayOrder: viewerMode == .view,
+                    canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
+                )
+            }
+        }
     }
 
     private func setViewerMode(_ mode: ViewerMode) {
@@ -682,6 +700,38 @@ private struct RootView: View {
         pasteboard.setString(consensus, forType: .string)
     }
 
+    private func copySelectionAsFASTA() {
+        guard selectedResidueCount > 0 else {
+            NSSound.beep()
+            return
+        }
+        guard NSApp.sendAction(NSSelectorFromString("copySelectionAsFASTA:"), to: nil, from: nil) else {
+            NSSound.beep()
+            return
+        }
+    }
+
+    private func findSequenceName() {
+        guard !displayRows.isEmpty else { return }
+        guard let searchText = promptForSequenceNameSearch(defaultSearchText: sequenceNameSearchText) else { return }
+        sequenceNameSearchText = searchText
+        let lowercasedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !lowercasedSearchText.isEmpty else { return }
+
+        let startIndex = highlightedNameRowIndex.map { min($0 + 1, displayRows.count) } ?? 0
+        let orderedIndices = Array(startIndex..<displayRows.count) + Array(0..<startIndex)
+        guard let matchedIndex = orderedIndices.first(where: {
+            displayRows[$0].name.localizedCaseInsensitiveContains(lowercasedSearchText)
+        }) else {
+            NSSound.beep()
+            showSequenceNameNotFoundAlert(searchText: lowercasedSearchText)
+            return
+        }
+
+        highlightedNameRowIndex = matchedIndex
+        nameSearchRequestID += 1
+    }
+
     private func startMAFFTAlignment() {
         guard canAlignWithMAFFT else { return }
         let rawText = document.rawText
@@ -824,6 +874,31 @@ private struct RootView: View {
             }
             return name
         }
+    }
+
+    private func promptForSequenceNameSearch(defaultSearchText: String) -> String? {
+        let alert = NSAlert()
+        alert.messageText = AppStrings.findSequenceNameTitle
+        alert.informativeText = String(localized: "Enter part of a sequence name.")
+        alert.addButton(withTitle: AppStrings.ok)
+        alert.addButton(withTitle: AppStrings.cancel)
+
+        let textField = NSTextField(string: defaultSearchText)
+        textField.frame = NSRect(x: 0, y: 0, width: 280, height: 24)
+        alert.accessoryView = textField
+        textField.selectText(nil)
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return nil }
+        return textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func showSequenceNameNotFoundAlert(searchText: String) {
+        let alert = NSAlert()
+        alert.messageText = AppStrings.sequenceNameNotFound
+        alert.informativeText = String(format: String(localized: "No sequence name contains \"%@\"."), searchText)
+        alert.addButton(withTitle: AppStrings.ok)
+        alert.runModal()
     }
 
     private func nextSequenceName() -> String {
