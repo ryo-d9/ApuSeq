@@ -67,7 +67,7 @@ final class AlignmentViewportRulerView: NSRulerView {
 
         var tick = ((visibleStart + step - 1) / step) * step
         while tick <= visibleEnd {
-            let documentX = textInset + (CGFloat(tick - 1) * glyphWidth) + glyphWidth
+            let documentX = textInset + (CGFloat(tick - 1) * glyphWidth) + (glyphWidth / 2)
             let x = documentX - visibleRect.minX
             let label = "\(tick)" as NSString
             let labelSize = label.size(withAttributes: labelAttributes)
