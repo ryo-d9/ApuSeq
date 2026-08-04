@@ -20,6 +20,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private let leftStack = NSStackView()
     private let rightStack = NSStackView()
     private let leftHeaderSpacer = NSView()
+    private var leftHeaderHeightConstraint: NSLayoutConstraint?
+    private var rulerHeightConstraint: NSLayoutConstraint?
     private var leftAuxHeightConstraint: NSLayoutConstraint?
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = 180
@@ -137,6 +139,16 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         syncAuxiliaryHorizontalOffset()
     }
 
+    func updateRuler(length: Int, font: NSFont, textInset: CGFloat) {
+        let rulerHeight = AlignmentViewportRulerView.rulerHeight(for: font)
+        if abs((leftHeaderHeightConstraint?.constant ?? 0) - rulerHeight) > 0.5 {
+            leftHeaderHeightConstraint?.constant = rulerHeight
+            rulerHeightConstraint?.constant = rulerHeight
+            needsLayout = true
+        }
+        rulerView.update(length: length, font: font, textInset: textInset)
+    }
+
     func updateNameColumnWidth(_ width: CGFloat) {
         guard !hasAppliedInitialNameWidth else { return }
         pendingInitialNameWidth = max(width, Self.minimumNameWidth)
@@ -237,6 +249,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         auxiliaryNameScrollView.isHidden = true
         auxiliarySequenceScrollView.isHidden = true
 
+        let leftHeaderHeightConstraint = leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
+        let rulerHeightConstraint = rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
+        self.leftHeaderHeightConstraint = leftHeaderHeightConstraint
+        self.rulerHeightConstraint = rulerHeightConstraint
+
         NSLayoutConstraint.activate([
             splitView.leadingAnchor.constraint(equalTo: leadingAnchor),
             splitView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -253,8 +270,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             rightStack.topAnchor.constraint(equalTo: rightPane.topAnchor),
             rightStack.bottomAnchor.constraint(equalTo: rightPane.bottomAnchor),
 
-            leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight),
-            rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight)
+            leftHeaderHeightConstraint,
+            rulerHeightConstraint
         ])
     }
 

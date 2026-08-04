@@ -1,7 +1,11 @@
 import AppKit
 
 final class AlignmentViewportRulerView: NSRulerView {
-    static let rulerHeight: CGFloat = 20
+    static let minimumRulerHeight: CGFloat = 20
+    private static let labelTopPadding: CGFloat = 2
+    private static let labelTickSpacing: CGFloat = 0.5
+    private static let tickLength: CGFloat = 6
+    private static let bottomPadding: CGFloat = 2
 
     private var alignmentLength = 0
     private var baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
@@ -11,7 +15,7 @@ final class AlignmentViewportRulerView: NSRulerView {
     init(scrollView: NSScrollView) {
         super.init(scrollView: scrollView, orientation: .horizontalRuler)
         clientView = scrollView.documentView
-        ruleThickness = Self.rulerHeight
+        ruleThickness = Self.rulerHeight(for: baseFont)
     }
 
     @available(*, unavailable)
@@ -23,7 +27,26 @@ final class AlignmentViewportRulerView: NSRulerView {
         alignmentLength = max(length, 0)
         baseFont = font
         self.textInset = textInset
+        ruleThickness = Self.rulerHeight(for: font)
         needsDisplay = true
+    }
+
+    static func rulerHeight(for font: NSFont) -> CGFloat {
+        let labelFont = Self.labelFont(for: font)
+        return max(
+            Self.minimumRulerHeight,
+            ceil(
+                Self.labelTopPadding
+                + alignmentLineHeight(for: labelFont)
+                + Self.labelTickSpacing
+                + Self.tickLength
+                + Self.bottomPadding
+            )
+        )
+    }
+
+    private static func labelFont(for font: NSFont) -> NSFont {
+        NSFont.monospacedSystemFont(ofSize: max(font.pointSize - 4, 7), weight: .regular)
     }
 
     override func drawHashMarksAndLabels(in rect: NSRect) {
@@ -32,7 +55,7 @@ final class AlignmentViewportRulerView: NSRulerView {
         guard alignmentLength > 0, let scrollView else { return }
 
         let glyphWidth = max(("M" as NSString).size(withAttributes: [.font: baseFont]).width, 1)
-        let labelFont = NSFont.monospacedSystemFont(ofSize: max(baseFont.pointSize - 4, 7), weight: .regular)
+        let labelFont = Self.labelFont(for: baseFont)
         let labelAttributes: [NSAttributedString.Key: Any] = [
             .font: labelFont,
             .foregroundColor: NSColor.secondaryLabelColor
@@ -46,16 +69,19 @@ final class AlignmentViewportRulerView: NSRulerView {
         while tick <= visibleEnd {
             let documentX = textInset + (CGFloat(tick - 1) * glyphWidth) + glyphWidth
             let x = documentX - visibleRect.minX
+            let label = "\(tick)" as NSString
+            let labelSize = label.size(withAttributes: labelAttributes)
+            let labelY = Self.labelTopPadding
+            let tickTop = ceil(labelY + labelSize.height + Self.labelTickSpacing)
+            let tickBottom = max(tickTop, min(tickTop + Self.tickLength, bounds.height - Self.bottomPadding))
             let markerPath = NSBezierPath()
-            markerPath.move(to: NSPoint(x: x, y: 14))
-            markerPath.line(to: NSPoint(x: x, y: 19))
+            markerPath.move(to: NSPoint(x: x, y: tickTop))
+            markerPath.line(to: NSPoint(x: x, y: tickBottom))
             NSColor.tertiaryLabelColor.setStroke()
             markerPath.lineWidth = 1
             markerPath.stroke()
 
-            let label = "\(tick)" as NSString
-            let labelSize = label.size(withAttributes: labelAttributes)
-            label.draw(at: NSPoint(x: x - labelSize.width / 2, y: 2), withAttributes: labelAttributes)
+            label.draw(at: NSPoint(x: x - labelSize.width / 2, y: labelY), withAttributes: labelAttributes)
             tick += step
         }
     }

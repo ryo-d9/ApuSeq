@@ -85,6 +85,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
             onDeleteSequence: onDeleteSequence,
             onSetReference: onSetReference
         )
+        containerView.updateRuler(
+            length: alignmentLength,
+            font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            textInset: sequenceTextView.textContainerInset.width
+        )
         context.coordinator.installScrollSync(for: containerView)
         context.coordinator.lastNameSearchRequestID = nameSearchRequestID
         return containerView
@@ -168,7 +173,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             containerView.sequenceTextView.font = font
             containerView.auxiliaryNameTextView.font = font
             containerView.auxiliarySequenceTextView.font = font
-            containerView.rulerView.update(length: alignmentLength, font: font, textInset: containerView.sequenceTextView.textContainerInset.width)
+            containerView.updateRuler(length: alignmentLength, font: font, textInset: containerView.sequenceTextView.textContainerInset.width)
             context.coordinator.lastFontSize = fontSize
         }
 
@@ -180,7 +185,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             referenceSequenceForBackground: referenceSequenceForBackground,
             identityColorThreshold: identityColorThreshold
         )
-        containerView.rulerView.update(
+        containerView.updateRuler(
             length: alignmentLength,
             font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
             textInset: containerView.sequenceTextView.textContainerInset.width
