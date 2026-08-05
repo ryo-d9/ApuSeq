@@ -30,6 +30,14 @@ struct AlignmentCopyActions {
 struct SequenceNameActions {
     let canFindSequenceName: Bool
     let findSequenceName: () -> Void
+    let canCopyCurrentSequence: Bool
+    let copyCurrentSequence: () -> Void
+    let canCopyCurrentSequenceAsFASTA: Bool
+    let copyCurrentSequenceAsFASTA: () -> Void
+    let canSetCurrentSequenceAsReference: Bool
+    let setCurrentSequenceAsReference: () -> Void
+    let canClearReference: Bool
+    let clearReference: () -> Void
 }
 
 struct ViewerModeActions {
@@ -283,6 +291,7 @@ struct OpenSourceLicenseCommands: Commands {
 
 struct AlignmentCommands: Commands {
     @FocusedValue(\.alignmentEditActions) private var editActions
+    @FocusedValue(\.sequenceNameActions) private var sequenceNameActions
     @FocusedValue(\.mafftAlignmentActions) private var mafftActions
     @FocusedValue(\.sequenceTransformContext) private var context
     @Environment(\.newDocument) private var newDocument
@@ -326,6 +335,31 @@ struct AlignmentCommands: Commands {
                 .disabled(editActions?.canSortSequencesByUPGMA != true)
             }
             .disabled(editActions?.canSortSequencesByName != true && editActions?.canSortSequencesByUPGMA != true)
+
+            Menu(AppStrings.sequenceMenu) {
+                Button(AppStrings.copyCurrentSequence) {
+                    sequenceNameActions?.copyCurrentSequence()
+                }
+                .disabled(sequenceNameActions?.canCopyCurrentSequence != true)
+
+                Button(AppStrings.copyCurrentSequenceAsFASTA) {
+                    sequenceNameActions?.copyCurrentSequenceAsFASTA()
+                }
+                .disabled(sequenceNameActions?.canCopyCurrentSequenceAsFASTA != true)
+
+                Divider()
+
+                Button(AppStrings.setCurrentSequenceAsReference) {
+                    sequenceNameActions?.setCurrentSequenceAsReference()
+                }
+                .disabled(sequenceNameActions?.canSetCurrentSequenceAsReference != true)
+
+                Button(AppStrings.clearReference) {
+                    sequenceNameActions?.clearReference()
+                }
+                .disabled(sequenceNameActions?.canClearReference != true)
+            }
+            .disabled(sequenceNameActions == nil)
 
             Divider()
 

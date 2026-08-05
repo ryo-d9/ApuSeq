@@ -57,6 +57,7 @@ private struct RootView: View {
     @State private var nameSearchRequestID = 0
     @State private var showsSequenceNameSearchPopover = false
     @State private var sequenceNameSearchMessage: String?
+    @State private var currentSequenceRowIndex: Int?
     @State private var isRunningMAFFTAlignment = false
     @State private var mafftAlignmentTask: Task<Void, Never>?
     @State private var mafftAlignmentErrorMessage = ""
@@ -97,6 +98,14 @@ private struct RootView: View {
 
     private var displayRows: [AlignmentRow] {
         model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
+    }
+
+    private var currentSequenceRow: AlignmentRow? {
+        guard let currentSequenceRowIndex,
+              displayRows.indices.contains(currentSequenceRowIndex) else {
+            return nil
+        }
+        return displayRows[currentSequenceRowIndex]
     }
 
     private var sequenceNameSearchMatchCount: Int? {
@@ -219,9 +228,18 @@ private struct RootView: View {
     }
 
     private var sequenceNameActions: SequenceNameActions {
-        SequenceNameActions(
+        let hasCurrentSequence = currentSequenceRow != nil
+        return SequenceNameActions(
             canFindSequenceName: !displayRows.isEmpty,
-            findSequenceName: findSequenceName
+            findSequenceName: findSequenceName,
+            canCopyCurrentSequence: hasCurrentSequence,
+            copyCurrentSequence: copyCurrentSequence,
+            canCopyCurrentSequenceAsFASTA: hasCurrentSequence,
+            copyCurrentSequenceAsFASTA: copyCurrentSequenceAsFASTA,
+            canSetCurrentSequenceAsReference: hasCurrentSequence,
+            setCurrentSequenceAsReference: setCurrentSequenceAsReference,
+            canClearReference: selectedReferenceName != nil,
+            clearReference: clearReference
         )
     }
 
@@ -396,6 +414,7 @@ private struct RootView: View {
             selectedSequenceCount: $selectedSequenceCount,
             selectedStartPosition: $selectedStartPosition,
             selectedEndPosition: $selectedEndPosition,
+            currentSequenceRowIndex: $currentSequenceRowIndex,
             onAddSequence: addSequence,
             onAddFASTAFromClipboard: addFASTAFromClipboard,
             onRenameSequence: renameDisplayedSequence,
@@ -477,7 +496,10 @@ private struct RootView: View {
             cancelMAFFTAlignment()
         }
         .onChange(of: document.rawText) { _, _ in parseAndRender() }
-        .onChange(of: model.alignment.rows.count) { _, _ in validateDisplayOrderMode() }
+        .onChange(of: model.alignment.rows.count) { _, _ in
+            validateDisplayOrderMode()
+            validateCurrentSequenceRow()
+        }
         .onChange(of: backgroundMode) { _, newValue in
             if newValue == .identity || newValue == .minority {
                 rerender()
@@ -581,6 +603,7 @@ private struct RootView: View {
             displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
+        validateCurrentSequenceRow()
     }
 
     private func rerender() {
@@ -591,12 +614,21 @@ private struct RootView: View {
             displayOrderMode: effectiveDisplayOrderMode,
             referenceName: selectedReferenceName
         )
+        validateCurrentSequenceRow()
     }
 
     private func validateDisplayOrderMode() {
         guard displayOrderMode == .upgma else { return }
         guard !AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count) else { return }
         displayOrderMode = .original
+    }
+
+    private func validateCurrentSequenceRow() {
+        guard let currentSequenceRowIndex else { return }
+        guard displayRows.indices.contains(currentSequenceRowIndex) else {
+            self.currentSequenceRowIndex = nil
+            return
+        }
     }
 
     private func validateReferenceBackgroundMode() {
@@ -736,6 +768,39 @@ private struct RootView: View {
             NSSound.beep()
             return
         }
+    }
+
+    private func copyCurrentSequence() {
+        guard let currentSequenceRow else {
+            NSSound.beep()
+            return
+        }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(currentSequenceRow.sequence, forType: .string)
+    }
+
+    private func copyCurrentSequenceAsFASTA() {
+        guard let currentSequenceRow else {
+            NSSound.beep()
+            return
+        }
+        let fasta = AlignmentSerializer.serialize(rows: [currentSequenceRow], preferredFormat: .fasta)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(fasta, forType: .string)
+    }
+
+    private func setCurrentSequenceAsReference() {
+        guard let currentSequenceRow else {
+            NSSound.beep()
+            return
+        }
+        setReference(currentSequenceRow.name)
+    }
+
+    private func clearReference() {
+        setReference(nil)
     }
 
     private func findSequenceName() {

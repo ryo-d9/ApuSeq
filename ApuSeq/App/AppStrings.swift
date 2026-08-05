@@ -5,7 +5,9 @@ enum AppStrings {
     static let alignment = String(localized: "Alignment")
     static let copyConsensus = String(localized: "Copy Consensus")
     static let copySequence = String(localized: "Copy Sequence")
+    static let copyCurrentSequence = String(localized: "Copy Current Sequence")
     static let copyAsFASTA = String(localized: "Copy as FASTA")
+    static let copyCurrentSequenceAsFASTA = String(localized: "Copy Current Sequence as FASTA")
     static let copySelectionAsFASTA = String(localized: "Copy Selection as FASTA")
     static let addSequenceTitle = String(localized: "Add Sequence")
     static let addFASTAFromClipboard = String(localized: "Add FASTA from Clipboard")
@@ -44,6 +46,7 @@ enum AppStrings {
     static let sequenceMenu = String(localized: "Sequence")
     static let referenceMenu = String(localized: "Reference")
     static let setAsReference = String(localized: "Set as Reference")
+    static let setCurrentSequenceAsReference = String(localized: "Set Current Sequence as Reference")
     static let clearReference = String(localized: "Clear Reference")
 
     static func appearanceName(_ mode: AppAppearanceMode) -> String {

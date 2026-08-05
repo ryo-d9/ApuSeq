@@ -329,6 +329,26 @@
         }
       }
     },
+    "Copy Current Sequence": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスをコピー"
+          }
+        }
+      }
+    },
+    "Copy Current Sequence as FASTA": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスをFASTAとしてコピー"
+          }
+        }
+      }
+    },
     "Copy Sequence": {
       "localizations": {
         "ja": {
@@ -1081,6 +1101,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "参照に設定"
+          }
+        }
+      }
+    },
+    "Set Current Sequence as Reference": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスを参照に設定"
           }
         }
       }

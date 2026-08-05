@@ -29,6 +29,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var selectedSequenceCount: Int
     @Binding var selectedStartPosition: Int?
     @Binding var selectedEndPosition: Int?
+    @Binding var currentSequenceRowIndex: Int?
     let onAddSequence: () -> Void
     let onAddFASTAFromClipboard: () -> Void
     let onRenameSequence: (Int) -> Void
@@ -52,6 +53,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
         sequenceTextView.setAccessibilityIdentifier("alignment-sequence-text")
         configureMainTextView(sequenceTextView, fontSize: fontSize)
+        sequenceTextView.rowNames = displayedRowNames
         sequenceTextView.delegate = context.coordinator
         sequenceTextView.onAddVerticalCursor = { [weak coordinator = context.coordinator, weak sequenceTextView] direction in
             guard let coordinator, let sequenceTextView else { return false }
@@ -124,6 +126,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             fontSize: fontSize
         )
         context.coordinator.onSequenceEdited = onSequenceEdited
+        containerView.sequenceTextView.rowNames = displayedRowNames
         context.coordinator.isProgrammaticTextUpdate = true
 
         let fingerprint = RenderedFingerprint(
@@ -197,7 +200,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
             selectedResidueCount: $selectedResidueCount,
             selectedSequenceCount: $selectedSequenceCount,
             selectedStartPosition: $selectedStartPosition,
-            selectedEndPosition: $selectedEndPosition
+            selectedEndPosition: $selectedEndPosition,
+            currentSequenceRowIndex: $currentSequenceRowIndex
         )
     }
 
@@ -214,6 +218,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             let sequenceCount: Int
             let startPosition: Int?
             let endPosition: Int?
+            let currentRowIndex: Int?
         }
 
         struct LogicalRange {
@@ -231,6 +236,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         private let selectedSequenceCount: Binding<Int>
         private let selectedStartPosition: Binding<Int?>
         private let selectedEndPosition: Binding<Int?>
+        private let currentSequenceRowIndex: Binding<Int?>
         private var observerTokens: [NSObjectProtocol] = []
         private var isSyncingScroll = false
         private var pendingSelectionSummary: SelectionSummary?
@@ -241,12 +247,14 @@ struct AlignmentTextViewport: NSViewRepresentable {
             selectedResidueCount: Binding<Int>,
             selectedSequenceCount: Binding<Int>,
             selectedStartPosition: Binding<Int?>,
-            selectedEndPosition: Binding<Int?>
+            selectedEndPosition: Binding<Int?>,
+            currentSequenceRowIndex: Binding<Int?>
         ) {
             self.selectedResidueCount = selectedResidueCount
             self.selectedSequenceCount = selectedSequenceCount
             self.selectedStartPosition = selectedStartPosition
             self.selectedEndPosition = selectedEndPosition
+            self.currentSequenceRowIndex = currentSequenceRowIndex
         }
 
         deinit {
@@ -422,13 +430,23 @@ struct AlignmentTextViewport: NSViewRepresentable {
                         residueCount: 0,
                         sequenceCount: 0,
                         startPosition: nil,
-                        endPosition: nil
+                        endPosition: nil,
+                        currentRowIndex: nil
                     )
                 )
                 return
             }
 
             let lineSpan = alignmentLength + 1
+            let textLength = (textView.string as NSString).length
+            let currentRowIndex: Int?
+            if textLength > 0 {
+                let clampedLocation = min(max(textView.selectedRange().location, 0), max(textLength - 1, 0))
+                let rowCount = max(textLength / lineSpan, 1)
+                currentRowIndex = min(clampedLocation / lineSpan, rowCount - 1)
+            } else {
+                currentRowIndex = nil
+            }
             var count = 0
             var selectedRows = Set<Int>()
             var minPosition: Int?
@@ -458,7 +476,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
                     residueCount: count,
                     sequenceCount: selectedRows.count,
                     startPosition: minPosition,
-                    endPosition: maxPosition
+                    endPosition: maxPosition,
+                    currentRowIndex: currentRowIndex
                 )
             )
         }
@@ -484,6 +503,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             selectedSequenceCount.wrappedValue = summary.sequenceCount
             selectedStartPosition.wrappedValue = summary.startPosition
             selectedEndPosition.wrappedValue = summary.endPosition
+            currentSequenceRowIndex.wrappedValue = summary.currentRowIndex
             lastAppliedSelectionSummary = summary
         }
 
