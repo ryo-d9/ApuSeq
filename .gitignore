@@ -21,9 +21,6 @@ xcuserdata/
 *.ipa
 *.pkg
 
-# Generated benchmark data
-SampleData/LargeFileBenchmark/generated/
-
 # Signing material
 *.p8
 *.p12

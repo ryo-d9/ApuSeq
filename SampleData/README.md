@@ -2,6 +2,15 @@
 
 These files are provided for trying ApuSeq, manual testing, screenshots, and App Store review notes. They are not bundled with the app.
 
+## App Review sample files
+
+Use these small synthetic files to verify ApuSeq's document opening, alignment display, editing, copying, sorting, coloring, and Quick Look behavior:
+
+- FASTA: `demo.fasta`
+  - Direct download: https://raw.githubusercontent.com/ryo-d9/ApuSeq/main/SampleData/demo.fasta
+- CLUSTAL: `demo.clustal`
+  - Direct download: https://raw.githubusercontent.com/ryo-d9/ApuSeq/main/SampleData/demo.clustal
+
 ## Synthetic examples
 
 - `demo.fasta` - FASTA nucleotide alignment with gaps, mixed names, and a short trailing-gap case
