@@ -460,6 +460,7 @@ private struct RootView: View {
                     Image(systemName: "plus")
                 }
                 .accessibilityIdentifier("add-sequence-toolbar-button")
+                .accessibilityLabel(String(localized: "Add a sequence"))
                 .help(String(localized: "Add a sequence"))
                 .disabled(!canAddSequence)
 
@@ -469,6 +470,7 @@ private struct RootView: View {
                     Image(systemName: "info.circle")
                 }
                 .accessibilityIdentifier("alignment-inspector-button")
+                .accessibilityLabel(String(localized: "Show alignment information"))
                 .help(String(localized: "Show alignment information"))
             }
         }

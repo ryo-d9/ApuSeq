@@ -44,10 +44,15 @@ enum AppStrings {
     static let cancel = String(localized: "Cancel")
     static let ok = String(localized: "OK")
     static let sequenceMenu = String(localized: "Sequence")
+    static let sequenceNames = String(localized: "Sequence Names")
     static let referenceMenu = String(localized: "Reference")
     static let setAsReference = String(localized: "Set as Reference")
     static let setCurrentSequenceAsReference = String(localized: "Set Current Sequence as Reference")
     static let clearReference = String(localized: "Clear Reference")
+
+    static func accessibilitySequenceName(rowIndex: Int, name: String) -> String {
+        String(format: String(localized: "Sequence %d: %@"), rowIndex, name)
+    }
 
     static func appearanceName(_ mode: AppAppearanceMode) -> String {
         switch mode {

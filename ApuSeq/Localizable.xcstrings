@@ -1065,6 +1065,16 @@
         }
       }
     },
+    "Sequence %d: %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス%d: %@"
+          }
+        }
+      }
+    },
     "Sequence name cannot be empty.": {
       "localizations": {
         "ja": {
@@ -1081,6 +1091,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "シーケンス名が見つかりません。"
+          }
+        }
+      }
+    },
+    "Sequence Names": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名"
           }
         }
       }
