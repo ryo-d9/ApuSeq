@@ -454,15 +454,17 @@ private struct RootView: View {
                 .accessibilityIdentifier("viewer-mode-picker")
                 .help(String(localized: "Switch between read-only view and edit mode"))
 
-                Button {
-                    addSequence()
-                } label: {
-                    Image(systemName: "plus")
+                if canUseNamedSequenceEditing {
+                    Button {
+                        addSequence()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityIdentifier("add-sequence-toolbar-button")
+                    .accessibilityLabel(String(localized: "Add a sequence"))
+                    .help(String(localized: "Add a sequence"))
+                    .disabled(!canAddSequence)
                 }
-                .accessibilityIdentifier("add-sequence-toolbar-button")
-                .accessibilityLabel(String(localized: "Add a sequence"))
-                .help(String(localized: "Add a sequence"))
-                .disabled(!canAddSequence)
 
                 Button {
                     showsInspector.toggle()
