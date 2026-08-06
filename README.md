@@ -16,6 +16,7 @@ ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequ
   - Nucleotide translation with selectable codon tables
   - Reverse complement generation for nucleotide alignments
   - Bundled MAFFT 7.526 alignment (`--auto`)
+  - Amino-acid-guided nucleotide alignment for coding FASTA sequences
   - Quick Look preview extension with lightweight residue coloring
 - **View mode**
   - Display ordering: Original, Name, and UPGMA
@@ -42,6 +43,7 @@ Changes in edit mode can be autosaved and are managed by the system versions wor
 - Sort sequences by name or UPGMA (3–300 sequences).
 - Reverse Complement, Translation, and Align with MAFFT create new FASTA documents.
 - Selected columns can be realigned independently using MAFFT.
+- Coding nucleotide FASTA sequences can be translated, aligned as amino acids with MAFFT, and mapped back to nucleotide codons with Alignment > Align with MAFFT > Amino-Acid-Guided Nucleotide Alignment.
 
 ## Quick Look
 

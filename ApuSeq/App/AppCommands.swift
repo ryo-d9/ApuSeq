@@ -60,6 +60,8 @@ struct MAFFTAlignmentActions {
     let align: () -> Void
     let canAlignSelection: Bool
     let alignSelection: () -> Void
+    let canAlignAminoAcidGuidedNucleotide: Bool
+    let alignAminoAcidGuidedNucleotide: (Int, TranslationCodonTable) -> Void
     let cancel: () -> Void
     let isRunning: Bool
 }
@@ -309,8 +311,25 @@ struct AlignmentCommands: Commands {
                     mafftActions?.alignSelection()
                 }
                 .disabled(mafftActions?.canAlignSelection != true)
+
+                Menu(AppStrings.aminoAcidGuidedNucleotideAlignment) {
+                    Button(String(localized: "Frame +0")) {
+                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 0)
+                    }
+                    Button(String(localized: "Frame +1")) {
+                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 1)
+                    }
+                    Button(String(localized: "Frame +2")) {
+                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 2)
+                    }
+                }
+                .disabled(mafftActions?.canAlignAminoAcidGuidedNucleotide != true)
             }
-            .disabled(mafftActions?.canAlign != true && mafftActions?.canAlignSelection != true)
+            .disabled(
+                mafftActions?.canAlign != true &&
+                mafftActions?.canAlignSelection != true &&
+                mafftActions?.canAlignAminoAcidGuidedNucleotide != true
+            )
 
             Button(AppStrings.removeAllGapColumns) {
                 editActions?.removeAllGapColumns()
@@ -425,5 +444,10 @@ struct AlignmentCommands: Commands {
                 NSSound.beep()
             }
         }
+    }
+
+    private func runAminoAcidGuidedNucleotideAlignment(frameOffset: Int) {
+        let codonTable = TranslationCodonTable(rawValue: translationCodonTable) ?? .standard
+        mafftActions?.alignAminoAcidGuidedNucleotide(frameOffset, codonTable)
     }
 }

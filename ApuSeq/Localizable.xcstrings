@@ -89,6 +89,36 @@
         }
       }
     },
+    "Amino-Acid-Guided Nucleotide Alignment": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸ガイド付き塩基配列アラインメント"
+          }
+        }
+      }
+    },
+    "Amino-acid-guided nucleotide alignment is available only for nucleotide sequences.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸ガイド付き塩基配列アラインメントは塩基配列でのみ使用できます。"
+          }
+        }
+      }
+    },
+    "Amino-acid-guided nucleotide alignment requires FASTA input.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸ガイド付き塩基配列アラインメントにはFASTA入力が必要です。"
+          }
+        }
+      }
+    },
     "Align Selected Columns with MAFFT Auto": {
       "localizations": {
         "ja": {
@@ -155,6 +185,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "外観"
+          }
+        }
+      }
+    },
+    "At least two coding sequences are required for amino-acid-guided nucleotide alignment.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸ガイド付き塩基配列アラインメントには2つ以上のコード配列が必要です。"
           }
         }
       }
@@ -315,6 +355,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "コドン表"
+          }
+        }
+      }
+    },
+    "Could not map the aligned amino acid sequence back to codons for \"%@\".": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" のアライン済みアミノ酸配列をコドンに戻せませんでした。"
           }
         }
       }
@@ -1085,6 +1135,26 @@
         }
       }
     },
+    "Sequence \"%@\" does not contain complete codons in the selected frame.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したフレームでは、シーケンス \"%@\" に完全なコドンが含まれていません。"
+          }
+        }
+      }
+    },
+    "Sequence \"%@\" does not contain a translated coding region in the selected frame.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択したフレームでは、シーケンス \"%@\" に翻訳できるコード領域が含まれていません。"
+          }
+        }
+      }
+    },
     "Selected Columns": {
       "localizations": {
         "ja": {
@@ -1341,6 +1411,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "同梱されたMAFFT実行ファイルが見つかりませんでした。"
+          }
+        }
+      }
+    },
+    "The amino acid alignment result did not match the input sequences.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アミノ酸アラインメントの結果が入力シーケンスと一致しませんでした。"
           }
         }
       }
