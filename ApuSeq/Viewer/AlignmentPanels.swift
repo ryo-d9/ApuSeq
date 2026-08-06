@@ -91,17 +91,49 @@ struct FooterBar: View {
 
 struct FileInformationView: View {
     let format: String
+    let sequenceKind: String
     let sequenceCount: Int
-    let residueCount: Int
+    let siteCount: Int
     let sourceCharacterCount: Int
+    let selectedSequenceCount: Int
+    let selectedSiteCount: Int
+    let selectedStartPosition: Int?
+    let selectedEndPosition: Int?
+    let referenceName: String?
+    let displayOrder: String
+    let background: String
 
     var body: some View {
         List {
-            LabeledContent(String(localized: "Format"), value: format)
-            LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
-            LabeledContent(String(localized: "Residues"), value: "\(residueCount)")
-            LabeledContent(String(localized: "Source Chars"), value: "\(sourceCharacterCount)")
+            Section(String(localized: "Document")) {
+                LabeledContent(String(localized: "Format"), value: format)
+                LabeledContent(String(localized: "Sequence Kind"), value: sequenceKind)
+                LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
+                LabeledContent(String(localized: "Sites"), value: "\(siteCount)")
+                LabeledContent(String(localized: "Source Characters"), value: "\(sourceCharacterCount)")
+            }
+            Section(String(localized: "Selection")) {
+                LabeledContent(String(localized: "Selected Sequences"), value: selectionValue(selectedSequenceCount))
+                LabeledContent(String(localized: "Selected Sites"), value: selectionValue(selectedSiteCount))
+                LabeledContent(String(localized: "Selected Columns"), value: selectedColumnsValue)
+            }
+            Section(String(localized: "View")) {
+                LabeledContent(String(localized: "Reference Sequence"), value: referenceName ?? String(localized: "None"))
+                LabeledContent(String(localized: "Display Order"), value: displayOrder)
+                LabeledContent(String(localized: "Background"), value: background)
+            }
         }
         .navigationTitle(String(localized: "Information"))
+    }
+
+    private var selectedColumnsValue: String {
+        guard let selectedStartPosition, let selectedEndPosition, selectedSiteCount > 0 else {
+            return String(localized: "None")
+        }
+        return "\(selectedStartPosition)-\(selectedEndPosition)"
+    }
+
+    private func selectionValue(_ count: Int) -> String {
+        count > 0 ? "\(count)" : String(localized: "None")
     }
 }

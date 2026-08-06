@@ -171,8 +171,11 @@ final class ApuSeqUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Format"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["FASTA"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Sequence Kind"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Sequences"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Residues"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Sites"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Selection"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Reference Sequence"].waitForExistence(timeout: 2))
     }
 
     @MainActor
