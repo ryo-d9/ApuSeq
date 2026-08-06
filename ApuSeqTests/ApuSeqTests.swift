@@ -137,6 +137,41 @@ struct ApuSeqTests {
         #expect(plainText == "ACGT\nA-GT\n")
     }
 
+    @Test func exportsSelectedColumnsAsFASTAByDisplayedRow() {
+        let text = "ACGT\nA-GT\n"
+        let fasta = AlignmentSelectionExporter.selectedFASTAString(
+            text: text,
+            rowNames: ["Alpha", "Beta"],
+            alignmentLength: 4,
+            selectedRanges: [
+                NSRange(location: 1, length: 2),
+                NSRange(location: 6, length: 2)
+            ]
+        )
+
+        #expect(fasta == ">Alpha [2-3]\nCG\n>Beta [2-3]\n-G\n")
+    }
+
+    @Test func exportsSelectedFASTAIgnoringNewlinesAndEmptySelections() {
+        let text = "ACGT\nA-GT\n"
+        let fasta = AlignmentSelectionExporter.selectedFASTAString(
+            text: text,
+            rowNames: ["Alpha", "Beta"],
+            alignmentLength: 4,
+            selectedRanges: [
+                NSRange(location: 3, length: 4)
+            ]
+        )
+
+        #expect(fasta == ">Alpha [4-4]\nT\n>Beta [1-2]\nA-\n")
+        #expect(AlignmentSelectionExporter.selectedFASTAString(
+            text: text,
+            rowNames: ["Alpha", "Beta"],
+            alignmentLength: 4,
+            selectedRanges: [NSRange(location: 0, length: 0)]
+        ) == nil)
+    }
+
     @Test func parsesPlainTextRemovingWhitespaceWithinSequenceLines() throws {
         let alignment = try AlignmentParser.parse("AC GT\nA\t-GT\n")
 

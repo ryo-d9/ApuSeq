@@ -19,6 +19,7 @@ struct ApuSeqApp: App {
             ViewerModeCommands()
             ViewPanelCommands()
             ColumnSelectionCommands()
+            SequenceNameCommands()
             AlignmentEditCommands()
             InspectorCommands()
             OpenSourceLicenseCommands()

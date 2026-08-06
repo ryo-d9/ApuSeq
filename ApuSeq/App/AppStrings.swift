@@ -5,9 +5,15 @@ enum AppStrings {
     static let alignment = String(localized: "Alignment")
     static let copyConsensus = String(localized: "Copy Consensus")
     static let copySequence = String(localized: "Copy Sequence")
+    static let copyCurrentSequence = String(localized: "Copy Current Sequence")
     static let copyAsFASTA = String(localized: "Copy as FASTA")
+    static let copyCurrentSequenceAsFASTA = String(localized: "Copy Current Sequence as FASTA")
+    static let copySelectionAsFASTA = String(localized: "Copy Selection as FASTA")
     static let addSequenceTitle = String(localized: "Add Sequence")
     static let addFASTAFromClipboard = String(localized: "Add FASTA from Clipboard")
+    static let findSequenceName = String(localized: "Find Sequence Name...")
+    static let findSequenceNameTitle = String(localized: "Find Sequence Name")
+    static let sequenceNameNotFound = String(localized: "Sequence name not found.")
     static let renameSequence = String(localized: "Rename Sequence...")
     static let renameSequenceTitle = String(localized: "Rename Sequence")
     static let deleteSequence = String(localized: "Delete Sequence")
@@ -38,9 +44,15 @@ enum AppStrings {
     static let cancel = String(localized: "Cancel")
     static let ok = String(localized: "OK")
     static let sequenceMenu = String(localized: "Sequence")
+    static let sequenceNames = String(localized: "Sequence Names")
     static let referenceMenu = String(localized: "Reference")
     static let setAsReference = String(localized: "Set as Reference")
+    static let setCurrentSequenceAsReference = String(localized: "Set Current Sequence as Reference")
     static let clearReference = String(localized: "Clear Reference")
+
+    static func accessibilitySequenceName(rowIndex: Int, name: String) -> String {
+        String(format: String(localized: "Sequence %d: %@"), rowIndex, name)
+    }
 
     static func appearanceName(_ mode: AppAppearanceMode) -> String {
         switch mode {

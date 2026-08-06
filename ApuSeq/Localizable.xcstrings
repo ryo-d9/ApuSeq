@@ -339,12 +339,42 @@
         }
       }
     },
+    "Copy Current Sequence": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスをコピー"
+          }
+        }
+      }
+    },
+    "Copy Current Sequence as FASTA": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスをFASTAとしてコピー"
+          }
+        }
+      }
+    },
     "Copy Sequence": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "シーケンスをコピー"
+          }
+        }
+      }
+    },
+    "Copy Selection as FASTA": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択範囲をFASTAとしてコピー"
           }
         }
       }
@@ -489,6 +519,16 @@
         }
       }
     },
+    "Enter part of a sequence name.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名の一部を入力してください。"
+          }
+        }
+      }
+    },
     "Entire Alignment": {
       "localizations": {
         "ja": {
@@ -515,6 +555,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "FASTA"
+          }
+        }
+      }
+    },
+    "Find Sequence Name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名を検索"
+          }
+        }
+      }
+    },
+    "Find Sequence Name...": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名を検索..."
           }
         }
       }
@@ -825,6 +885,16 @@
         }
       }
     },
+    "No sequence name contains \"%@\".": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" を含むシーケンス名はありません。"
+          }
+        }
+      }
+    },
     "Open Source Licenses": {
       "localizations": {
         "ja": {
@@ -1075,12 +1145,42 @@
         }
       }
     },
+    "Sequence %d: %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス%d: %@"
+          }
+        }
+      }
+    },
     "Sequence name cannot be empty.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "シーケンス名は空にできません。"
+          }
+        }
+      }
+    },
+    "Sequence name not found.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名が見つかりません。"
+          }
+        }
+      }
+    },
+    "Sequence Names": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名"
           }
         }
       }
@@ -1101,6 +1201,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "参照に設定"
+          }
+        }
+      }
+    },
+    "Set Current Sequence as Reference": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のシーケンスを参照に設定"
           }
         }
       }
@@ -1331,6 +1441,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "pt"
+          }
+        }
+      }
+    },
+    "%d matches": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d件一致"
+          }
+        }
+      }
+    },
+    "1 match": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1件一致"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        }
+      }
+    },
+    "No matches": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一致なし"
+          }
+        }
+      }
+    },
+    "Sequence name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シーケンス名"
           }
         }
       }

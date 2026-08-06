@@ -5,6 +5,9 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var rowSequences: [String] = []
+    var highlightedRowIndex: Int? {
+        didSet { needsDisplay = true }
+    }
     var verticalOffset: CGFloat = 0 {
         didSet {
             if abs(verticalOffset - oldValue) > 0.5 {
@@ -22,20 +25,27 @@ final class AlignmentViewportNameColumnView: NSView {
     var onRenameSequence: ((Int) -> Void)?
     var onDeleteSequence: ((Int) -> Void)?
     var onSetReference: ((String?) -> Void)?
+    var onScrollWheel: ((NSEvent) -> Void)?
 
     private let textInset = NSSize(width: 12, height: 12)
 
     override var isFlipped: Bool { true }
 
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        clipsToBounds = true
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         NSColor.textBackgroundColor.setFill()
         dirtyRect.fill()
         guard !rowNames.isEmpty else { return }
-
-        let lineHeight = max(self.lineHeight, 1)
-        let firstRow = max(Int(floor((dirtyRect.minY + verticalOffset - textInset.height) / lineHeight)), 0)
-        let lastRow = min(Int(ceil((dirtyRect.maxY + verticalOffset - textInset.height) / lineHeight)), rowNames.count - 1)
-        guard firstRow <= lastRow else { return }
+        guard let visibleRows = visibleRowRange(in: dirtyRect) else { return }
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = .byTruncatingTail
@@ -45,16 +55,52 @@ final class AlignmentViewportNameColumnView: NSView {
             .paragraphStyle: paragraphStyle
         ]
 
-        for row in firstRow...lastRow {
-            let y = textInset.height + CGFloat(row) * lineHeight - verticalOffset
+        for row in visibleRows {
+            let y = rowOriginY(row)
             let rect = NSRect(
                 x: textInset.width,
                 y: y,
                 width: max(bounds.width - (textInset.width * 2), 0),
                 height: lineHeight
             )
+            if row == highlightedRowIndex {
+                NSColor.selectedContentBackgroundColor.withAlphaComponent(0.16).setFill()
+                NSRect(x: 0, y: y, width: bounds.width, height: lineHeight).fill()
+            }
             (rowNames[row] as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
         }
+    }
+
+    override func isAccessibilityElement() -> Bool {
+        true
+    }
+
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        .group
+    }
+
+    override func accessibilityLabel() -> String? {
+        AppStrings.sequenceNames
+    }
+
+    override func accessibilityChildren() -> [Any]? {
+        guard let visibleRows = visibleRowRange(in: bounds) else { return [] }
+        return visibleRows.map { row in
+            let element = NSAccessibilityElement()
+            element.setAccessibilityParent(self)
+            element.setAccessibilityRole(.staticText)
+            element.setAccessibilityLabel(AppStrings.accessibilitySequenceName(rowIndex: row + 1, name: rowNames[row]))
+            element.setAccessibilityFrameInParentSpace(rowRect(row))
+            return element
+        }
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX) else {
+            super.scrollWheel(with: event)
+            return
+        }
+        onScrollWheel?(event)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -120,6 +166,23 @@ final class AlignmentViewportNameColumnView: NSView {
         let y = point.y + verticalOffset - textInset.height
         guard y >= 0 else { return -1 }
         return Int(floor(y / max(lineHeight, 1)))
+    }
+
+    private func visibleRowRange(in rect: NSRect) -> ClosedRange<Int>? {
+        guard !rowNames.isEmpty else { return nil }
+        let lineHeight = max(self.lineHeight, 1)
+        let firstRow = max(Int(floor((rect.minY + verticalOffset - textInset.height) / lineHeight)), 0)
+        let lastRow = min(Int(ceil((rect.maxY + verticalOffset - textInset.height) / lineHeight)), rowNames.count - 1)
+        guard firstRow <= lastRow else { return nil }
+        return firstRow...lastRow
+    }
+
+    private func rowRect(_ row: Int) -> NSRect {
+        NSRect(x: 0, y: rowOriginY(row), width: bounds.width, height: lineHeight)
+    }
+
+    private func rowOriginY(_ row: Int) -> CGFloat {
+        textInset.height + CGFloat(row) * lineHeight - verticalOffset
     }
 
     private var lineHeight: CGFloat {

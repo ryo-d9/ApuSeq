@@ -20,6 +20,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private let leftStack = NSStackView()
     private let rightStack = NSStackView()
     private let leftHeaderSpacer = NSView()
+    private var leftHeaderHeightConstraint: NSLayoutConstraint?
+    private var rulerHeightConstraint: NSLayoutConstraint?
     private var leftAuxHeightConstraint: NSLayoutConstraint?
     private var rightAuxHeightConstraint: NSLayoutConstraint?
     private var desiredNameWidth: CGFloat = 180
@@ -68,6 +70,9 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
         super.init(frame: .zero)
         splitView.delegate = self
+        nameColumnView.onScrollWheel = { [weak self] event in
+            self?.scrollSequenceVerticallyFromNameColumn(with: event)
+        }
         setupLayout()
     }
 
@@ -96,6 +101,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             nameColumnView.rowNames = names
         }
         nameColumnView.rowSequences = sequences
+        sequenceTextView.rowNames = names
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
@@ -105,6 +111,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameColumnView.onSetReference = onSetReference
         sequenceTextView.onAddSequence = onAddSequence
         sequenceTextView.canAddSequenceFromMenu = canEditSequenceNames
+    }
+
+    func updateHighlightedNameRow(_ row: Int?) {
+        nameColumnView.highlightedRowIndex = row
     }
 
     func updateAuxiliaryPanel(
@@ -129,6 +139,16 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         syncAuxiliaryHorizontalOffset()
     }
 
+    func updateRuler(length: Int, font: NSFont, textInset: CGFloat) {
+        let rulerHeight = AlignmentViewportRulerView.rulerHeight(for: font)
+        if abs((leftHeaderHeightConstraint?.constant ?? 0) - rulerHeight) > 0.5 {
+            leftHeaderHeightConstraint?.constant = rulerHeight
+            rulerHeightConstraint?.constant = rulerHeight
+            needsLayout = true
+        }
+        rulerView.update(length: length, font: font, textInset: textInset)
+    }
+
     func updateNameColumnWidth(_ width: CGFloat) {
         guard !hasAppliedInitialNameWidth else { return }
         pendingInitialNameWidth = max(width, Self.minimumNameWidth)
@@ -146,6 +166,17 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameColumnView.verticalOffset = sequenceScrollView.contentView.bounds.origin.y
     }
 
+    func scrollNameRowToVisible(_ row: Int) {
+        guard row >= 0, row < nameColumnView.rowNames.count else { return }
+        let lineHeight = alignmentLineHeight(for: nameColumnView.font)
+        let targetY = max(CGFloat(row) * lineHeight + sequenceTextView.textContainerInset.height - (sequenceScrollView.contentView.bounds.height / 2), 0)
+        var origin = sequenceScrollView.contentView.bounds.origin
+        origin.y = min(targetY, maxVerticalSequenceOffset)
+        sequenceScrollView.contentView.scroll(to: origin)
+        sequenceScrollView.reflectScrolledClipView(sequenceScrollView.contentView)
+        handleSequenceBoundsChange()
+    }
+
     func handleSequenceBoundsChange() {
         let origin = sequenceScrollView.contentView.bounds.origin
         updateNameColumnVerticalOffset()
@@ -153,6 +184,18 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         lastSequenceHorizontalOffset = origin.x
         syncAuxiliaryHorizontalOffset()
         rulerView.needsDisplay = true
+    }
+
+    private func scrollSequenceVerticallyFromNameColumn(with event: NSEvent) {
+        let horizontalOffset = sequenceScrollView.contentView.bounds.origin.x
+        sequenceScrollView.scrollWheel(with: event)
+        var origin = sequenceScrollView.contentView.bounds.origin
+        if abs(origin.x - horizontalOffset) > 0.5 {
+            origin.x = horizontalOffset
+            sequenceScrollView.contentView.scroll(to: origin)
+            sequenceScrollView.reflectScrolledClipView(sequenceScrollView.contentView)
+        }
+        handleSequenceBoundsChange()
     }
 
     func syncAuxiliaryHorizontalOffset() {
@@ -206,6 +249,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         auxiliaryNameScrollView.isHidden = true
         auxiliarySequenceScrollView.isHidden = true
 
+        let leftHeaderHeightConstraint = leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
+        let rulerHeightConstraint = rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
+        self.leftHeaderHeightConstraint = leftHeaderHeightConstraint
+        self.rulerHeightConstraint = rulerHeightConstraint
+
         NSLayoutConstraint.activate([
             splitView.leadingAnchor.constraint(equalTo: leadingAnchor),
             splitView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -222,8 +270,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             rightStack.topAnchor.constraint(equalTo: rightPane.topAnchor),
             rightStack.bottomAnchor.constraint(equalTo: rightPane.bottomAnchor),
 
-            leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight),
-            rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.rulerHeight)
+            leftHeaderHeightConstraint,
+            rulerHeightConstraint
         ])
     }
 
@@ -260,6 +308,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         guard values.count >= 3 else { return nil }
         guard let width = Double(values[2]) else { return nil }
         return CGFloat(width)
+    }
+
+    private var maxVerticalSequenceOffset: CGFloat {
+        guard let documentView = sequenceScrollView.documentView else { return 0 }
+        return max(documentView.bounds.height - sequenceScrollView.contentView.bounds.height, 0)
     }
 
     func splitView(_ splitView: NSSplitView, constrainSplitPosition proposedPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {

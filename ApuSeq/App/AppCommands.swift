@@ -23,6 +23,21 @@ struct AlignmentEditActions {
 struct AlignmentCopyActions {
     let canCopyConsensus: Bool
     let copyConsensus: () -> Void
+    let canCopySelectionAsFASTA: Bool
+    let copySelectionAsFASTA: () -> Void
+}
+
+struct SequenceNameActions {
+    let canFindSequenceName: Bool
+    let findSequenceName: () -> Void
+    let canCopyCurrentSequence: Bool
+    let copyCurrentSequence: () -> Void
+    let canCopyCurrentSequenceAsFASTA: Bool
+    let copyCurrentSequenceAsFASTA: () -> Void
+    let canSetCurrentSequenceAsReference: Bool
+    let setCurrentSequenceAsReference: () -> Void
+    let canClearReference: Bool
+    let clearReference: () -> Void
 }
 
 struct ViewerModeActions {
@@ -61,6 +76,10 @@ private struct AlignmentCopyActionsKey: FocusedValueKey {
     typealias Value = AlignmentCopyActions
 }
 
+private struct SequenceNameActionsKey: FocusedValueKey {
+    typealias Value = SequenceNameActions
+}
+
 private struct ViewerModeActionsKey: FocusedValueKey {
     typealias Value = ViewerModeActions
 }
@@ -89,6 +108,11 @@ extension FocusedValues {
         set { self[AlignmentCopyActionsKey.self] = newValue }
     }
 
+    var sequenceNameActions: SequenceNameActions? {
+        get { self[SequenceNameActionsKey.self] }
+        set { self[SequenceNameActionsKey.self] = newValue }
+    }
+
     var viewerModeActions: ViewerModeActions? {
         get { self[ViewerModeActionsKey.self] }
         set { self[ViewerModeActionsKey.self] = newValue }
@@ -110,6 +134,11 @@ struct ColumnSelectionCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .pasteboard) {
+            Button(AppStrings.copySelectionAsFASTA) {
+                actions?.copySelectionAsFASTA()
+            }
+            .disabled(actions?.canCopySelectionAsFASTA != true)
+
             Button(AppStrings.copyConsensus) {
                 actions?.copyConsensus()
             }
@@ -138,6 +167,20 @@ struct ColumnSelectionCommands: Commands {
                 }
                 .keyboardShortcut(.downArrow, modifiers: [.control, .shift])
             }
+        }
+    }
+}
+
+struct SequenceNameCommands: Commands {
+    @FocusedValue(\.sequenceNameActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button(AppStrings.findSequenceName) {
+                actions?.findSequenceName()
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+            .disabled(actions?.canFindSequenceName != true)
         }
     }
 }
@@ -248,6 +291,7 @@ struct OpenSourceLicenseCommands: Commands {
 
 struct AlignmentCommands: Commands {
     @FocusedValue(\.alignmentEditActions) private var editActions
+    @FocusedValue(\.sequenceNameActions) private var sequenceNameActions
     @FocusedValue(\.mafftAlignmentActions) private var mafftActions
     @FocusedValue(\.sequenceTransformContext) private var context
     @Environment(\.newDocument) private var newDocument
@@ -291,6 +335,31 @@ struct AlignmentCommands: Commands {
                 .disabled(editActions?.canSortSequencesByUPGMA != true)
             }
             .disabled(editActions?.canSortSequencesByName != true && editActions?.canSortSequencesByUPGMA != true)
+
+            Menu(AppStrings.sequenceMenu) {
+                Button(AppStrings.copyCurrentSequence) {
+                    sequenceNameActions?.copyCurrentSequence()
+                }
+                .disabled(sequenceNameActions?.canCopyCurrentSequence != true)
+
+                Button(AppStrings.copyCurrentSequenceAsFASTA) {
+                    sequenceNameActions?.copyCurrentSequenceAsFASTA()
+                }
+                .disabled(sequenceNameActions?.canCopyCurrentSequenceAsFASTA != true)
+
+                Divider()
+
+                Button(AppStrings.setCurrentSequenceAsReference) {
+                    sequenceNameActions?.setCurrentSequenceAsReference()
+                }
+                .disabled(sequenceNameActions?.canSetCurrentSequenceAsReference != true)
+
+                Button(AppStrings.clearReference) {
+                    sequenceNameActions?.clearReference()
+                }
+                .disabled(sequenceNameActions?.canClearReference != true)
+            }
+            .disabled(sequenceNameActions == nil)
 
             Divider()
 
