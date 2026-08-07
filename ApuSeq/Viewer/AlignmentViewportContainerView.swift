@@ -1,8 +1,9 @@
 import AppKit
 
-final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
+final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate, NSSearchFieldDelegate {
     private static let minimumNameWidth: CGFloat = 90
     private static let minimumSequenceWidth: CGFloat = 160
+    private static let nameSearchHeaderHeight: CGFloat = 64
     private static let splitViewAutosaveName = NSSplitView.AutosaveName("ApuSeqAlignmentViewportSplitView")
 
     let nameColumnView: AlignmentViewportNameColumnView
@@ -20,6 +21,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private let leftStack = NSStackView()
     private let rightStack = NSStackView()
     private let leftHeaderSpacer = NSView()
+    private let nameFindBarView = SequenceNameFindBarView()
     private var leftHeaderHeightConstraint: NSLayoutConstraint?
     private var rulerHeightConstraint: NSLayoutConstraint?
     private var leftAuxHeightConstraint: NSLayoutConstraint?
@@ -28,6 +30,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private var hasAppliedInitialNameWidth = false
     private var pendingInitialNameWidth: CGFloat?
     private var lastSequenceHorizontalOffset = CGFloat.greatestFiniteMagnitude
+    private var lastNameFindFocusRequestID = -1
+    private var isNameFindBarPresented = false
+    var onNameFindTextChanged: ((String) -> Void)?
+    var onNameFindSubmit: ((Int) -> Void)?
+    var onNameFindClose: (() -> Void)?
 
     init(
         nameColumnView: AlignmentViewportNameColumnView,
@@ -117,6 +124,24 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameColumnView.highlightedRowIndex = row
     }
 
+    func updateNameFindBar(
+        isPresented: Bool,
+        text: String,
+        statusText: String?,
+        focusRequestID: Int
+    ) {
+        isNameFindBarPresented = isPresented
+        nameFindBarView.isHidden = !isPresented
+        nameFindBarView.update(text: text, statusText: statusText)
+        updateHeaderHeights()
+        guard isPresented, focusRequestID != lastNameFindFocusRequestID else { return }
+        lastNameFindFocusRequestID = focusRequestID
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.nameFindBarView.focusSearchField()
+        }
+    }
+
     func updateAuxiliaryPanel(
         nameText: NSAttributedString,
         sequenceText: NSAttributedString,
@@ -141,11 +166,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func updateRuler(length: Int, font: NSFont, textInset: CGFloat) {
         let rulerHeight = AlignmentViewportRulerView.rulerHeight(for: font)
-        if abs((leftHeaderHeightConstraint?.constant ?? 0) - rulerHeight) > 0.5 {
-            leftHeaderHeightConstraint?.constant = rulerHeight
+        if abs((rulerHeightConstraint?.constant ?? 0) - rulerHeight) > 0.5 {
             rulerHeightConstraint?.constant = rulerHeight
-            needsLayout = true
         }
+        updateHeaderHeights()
         rulerView.update(length: length, font: font, textInset: textInset)
     }
 
@@ -218,7 +242,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private func setupLayout() {
         [
             splitView, leftPane, rightPane, leftStack, rightStack, leftHeaderSpacer,
-            nameColumnView, sequenceScrollView, auxiliaryNameScrollView, auxiliarySequenceScrollView, rulerView
+            nameColumnView, sequenceScrollView, auxiliaryNameScrollView, auxiliarySequenceScrollView, rulerView,
+            nameFindBarView
         ].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -242,6 +267,18 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         rightStack.addArrangedSubview(sequenceScrollView)
         rightStack.addArrangedSubview(auxiliarySequenceScrollView)
 
+        nameFindBarView.isHidden = true
+        nameFindBarView.onTextChanged = { [weak self] text in
+            self?.onNameFindTextChanged?(text)
+        }
+        nameFindBarView.onSubmit = { [weak self] direction in
+            self?.onNameFindSubmit?(direction)
+        }
+        nameFindBarView.onClose = { [weak self] in
+            self?.onNameFindClose?()
+        }
+        leftHeaderSpacer.addSubview(nameFindBarView)
+
         leftAuxHeightConstraint = auxiliaryNameScrollView.heightAnchor.constraint(equalToConstant: 0)
         rightAuxHeightConstraint = auxiliarySequenceScrollView.heightAnchor.constraint(equalToConstant: 0)
         leftAuxHeightConstraint?.isActive = true
@@ -264,6 +301,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             leftStack.trailingAnchor.constraint(equalTo: leftPane.trailingAnchor),
             leftStack.topAnchor.constraint(equalTo: leftPane.topAnchor),
             leftStack.bottomAnchor.constraint(equalTo: leftPane.bottomAnchor),
+
+            nameFindBarView.leadingAnchor.constraint(equalTo: leftHeaderSpacer.leadingAnchor, constant: 6),
+            nameFindBarView.trailingAnchor.constraint(equalTo: leftHeaderSpacer.trailingAnchor, constant: -6),
+            nameFindBarView.topAnchor.constraint(equalTo: leftHeaderSpacer.topAnchor, constant: 4),
+            nameFindBarView.bottomAnchor.constraint(equalTo: leftHeaderSpacer.bottomAnchor, constant: -4),
 
             rightStack.leadingAnchor.constraint(equalTo: rightPane.leadingAnchor),
             rightStack.trailingAnchor.constraint(equalTo: rightPane.trailingAnchor),
@@ -294,6 +336,17 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         }
         desiredNameWidth = clamped
         hasAppliedInitialNameWidth = true
+    }
+
+    private func updateHeaderHeights() {
+        let rulerHeight = rulerHeightConstraint?.constant ?? AlignmentViewportRulerView.minimumRulerHeight
+        let targetLeftHeaderHeight = isNameFindBarPresented
+            ? max(rulerHeight, Self.nameSearchHeaderHeight)
+            : rulerHeight
+        if abs((leftHeaderHeightConstraint?.constant ?? 0) - targetLeftHeaderHeight) > 0.5 {
+            leftHeaderHeightConstraint?.constant = targetLeftHeaderHeight
+            needsLayout = true
+        }
     }
 
     private var autosavedNameWidth: CGFloat? {
@@ -330,5 +383,148 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func splitView(_ splitView: NSSplitView, shouldAdjustSizeOfSubview view: NSView) -> Bool {
         view !== leftPane
+    }
+
+}
+
+private final class SequenceNameFindBarView: NSView, NSSearchFieldDelegate {
+    private let stackView = NSStackView()
+    private let footerStackView = NSStackView()
+    private let searchField = SequenceNameSearchField()
+    private let statusLabel = NSTextField(labelWithString: "")
+    private let footerSpacer = NSView()
+    private let doneButton = NSButton()
+
+    var onTextChanged: ((String) -> Void)?
+    var onSubmit: ((Int) -> Void)?
+    var onClose: (() -> Void)?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupLayout()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func update(text: String, statusText: String?) {
+        if searchField.stringValue != text {
+            searchField.stringValue = text
+        }
+        statusLabel.stringValue = statusText ?? ""
+        statusLabel.isHidden = statusText == nil
+    }
+
+    func focusSearchField() {
+        window?.makeFirstResponder(searchField)
+        searchField.selectText(nil)
+    }
+
+    func controlTextDidChange(_ notification: Notification) {
+        guard notification.object as? NSSearchField === searchField else { return }
+        onTextChanged?(searchField.stringValue)
+    }
+
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        guard control === searchField else { return false }
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            let flags = NSApp.currentEvent?.modifierFlags.intersection(.deviceIndependentFlagsMask) ?? []
+            onSubmit?(flags.contains(.shift) ? -1 : 1)
+            return true
+        }
+        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            onClose?()
+            return true
+        }
+        return false
+    }
+
+    private func setupLayout() {
+        [
+            stackView, footerStackView, searchField, statusLabel, footerSpacer, doneButton
+        ].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+        }
+
+        stackView.orientation = .vertical
+        stackView.alignment = .leading
+        stackView.distribution = .fill
+        stackView.spacing = 5
+        addSubview(stackView)
+
+        footerStackView.orientation = .horizontal
+        footerStackView.alignment = .centerY
+        footerStackView.distribution = .fill
+        footerStackView.spacing = 6
+        stackView.addArrangedSubview(searchField)
+        stackView.addArrangedSubview(footerStackView)
+        footerStackView.addArrangedSubview(statusLabel)
+        footerStackView.addArrangedSubview(footerSpacer)
+        footerStackView.addArrangedSubview(doneButton)
+
+        searchField.placeholderString = String(localized: "Sequence name")
+        searchField.controlSize = .small
+        searchField.delegate = self
+        searchField.sendsSearchStringImmediately = false
+        searchField.sendsWholeSearchString = true
+        searchField.onCancel = { [weak self] in
+            self?.onClose?()
+        }
+        searchField.onTextChanged = { [weak self] text in
+            self?.onTextChanged?(text)
+        }
+        searchField.setAccessibilityIdentifier("sequence-name-search-field")
+
+        statusLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.lineBreakMode = .byTruncatingTail
+        statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        footerSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        footerSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        doneButton.title = String(localized: "Done")
+        doneButton.bezelStyle = .rounded
+        doneButton.controlSize = .small
+        doneButton.target = self
+        doneButton.action = #selector(close(_:))
+        doneButton.setAccessibilityLabel(String(localized: "Done"))
+
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            searchField.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
+            searchField.trailingAnchor.constraint(equalTo: stackView.trailingAnchor),
+            searchField.heightAnchor.constraint(equalToConstant: 22),
+            searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
+
+            footerStackView.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
+            footerStackView.trailingAnchor.constraint(equalTo: stackView.trailingAnchor),
+            footerStackView.heightAnchor.constraint(equalToConstant: 22),
+
+            doneButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 48),
+            doneButton.heightAnchor.constraint(equalToConstant: 22)
+        ])
+    }
+
+    @objc private func close(_ sender: Any?) {
+        onClose?()
+    }
+}
+
+private final class SequenceNameSearchField: NSSearchField {
+    var onCancel: (() -> Void)?
+    var onTextChanged: ((String) -> Void)?
+
+    override func cancelOperation(_ sender: Any?) {
+        if stringValue.isEmpty {
+            onCancel?()
+        } else {
+            stringValue = ""
+            onTextChanged?(stringValue)
+        }
     }
 }

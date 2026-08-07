@@ -55,7 +55,8 @@ private struct RootView: View {
     @State private var sequenceNameSearchText = ""
     @State private var highlightedNameRowIndex: Int?
     @State private var nameSearchRequestID = 0
-    @State private var showsSequenceNameSearchPopover = false
+    @State private var showsSequenceNameFindBar = false
+    @State private var sequenceNameFindFocusRequestID = 0
     @State private var sequenceNameSearchMessage: String?
     @State private var currentSequenceRowIndex: Int?
     @State private var isRunningMAFFTAlignment = false
@@ -108,11 +109,25 @@ private struct RootView: View {
         return displayRows[currentSequenceRowIndex]
     }
 
-    private var sequenceNameSearchMatchCount: Int? {
+    private var sequenceNameSearchStatusText: String? {
+        if let sequenceNameSearchMessage {
+            return sequenceNameSearchMessage
+        }
         let query = sequenceNameSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return nil }
-        return displayRows.reduce(0) { count, row in
-            count + (row.name.localizedCaseInsensitiveContains(query) ? 1 : 0)
+        let matches = sequenceNameSearchMatches(for: query)
+        guard !matches.isEmpty else {
+            return String(localized: "No matches")
+        }
+        if let highlightedNameRowIndex,
+           let ordinal = matches.firstIndex(of: highlightedNameRowIndex) {
+            return "\(ordinal + 1)/\(matches.count)"
+        }
+        switch matches.count {
+        case 1:
+            return String(localized: "1 match")
+        default:
+            return String(format: String(localized: "%d matches"), matches.count)
         }
     }
 
@@ -413,6 +428,10 @@ private struct RootView: View {
             displayedRowSequences: displayRows.map(\.sequence),
             highlightedNameRowIndex: highlightedNameRowIndex,
             nameSearchRequestID: nameSearchRequestID,
+            isNameFindBarPresented: showsSequenceNameFindBar,
+            nameSearchText: sequenceNameSearchText,
+            nameSearchStatusText: sequenceNameSearchStatusText,
+            nameFindFocusRequestID: sequenceNameFindFocusRequestID,
             auxiliaryNameAttributedText: auxiliaryAttributedText(auxiliaryPanel.leftText),
             auxiliarySequenceAttributedText: auxiliarySequenceAttributedText(auxiliaryPanel),
             auxiliaryLineCount: auxiliaryPanel.lineCount,
@@ -428,30 +447,16 @@ private struct RootView: View {
             onAddFASTAFromClipboard: addFASTAFromClipboard,
             onRenameSequence: renameDisplayedSequence,
             onDeleteSequence: deleteDisplayedSequence,
-            onSetReference: setReference
+            onSetReference: setReference,
+            onNameFindTextChanged: updateSequenceNameSearchText,
+            onNameFindSubmit: searchSequenceName,
+            onNameFindClose: closeSequenceNameSearch
         )
     }
 
     var body: some View {
         contentBody
         .navigationTitle(documentTitle)
-        .popover(isPresented: $showsSequenceNameSearchPopover, arrowEdge: .top) {
-            SequenceNameSearchPopover(
-                searchText: $sequenceNameSearchText,
-                matchCount: sequenceNameSearchMatchCount,
-                message: sequenceNameSearchMessage,
-                onSearch: searchSequenceName,
-                onClose: { showsSequenceNameSearchPopover = false }
-            )
-            .onChange(of: sequenceNameSearchText) {
-                sequenceNameSearchMessage = nil
-            }
-        }
-        .onChange(of: showsSequenceNameSearchPopover) { _, isPresented in
-            guard !isPresented else { return }
-            highlightedNameRowIndex = nil
-            sequenceNameSearchMessage = nil
-        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Picker(String(localized: "Mode"), selection: viewerModeBinding) {
@@ -520,6 +525,9 @@ private struct RootView: View {
         .onChange(of: model.alignment.rows.count) { _, _ in
             validateDisplayOrderMode()
             validateCurrentSequenceRow()
+            if showsSequenceNameFindBar {
+                updateSequenceNameSearchHighlight(scrollToMatch: false)
+            }
         }
         .onChange(of: backgroundMode) { _, newValue in
             if newValue == .identity || newValue == .minority {
@@ -827,31 +835,80 @@ private struct RootView: View {
     private func findSequenceName() {
         guard !displayRows.isEmpty else { return }
         sequenceNameSearchMessage = nil
-        showsSequenceNameSearchPopover = true
+        showsSequenceNameFindBar = true
+        sequenceNameFindFocusRequestID += 1
+        updateSequenceNameSearchHighlight(scrollToMatch: true)
     }
 
-    private func searchSequenceName() {
+    private func updateSequenceNameSearchText(_ text: String) {
+        sequenceNameSearchText = text
+        sequenceNameSearchMessage = nil
+        updateSequenceNameSearchHighlight(scrollToMatch: true)
+    }
+
+    private func closeSequenceNameSearch() {
+        showsSequenceNameFindBar = false
+        highlightedNameRowIndex = nil
+        sequenceNameSearchMessage = nil
+    }
+
+    private func updateSequenceNameSearchHighlight(scrollToMatch: Bool) {
         guard !displayRows.isEmpty else { return }
         let searchText = sequenceNameSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        sequenceNameSearchText = searchText
         guard !searchText.isEmpty else {
-            sequenceNameSearchMessage = String(localized: "Enter part of a sequence name.")
+            highlightedNameRowIndex = nil
+            sequenceNameSearchMessage = nil
             return
         }
 
-        let startIndex = highlightedNameRowIndex.map { min($0 + 1, displayRows.count) } ?? 0
-        let orderedIndices = Array(startIndex..<displayRows.count) + Array(0..<startIndex)
-        guard let matchedIndex = orderedIndices.first(where: {
-            displayRows[$0].name.localizedCaseInsensitiveContains(searchText)
-        }) else {
-            NSSound.beep()
+        guard let matchedIndex = sequenceNameSearchMatches(for: searchText).first else {
+            highlightedNameRowIndex = nil
             sequenceNameSearchMessage = nil
             return
         }
 
         sequenceNameSearchMessage = nil
         highlightedNameRowIndex = matchedIndex
+        if scrollToMatch {
+            nameSearchRequestID += 1
+        }
+    }
+
+    private func searchSequenceName(direction: Int) {
+        guard !displayRows.isEmpty else { return }
+        let searchText = sequenceNameSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        sequenceNameSearchText = searchText
+        guard !searchText.isEmpty else {
+            sequenceNameSearchMessage = String(localized: "Enter part of a sequence name.")
+            highlightedNameRowIndex = nil
+            return
+        }
+
+        let matches = sequenceNameSearchMatches(for: searchText)
+        guard !matches.isEmpty else {
+            NSSound.beep()
+            sequenceNameSearchMessage = nil
+            highlightedNameRowIndex = nil
+            return
+        }
+
+        let step = direction < 0 ? -1 : 1
+        let currentMatchIndex = highlightedNameRowIndex.flatMap { matches.firstIndex(of: $0) }
+        let nextMatchIndex: Int
+        if let currentMatchIndex {
+            nextMatchIndex = (currentMatchIndex + step + matches.count) % matches.count
+        } else {
+            nextMatchIndex = direction < 0 ? matches.count - 1 : 0
+        }
+        sequenceNameSearchMessage = nil
+        highlightedNameRowIndex = matches[nextMatchIndex]
         nameSearchRequestID += 1
+    }
+
+    private func sequenceNameSearchMatches(for searchText: String) -> [Int] {
+        displayRows.indices.filter {
+            displayRows[$0].name.localizedCaseInsensitiveContains(searchText)
+        }
     }
 
     private func startMAFFTAlignment() {
@@ -1082,125 +1139,6 @@ private struct RootView: View {
     private func sameRowOrder(_ first: [AlignmentRow], _ second: [AlignmentRow]) -> Bool {
         first.elementsEqual(second) { left, right in
             left.name == right.name && left.sequence == right.sequence
-        }
-    }
-}
-
-private struct SequenceNameSearchPopover: View {
-    @Binding var searchText: String
-    let matchCount: Int?
-    let message: String?
-    let onSearch: () -> Void
-    let onClose: () -> Void
-
-    private var statusText: String? {
-        if let message {
-            return message
-        }
-        guard let matchCount else { return nil }
-        switch matchCount {
-        case 0:
-            return String(localized: "No matches")
-        case 1:
-            return String(localized: "1 match")
-        default:
-            return String(format: String(localized: "%d matches"), matchCount)
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(AppStrings.findSequenceNameTitle)
-                .font(.headline)
-
-            SequenceNameSearchField(text: $searchText, onSubmit: onSearch)
-                .frame(width: 260, height: 28)
-
-            if let statusText {
-                Text(statusText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            HStack {
-                Spacer()
-                Button(String(localized: "Done")) {
-                    onClose()
-                }
-                .keyboardShortcut(.cancelAction)
-                Button(String(localized: "Next")) {
-                    onSearch()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(12)
-        .frame(width: 300)
-    }
-}
-
-private struct SequenceNameSearchField: NSViewRepresentable {
-    @Binding var text: String
-    let onSubmit: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, onSubmit: onSubmit)
-    }
-
-    func makeNSView(context: Context) -> NSSearchField {
-        let searchField = NSSearchField(frame: .zero)
-        searchField.placeholderString = String(localized: "Sequence name")
-        searchField.target = context.coordinator
-        searchField.action = #selector(Coordinator.submitSearch(_:))
-        searchField.delegate = context.coordinator
-        searchField.controlSize = .regular
-        searchField.sendsSearchStringImmediately = false
-        searchField.sendsWholeSearchString = true
-        return searchField
-    }
-
-    func updateNSView(_ searchField: NSSearchField, context: Context) {
-        context.coordinator.text = $text
-        context.coordinator.onSubmit = onSubmit
-        if searchField.stringValue != text {
-            searchField.stringValue = text
-        }
-        guard !context.coordinator.didFocus else { return }
-        context.coordinator.didFocus = true
-        DispatchQueue.main.async {
-            searchField.window?.makeFirstResponder(searchField)
-            searchField.selectText(nil)
-        }
-    }
-
-    final class Coordinator: NSObject, NSSearchFieldDelegate {
-        var text: Binding<String>
-        var onSubmit: () -> Void
-        var didFocus = false
-
-        init(text: Binding<String>, onSubmit: @escaping () -> Void) {
-            self.text = text
-            self.onSubmit = onSubmit
-        }
-
-        func controlTextDidChange(_ notification: Notification) {
-            guard let searchField = notification.object as? NSSearchField else { return }
-            text.wrappedValue = searchField.stringValue
-        }
-
-        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                text.wrappedValue = control.stringValue
-                onSubmit()
-                return true
-            }
-            return false
-        }
-
-        @objc func submitSearch(_ sender: NSSearchField) {
-            text.wrappedValue = sender.stringValue
-            onSubmit()
         }
     }
 }

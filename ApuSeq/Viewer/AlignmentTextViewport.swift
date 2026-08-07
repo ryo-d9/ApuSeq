@@ -19,6 +19,10 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let displayedRowSequences: [String]
     let highlightedNameRowIndex: Int?
     let nameSearchRequestID: Int
+    let isNameFindBarPresented: Bool
+    let nameSearchText: String
+    let nameSearchStatusText: String?
+    let nameFindFocusRequestID: Int
     let auxiliaryNameAttributedText: NSAttributedString
     let auxiliarySequenceAttributedText: NSAttributedString
     let auxiliaryLineCount: Int
@@ -35,6 +39,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let onRenameSequence: (Int) -> Void
     let onDeleteSequence: (Int) -> Void
     let onSetReference: (String?) -> Void
+    let onNameFindTextChanged: (String) -> Void
+    let onNameFindSubmit: (Int) -> Void
+    let onNameFindClose: () -> Void
 
     func makeNSView(context: Context) -> AlignmentViewportContainerView {
         let nameColumnView = AlignmentViewportNameColumnView()
@@ -76,6 +83,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
             auxiliaryNameTextView: auxiliaryNameTextView,
             auxiliarySequenceTextView: auxiliarySequenceTextView
         )
+        containerView.onNameFindTextChanged = onNameFindTextChanged
+        containerView.onNameFindSubmit = onNameFindSubmit
+        containerView.onNameFindClose = onNameFindClose
         containerView.updateNameRows(
             displayedRowNames,
             sequences: displayedRowSequences,
@@ -91,6 +101,12 @@ struct AlignmentTextViewport: NSViewRepresentable {
             length: alignmentLength,
             font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
             textInset: sequenceTextView.textContainerInset.width
+        )
+        containerView.updateNameFindBar(
+            isPresented: isNameFindBarPresented,
+            text: nameSearchText,
+            statusText: nameSearchStatusText,
+            focusRequestID: nameFindFocusRequestID
         )
         context.coordinator.installScrollSync(for: containerView)
         context.coordinator.lastNameSearchRequestID = nameSearchRequestID
@@ -112,6 +128,15 @@ struct AlignmentTextViewport: NSViewRepresentable {
             onSetReference: onSetReference
         )
         containerView.updateHighlightedNameRow(highlightedNameRowIndex)
+        containerView.onNameFindTextChanged = onNameFindTextChanged
+        containerView.onNameFindSubmit = onNameFindSubmit
+        containerView.onNameFindClose = onNameFindClose
+        containerView.updateNameFindBar(
+            isPresented: isNameFindBarPresented,
+            text: nameSearchText,
+            statusText: nameSearchStatusText,
+            focusRequestID: nameFindFocusRequestID
+        )
         if context.coordinator.lastNameSearchRequestID != nameSearchRequestID {
             context.coordinator.lastNameSearchRequestID = nameSearchRequestID
             if let highlightedNameRowIndex {
