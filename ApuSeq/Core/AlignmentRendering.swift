@@ -45,12 +45,13 @@ enum AlignmentRenderer {
         guard !alignment.rows.isEmpty else { return .empty }
 
         let nameWidth = alignment.rows.map { $0.name.count }.max() ?? 0
+        let baseFont = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            .font: baseFont,
             .foregroundColor: NSColor.labelColor
         ]
         let nameAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            .font: baseFont,
             .foregroundColor: NSColor.secondaryLabelColor
         ]
 
@@ -80,7 +81,11 @@ enum AlignmentRenderer {
             )
         }
 
-        let nameColumnWidth = CGFloat(nameWidth + 2) * CGFloat(fontSize * 0.64) + 20
+        let nameTextWidth = alignment.rows
+            .map { ($0.name as NSString).size(withAttributes: nameAttributes).width }
+            .max() ?? 0
+        let horizontalPadding = (("M" as NSString).size(withAttributes: nameAttributes).width * 2) + 20
+        let nameColumnWidth = ceil(nameTextWidth + horizontalPadding)
         return RenderedAlignment(
             sequenceAttributedText: sequenceAttributed,
             nameAttributedText: namesAttributed,

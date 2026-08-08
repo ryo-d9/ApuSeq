@@ -36,6 +36,14 @@ enum AlignmentParseError: LocalizedError {
     }
 }
 
+enum AlignmentSequenceInput {
+    nonisolated static func isValidEditingReplacement(_ text: String) -> Bool {
+        text.unicodeScalars.allSatisfy { scalar in
+            scalar.value >= 33 && scalar.value <= 126
+        }
+    }
+}
+
 enum AlignmentParser {
     nonisolated static func parse(_ text: String) throws -> AlignmentData {
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)

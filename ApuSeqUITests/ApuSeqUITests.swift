@@ -64,6 +64,7 @@ final class ApuSeqUITests: XCTestCase {
         openMenu("Edit")
 
         XCTAssertTrue(app.menuItems["Copy Consensus"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Copy Selection as FASTA"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Select"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
@@ -82,8 +83,30 @@ final class ApuSeqUITests: XCTestCase {
         XCTAssertTrue(app.menuItems["Remove All-Gap Columns"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Trim Trailing Gaps"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Sort Sequences"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Current Sequence"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Reverse Complement"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Translation"].waitForExistence(timeout: 2))
+
+        dismissMenu()
+    }
+
+    @MainActor
+    func testCurrentSequenceMenuContainsRowCommands() throws {
+        launchApp(openingSampleFile: "demo.fasta")
+        XCTAssertTrue(app.windows["demo.fasta"].waitForExistence(timeout: 5))
+        enterEditMode()
+
+        openMenu("Alignment")
+        let currentSequenceMenu = app.menuItems["Current Sequence"]
+        XCTAssertTrue(currentSequenceMenu.waitForExistence(timeout: 2))
+        currentSequenceMenu.hover()
+
+        XCTAssertTrue(app.menuItems["Copy Current Sequence"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Copy Current Sequence as FASTA"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Set Current Sequence as Reference"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Clear Reference"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Rename Current Sequence..."].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.menuItems["Delete Current Sequence"].waitForExistence(timeout: 2))
 
         dismissMenu()
     }

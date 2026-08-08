@@ -4,7 +4,7 @@
 
 - **Requirement**: macOS Tahoe 26 or later
 - **Languages**: English and Japanese
-- **Distribution**: Currently under development. Planned for future release on the Mac App Store.
+- **Distribution**: [Mac App Store](https://apps.apple.com/app/apuseq/id6794863866)
 
 ## Features
 ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequence alignment files.
@@ -63,7 +63,7 @@ The Quick Look extension provides a compact HTML preview for supported alignment
 - `ApuSeqIcon.icon` - Icon Composer app icon
 
 ## Development
-  - macOS 26.5
+  - macOS 26.6
   - Xcode 26.6
 
 ## Build

@@ -29,7 +29,10 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
         guard let textStorage else { return }
         guard !ranges.isEmpty, alignmentLength > 0 else { return }
-        guard !replacement.contains("\n") else { return }
+        guard AlignmentSequenceInput.isValidEditingReplacement(replacement) else {
+            NSSound.beep()
+            return
+        }
 
         let previousState = captureColumnEditState()
         let lines = sequenceLines()

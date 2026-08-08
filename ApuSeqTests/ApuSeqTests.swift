@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 import UniformTypeIdentifiers
@@ -396,6 +397,39 @@ struct ApuSeqTests {
 
         #expect(rendered.identityByColumn.isEmpty)
         #expect(rendered.majorityResidueByColumn.isEmpty)
+    }
+
+    @Test func rendererUsesMeasuredNameColumnWidth() {
+        let fontSize = 18.0
+        let name = "Wide Sequence Name"
+        let alignment = AlignmentData(
+            format: .fasta,
+            rows: [AlignmentRow(name: name, sequence: "ACGT")],
+            length: 4,
+            sequenceKind: .nucleotide
+        )
+
+        let rendered = AlignmentRenderer.render(
+            alignment,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            fontSize: fontSize
+        )
+
+        let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let nameWidth = (name as NSString).size(withAttributes: attributes).width
+        let expectedWidth = ceil(nameWidth + (("M" as NSString).size(withAttributes: attributes).width * 2) + 20)
+        #expect(rendered.nameColumnWidth == expectedWidth)
+    }
+
+    @Test func editingReplacementAllowsOnlyPrintableASCIICharacters() {
+        #expect(AlignmentSequenceInput.isValidEditingReplacement(""))
+        #expect(AlignmentSequenceInput.isValidEditingReplacement("ACGT-.*?"))
+        #expect(!AlignmentSequenceInput.isValidEditingReplacement("AC GT"))
+        #expect(!AlignmentSequenceInput.isValidEditingReplacement("AC\nGT"))
+        #expect(!AlignmentSequenceInput.isValidEditingReplacement("ＡCGT"))
+        #expect(!AlignmentSequenceInput.isValidEditingReplacement("ACGT😀"))
     }
 
     @Test func referenceDifferenceColoringNormalizesCaseAndGapCharacters() {
