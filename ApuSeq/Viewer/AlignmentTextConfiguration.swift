@@ -6,6 +6,13 @@ func alignmentLineHeight(for font: NSFont) -> CGFloat {
     max(alignmentLineHeightLayoutManager.defaultLineHeight(for: font), 1)
 }
 
+private func configureAlignmentTextContainer(_ textContainer: NSTextContainer?) {
+    textContainer?.lineFragmentPadding = 0
+    textContainer?.widthTracksTextView = false
+    textContainer?.lineBreakMode = .byClipping
+    textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+}
+
 func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isEditable = false
     textView.isSelectable = true
@@ -30,9 +37,7 @@ func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isVerticallyResizable = true
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.minSize = NSSize(width: 0, height: 0)
-    textView.textContainer?.widthTracksTextView = false
-    textView.textContainer?.lineBreakMode = .byClipping
-    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    configureAlignmentTextContainer(textView.textContainer)
 }
 
 func configureNameTextView(_ textView: NSTextView, fontSize: Double) {
@@ -50,9 +55,7 @@ func configureNameTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isVerticallyResizable = true
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.minSize = NSSize(width: 0, height: 0)
-    textView.textContainer?.widthTracksTextView = false
-    textView.textContainer?.lineBreakMode = .byClipping
-    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    configureAlignmentTextContainer(textView.textContainer)
 }
 
 func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
@@ -70,8 +73,6 @@ func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isVerticallyResizable = true
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.minSize = NSSize(width: 0, height: 0)
-    textView.textContainer?.widthTracksTextView = false
     textView.textContainer?.heightTracksTextView = false
-    textView.textContainer?.lineBreakMode = .byClipping
-    textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    configureAlignmentTextContainer(textView.textContainer)
 }
