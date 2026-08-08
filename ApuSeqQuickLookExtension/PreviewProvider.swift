@@ -4,14 +4,17 @@ import QuickLookUI
 import UniformTypeIdentifiers
 
 final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
+    private static let previewByteLimit = 2_000_000
+    private static let previewLineLimit = 400
+    private static let previewLineLengthLimit = 5_000
+
     func providePreview(
         for request: QLFilePreviewRequest,
         completionHandler: @escaping @Sendable (QLPreviewReply?, (any Error)?) -> Void
     ) {
         do {
-            let data = try Data(contentsOf: request.fileURL)
-            let text = try decodeText(from: data)
-            let html = htmlPreview(for: text)
+            let previewSource = try previewSourceText(from: request.fileURL)
+            let html = htmlPreview(for: previewSource.text, wasByteLimited: previewSource.wasByteLimited)
 
             let reply = QLPreviewReply(
                 dataOfContentType: .html,
@@ -28,6 +31,18 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         }
     }
 
+    private func previewSourceText(from url: URL) throws -> (text: String, wasByteLimited: Bool) {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer {
+            try? handle.close()
+        }
+
+        let data = try handle.read(upToCount: Self.previewByteLimit + 1) ?? Data()
+        let wasByteLimited = data.count > Self.previewByteLimit
+        let limitedData = wasByteLimited ? data.prefix(Self.previewByteLimit) : data[...]
+        return (try decodeText(from: Data(limitedData)), wasByteLimited)
+    }
+
     private func decodeText(from data: Data) throws -> String {
         if let decoded = TextDecoding.decode(data) {
             return decoded
@@ -35,8 +50,13 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         throw CocoaError(.fileReadCorruptFile)
     }
 
-    private func htmlPreview(for rawText: String) -> String {
-        let previewText = limitedPreviewText(from: rawText, lineLimit: 400, lineLengthLimit: 5_000)
+    private func htmlPreview(for rawText: String, wasByteLimited: Bool) -> String {
+        let previewText = limitedPreviewText(
+            from: rawText,
+            lineLimit: Self.previewLineLimit,
+            lineLengthLimit: Self.previewLineLengthLimit,
+            wasByteLimited: wasByteLimited
+        )
         let highlighted = highlightedHTML(for: previewText)
 
         return """
@@ -148,13 +168,18 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
             .replacingOccurrences(of: ">", with: "&gt;")
     }
 
-    private func limitedPreviewText(from text: String, lineLimit: Int, lineLengthLimit: Int) -> String {
+    private func limitedPreviewText(
+        from text: String,
+        lineLimit: Int,
+        lineLengthLimit: Int,
+        wasByteLimited: Bool
+    ) -> String {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
         let visibleLines = lines.prefix(lineLimit)
         let truncatedLines = visibleLines.map { limitedLineText(from: String($0), limit: lineLengthLimit) }
         var preview = truncatedLines.joined(separator: "\n")
 
-        if lines.count > lineLimit {
+        if lines.count > lineLimit || wasByteLimited {
             preview += "\n\n... (preview truncated: showing first \(lineLimit) lines)"
         }
 

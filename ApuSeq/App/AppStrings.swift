@@ -40,6 +40,8 @@ enum AppStrings {
     static let aminoAcidGuidedNucleotideAlignment = String(localized: "Amino-Acid-Guided Nucleotide Alignment")
     static let aligningWithMAFFT = String(localized: "Aligning with MAFFT...")
     static let mafftAlignmentFailed = String(localized: "MAFFT Alignment Failed")
+    static let operationFailed = String(localized: "Operation Failed")
+    static let clipboardDoesNotContainFASTA = String(localized: "The clipboard does not contain valid FASTA sequences.")
     static let openSourceLicenses = String(localized: "Open Source Licenses")
     static let openSourceLicensesMenuItem = String(localized: "Open Source Licenses...")
     static let reverseComplement = String(localized: "Reverse Complement")

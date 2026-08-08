@@ -80,7 +80,7 @@ enum AlignmentParser {
                 currentName = title.isEmpty ? "Unnamed Sequence" : title
                 currentSequenceParts = []
             } else {
-                let cleaned = removingSequenceWhitespace(from: line)
+                let cleaned = sanitizedSequenceText(from: line)
                 currentSequenceParts.append(cleaned)
             }
         }
@@ -111,7 +111,7 @@ enum AlignmentParser {
             let columns = line.split(whereSeparator: \.isWhitespace)
             guard columns.count >= 2 else { continue }
             let name = String(columns[0])
-            let chunk = removingSequenceWhitespace(from: String(columns[1]))
+            let chunk = sanitizedSequenceText(from: String(columns[1]))
             guard isValidCLUSTALSequenceChunk(chunk) else { continue }
 
             if sequencesByName[name] == nil {
@@ -153,8 +153,47 @@ enum AlignmentParser {
             .first { !$0.isEmpty && !isFASTACommentLine($0) }
     }
 
-    nonisolated private static func removingSequenceWhitespace(from text: String) -> String {
-        text.filter { !$0.isWhitespace }
+    nonisolated private static func sanitizedSequenceText(from text: String) -> String {
+        var output = String()
+        output.reserveCapacity(text.utf8.count)
+        var needsUnicodeFallback = false
+
+        for byte in text.utf8 {
+            switch byte {
+            case 9, 10, 11, 12, 13, 32:
+                continue
+            case 33...126:
+                output.append(Character(UnicodeScalar(byte)))
+            default:
+                needsUnicodeFallback = true
+                break
+            }
+        }
+
+        if !needsUnicodeFallback {
+            return output
+        }
+
+        return sanitizedUnicodeSequenceText(from: text)
+    }
+
+    nonisolated private static func sanitizedUnicodeSequenceText(from text: String) -> String {
+        let halfWidthText = text.applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? text
+        var output = String()
+        output.reserveCapacity(halfWidthText.utf8.count)
+
+        for scalar in halfWidthText.unicodeScalars {
+            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
+                continue
+            }
+            if scalar.value >= 33 && scalar.value <= 126 {
+                output.append(Character(scalar))
+            } else {
+                output.append("?")
+            }
+        }
+
+        return output
     }
 
     nonisolated private static func isValidCLUSTALSequenceChunk(_ chunk: String) -> Bool {
@@ -182,7 +221,7 @@ enum AlignmentParser {
         let rows = lines.enumerated().map { index, line in
             AlignmentRow(
                 name: "Sequence \(index + 1)",
-                sequence: removingSequenceWhitespace(from: line)
+                sequence: sanitizedSequenceText(from: line)
             )
         }
 
@@ -191,10 +230,10 @@ enum AlignmentParser {
     }
 
     nonisolated private static func normalize(rows: [AlignmentRow], format: AlignmentFormat) -> AlignmentData {
-        let maxLength = rows.map(\.sequence.count).max() ?? 0
+        let maxLength = rows.map { ($0.sequence as NSString).length }.max() ?? 0
         let normalizedRows = rows.enumerated().map { index, row in
             let cleanName = row.name.isEmpty ? "Sequence \(index + 1)" : row.name
-            let paddingCount = maxLength - row.sequence.count
+            let paddingCount = maxLength - (row.sequence as NSString).length
             let padding = String(repeating: "-", count: max(paddingCount, 0))
             return AlignmentRow(name: cleanName, sequence: row.sequence + padding)
         }

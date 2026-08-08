@@ -50,6 +50,12 @@ struct ViewerModeActions {
 }
 
 struct AlignmentDisplayActions {
+    let showsReferencePanel: Bool
+    let toggleReferencePanel: () -> Void
+    let showsConsensusPanel: Bool
+    let toggleConsensusPanel: () -> Void
+    let showsConservationPanel: Bool
+    let toggleConservationPanel: () -> Void
     let backgroundMode: AlignmentBackgroundMode
     let availableBackgroundModes: [AlignmentBackgroundMode]
     let setBackgroundMode: (AlignmentBackgroundMode) -> Void
@@ -233,23 +239,25 @@ struct ViewerModeCommands: Commands {
 }
 
 struct ViewPanelCommands: Commands {
-    @AppStorage("showReferencePanel") private var showReferencePanel = false
-    @AppStorage("showConsensusPanel") private var showConsensusPanel = false
-    @AppStorage("showConservationPanel") private var showConservationPanel = false
     @FocusedValue(\.alignmentDisplayActions) private var displayActions
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
             Divider()
-            Button(showReferencePanel ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel")) {
-                showReferencePanel.toggle()
+            Button(displayActions?.showsReferencePanel == true ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel")) {
+                displayActions?.toggleReferencePanel()
             }
-            Button(showConsensusPanel ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel")) {
-                showConsensusPanel.toggle()
+            .disabled(displayActions == nil)
+
+            Button(displayActions?.showsConsensusPanel == true ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel")) {
+                displayActions?.toggleConsensusPanel()
             }
-            Button(showConservationPanel ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel")) {
-                showConservationPanel.toggle()
+            .disabled(displayActions == nil)
+
+            Button(displayActions?.showsConservationPanel == true ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel")) {
+                displayActions?.toggleConservationPanel()
             }
+            .disabled(displayActions == nil)
 
             Divider()
             Picker(String(localized: "Background Color"), selection: backgroundModeBinding) {
@@ -437,7 +445,7 @@ struct AlignmentCommands: Commands {
                     }
                 }
             } catch {
-                NSSound.beep()
+                presentOperationError(error.localizedDescription)
             }
         }
     }
@@ -458,7 +466,7 @@ struct AlignmentCommands: Commands {
                     }
                 }
             } catch {
-                NSSound.beep()
+                presentOperationError(error.localizedDescription)
             }
         }
     }
@@ -466,5 +474,15 @@ struct AlignmentCommands: Commands {
     private func runAminoAcidGuidedNucleotideAlignment(frameOffset: Int) {
         let codonTable = TranslationCodonTable(rawValue: translationCodonTable) ?? .standard
         mafftActions?.alignAminoAcidGuidedNucleotide(frameOffset, codonTable)
+    }
+
+    @MainActor
+    private func presentOperationError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = AppStrings.operationFailed
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: AppStrings.ok)
+        alert.runModal()
     }
 }

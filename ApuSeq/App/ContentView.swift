@@ -63,10 +63,12 @@ private struct RootView: View {
     @State private var mafftAlignmentTask: Task<Void, Never>?
     @State private var mafftAlignmentErrorMessage = ""
     @State private var showsMAFFTAlignmentError = false
+    @State private var operationErrorMessage = ""
+    @State private var showsOperationError = false
 
-    @AppStorage("showReferencePanel") private var showsReferencePanel = false
-    @AppStorage("showConsensusPanel") private var showsConsensusPanel = false
-    @AppStorage("showConservationPanel") private var showsConservationPanel = false
+    @SceneStorage("showReferencePanel") private var showsReferencePanel = false
+    @SceneStorage("showConsensusPanel") private var showsConsensusPanel = false
+    @SceneStorage("showConservationPanel") private var showsConservationPanel = false
 
     @State private var selectedReferenceName: String?
     @State private var viewerMode: ViewerMode = .view
@@ -271,6 +273,12 @@ private struct RootView: View {
 
     private var alignmentDisplayActions: AlignmentDisplayActions {
         AlignmentDisplayActions(
+            showsReferencePanel: showsReferencePanel,
+            toggleReferencePanel: { showsReferencePanel.toggle() },
+            showsConsensusPanel: showsConsensusPanel,
+            toggleConsensusPanel: { showsConsensusPanel.toggle() },
+            showsConservationPanel: showsConservationPanel,
+            toggleConservationPanel: { showsConservationPanel.toggle() },
             backgroundMode: backgroundMode,
             availableBackgroundModes: availableBackgroundModes,
             setBackgroundMode: setBackgroundMode,
@@ -519,6 +527,11 @@ private struct RootView: View {
         } message: {
             Text(mafftAlignmentErrorMessage)
         }
+        .alert(AppStrings.operationFailed, isPresented: $showsOperationError) {
+            Button(AppStrings.ok, role: .cancel) {}
+        } message: {
+            Text(operationErrorMessage)
+        }
         .onAppear {
             parseAndRender()
         }
@@ -696,7 +709,7 @@ private struct RootView: View {
     private func addFASTAFromClipboard() {
         guard canAddSequence else { return }
         guard let clipboardText = NSPasteboard.general.string(forType: .string) else {
-            NSSound.beep()
+            showOperationError(AppStrings.clipboardDoesNotContainFASTA)
             return
         }
         let trimmed = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -704,7 +717,7 @@ private struct RootView: View {
               let parsed = try? AlignmentParser.parse(trimmed),
               parsed.format == .fasta,
               !parsed.rows.isEmpty else {
-            NSSound.beep()
+            showOperationError(AppStrings.clipboardDoesNotContainFASTA)
             return
         }
 
@@ -1007,6 +1020,11 @@ private struct RootView: View {
     private func finishMAFFTAlignment() {
         isRunningMAFFTAlignment = false
         mafftAlignmentTask = nil
+    }
+
+    private func showOperationError(_ message: String) {
+        operationErrorMessage = message
+        showsOperationError = true
     }
 
     private var selectedColumnRange: Range<Int>? {

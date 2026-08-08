@@ -33,6 +33,21 @@ struct ApuSeqTests {
         #expect(alignment.rows.map { $0.sequence } == ["ACGT", "AC--"])
     }
 
+    @Test func parsesFASTANormalizingSequenceTextToASCIICells() throws {
+        let text = """
+        >Unicode name 配列
+        ＡＣＧＴα
+        >Plain
+        ACGTA
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.rows.map { $0.name } == ["Unicode name 配列", "Plain"])
+        #expect(alignment.rows.map { $0.sequence } == ["ACGT?", "ACGTA"])
+        #expect(alignment.length == 5)
+    }
+
     @Test func parsesCLUSTALBlocksInOriginalSequenceOrder() throws {
         let text = """
         CLUSTAL W
