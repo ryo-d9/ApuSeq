@@ -252,11 +252,13 @@ struct ViewPanelCommands: Commands {
             Button(displayActions?.showsConsensusPanel == true ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel")) {
                 displayActions?.toggleConsensusPanel()
             }
+            .keyboardShortcut("c", modifiers: [.command, .control])
             .disabled(displayActions == nil)
 
             Button(displayActions?.showsConservationPanel == true ? String(localized: "Hide Identity Panel") : String(localized: "Show Identity Panel")) {
                 displayActions?.toggleConservationPanel()
             }
+            .keyboardShortcut("i", modifiers: [.command, .control])
             .disabled(displayActions == nil)
 
             Divider()
