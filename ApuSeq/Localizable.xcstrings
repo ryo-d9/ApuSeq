@@ -449,6 +449,16 @@
         }
       }
     },
+    "Current Sequence" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のシーケンス"
+          }
+        }
+      }
+    },
     "Could not map the aligned amino acid sequence back to codons for \"%@\"." : {
       "localizations" : {
         "ja" : {
@@ -475,6 +485,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "シーケンスを削除"
+          }
+        }
+      }
+    },
+    "Delete Current Sequence" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のシーケンスを削除"
           }
         }
       }
@@ -1097,6 +1117,16 @@
         }
       }
     },
+    "Rename Current Sequence..." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のシーケンス名を変更..."
+          }
+        }
+      }
+    },
     "Residue" : {
       "localizations" : {
         "ja" : {
@@ -1289,6 +1319,7 @@
       }
     },
     "Sequence name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {

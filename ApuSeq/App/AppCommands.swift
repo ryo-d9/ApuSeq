@@ -34,6 +34,10 @@ struct SequenceNameActions {
     let copyCurrentSequence: () -> Void
     let canCopyCurrentSequenceAsFASTA: Bool
     let copyCurrentSequenceAsFASTA: () -> Void
+    let canRenameCurrentSequence: Bool
+    let renameCurrentSequence: () -> Void
+    let canDeleteCurrentSequence: Bool
+    let deleteCurrentSequence: () -> Void
     let canSetCurrentSequenceAsReference: Bool
     let setCurrentSequenceAsReference: () -> Void
     let canClearReference: Bool
@@ -139,6 +143,7 @@ struct ColumnSelectionCommands: Commands {
             Button(AppStrings.copySelectionAsFASTA) {
                 actions?.copySelectionAsFASTA()
             }
+            .keyboardShortcut("c", modifiers: [.command, .option])
             .disabled(actions?.canCopySelectionAsFASTA != true)
 
             Button(AppStrings.copyConsensus) {
@@ -355,7 +360,7 @@ struct AlignmentCommands: Commands {
             }
             .disabled(editActions?.canSortSequencesByName != true && editActions?.canSortSequencesByUPGMA != true)
 
-            Menu(AppStrings.sequenceMenu) {
+            Menu(AppStrings.currentSequenceMenu) {
                 Button(AppStrings.copyCurrentSequence) {
                     sequenceNameActions?.copyCurrentSequence()
                 }
@@ -377,6 +382,18 @@ struct AlignmentCommands: Commands {
                     sequenceNameActions?.clearReference()
                 }
                 .disabled(sequenceNameActions?.canClearReference != true)
+
+                Divider()
+
+                Button(AppStrings.renameCurrentSequence) {
+                    sequenceNameActions?.renameCurrentSequence()
+                }
+                .disabled(sequenceNameActions?.canRenameCurrentSequence != true)
+
+                Button(AppStrings.deleteCurrentSequence) {
+                    sequenceNameActions?.deleteCurrentSequence()
+                }
+                .disabled(sequenceNameActions?.canDeleteCurrentSequence != true)
             }
             .disabled(sequenceNameActions == nil)
 

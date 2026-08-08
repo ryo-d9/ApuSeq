@@ -1,9 +1,9 @@
 import AppKit
 
-final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate, NSSearchFieldDelegate {
+final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private static let minimumNameWidth: CGFloat = 90
     private static let minimumSequenceWidth: CGFloat = 160
-    private static let nameSearchHeaderHeight: CGFloat = 64
+    private static let nameFindBarHeaderHeight: CGFloat = 64
     private static let splitViewAutosaveName = NSSplitView.AutosaveName("ApuSeqAlignmentViewportSplitView")
 
     let nameColumnView: AlignmentViewportNameColumnView
@@ -341,7 +341,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate, NSSearc
     private func updateHeaderHeights() {
         let rulerHeight = rulerHeightConstraint?.constant ?? AlignmentViewportRulerView.minimumRulerHeight
         let targetLeftHeaderHeight = isNameFindBarPresented
-            ? max(rulerHeight, Self.nameSearchHeaderHeight)
+            ? max(rulerHeight, Self.nameFindBarHeaderHeight)
             : rulerHeight
         if abs((leftHeaderHeightConstraint?.constant ?? 0) - targetLeftHeaderHeight) > 0.5 {
             leftHeaderHeightConstraint?.constant = targetLeftHeaderHeight
@@ -460,11 +460,11 @@ private final class SequenceNameFindBarView: NSView, NSSearchFieldDelegate {
         footerStackView.spacing = 6
         stackView.addArrangedSubview(searchField)
         stackView.addArrangedSubview(footerStackView)
-        footerStackView.addArrangedSubview(statusLabel)
         footerStackView.addArrangedSubview(footerSpacer)
+        footerStackView.addArrangedSubview(statusLabel)
         footerStackView.addArrangedSubview(doneButton)
 
-        searchField.placeholderString = String(localized: "Sequence name")
+        searchField.placeholderString = String(localized: "Name")
         searchField.controlSize = .small
         searchField.delegate = self
         searchField.sendsSearchStringImmediately = false

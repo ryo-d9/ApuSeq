@@ -251,6 +251,10 @@ private struct RootView: View {
             copyCurrentSequence: copyCurrentSequence,
             canCopyCurrentSequenceAsFASTA: hasCurrentSequence,
             copyCurrentSequenceAsFASTA: copyCurrentSequenceAsFASTA,
+            canRenameCurrentSequence: canUseNamedSequenceEditing && hasCurrentSequence,
+            renameCurrentSequence: renameCurrentSequence,
+            canDeleteCurrentSequence: canUseNamedSequenceEditing && hasCurrentSequence && model.alignment.rows.count > 1,
+            deleteCurrentSequence: deleteCurrentSequence,
             canSetCurrentSequenceAsReference: hasCurrentSequence,
             setCurrentSequenceAsReference: setCurrentSequenceAsReference,
             canClearReference: selectedReferenceName != nil,
@@ -745,6 +749,16 @@ private struct RootView: View {
             selectedReferenceName = nil
         }
         applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.deleteSequence)
+    }
+
+    private func renameCurrentSequence() {
+        guard let currentSequenceRowIndex else { return }
+        renameDisplayedSequence(at: currentSequenceRowIndex)
+    }
+
+    private func deleteCurrentSequence() {
+        guard let currentSequenceRowIndex else { return }
+        deleteDisplayedSequence(at: currentSequenceRowIndex)
     }
 
     private func removeAllGapColumns() {
