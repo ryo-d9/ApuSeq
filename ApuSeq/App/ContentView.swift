@@ -688,6 +688,12 @@ private struct RootView: View {
         AlignmentPrinter.runPrintPanel(
             alignment: displayAlignment,
             title: documentTitle,
+            options: AlignmentPrintOptions(
+                referenceName: showsReferencePanel ? selectedReferenceName : nil,
+                referenceSequence: showsReferencePanel ? selectedReferenceSequence : nil,
+                includesConsensus: showsConsensusPanel,
+                includesIdentity: showsConservationPanel
+            ),
             window: NSApp.keyWindow ?? NSApp.mainWindow
         )
     }

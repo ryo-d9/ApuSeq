@@ -3,12 +3,14 @@ import Foundation
 
 struct AlignmentPrintOptions: Equatable {
     var maximumColumnsPerBlock = 100
+    var referenceName: String?
+    var referenceSequence: String?
     var includesConsensus = true
     var includesIdentity = true
     var usesResidueBackground = true
     var fontSize: CGFloat = 9
 
-    static let `default` = AlignmentPrintOptions()
+    nonisolated static let `default` = AlignmentPrintOptions()
 }
 
 struct AlignmentPrintPage: Equatable {
@@ -18,9 +20,14 @@ struct AlignmentPrintPage: Equatable {
 
 enum AlignmentPrinter {
     @MainActor
-    static func runPrintPanel(alignment: AlignmentData, title: String, window: NSWindow?) {
+    static func runPrintPanel(
+        alignment: AlignmentData,
+        title: String,
+        options: AlignmentPrintOptions = .default,
+        window: NSWindow?
+    ) {
         let printInfo = configuredPrintInfo()
-        let printView = AlignmentPrintView(alignment: alignment, title: title, printInfo: printInfo)
+        let printView = AlignmentPrintView(alignment: alignment, title: title, options: options, printInfo: printInfo)
         let operation = NSPrintOperation(view: printView, printInfo: printInfo)
         operation.showsPrintPanel = true
         operation.showsProgressPanel = true
@@ -68,7 +75,10 @@ enum AlignmentPrintLayout {
             nameColumnWidth: nameColumnWidth,
             characterWidth: characterWidth
         )
-        let auxiliaryLineCount = (options.includesConsensus ? 1 : 0) + (options.includesIdentity ? 1 : 0)
+        let auxiliaryLineCount =
+            (options.referenceSequence == nil ? 0 : 1) +
+            (options.includesConsensus ? 1 : 0) +
+            (options.includesIdentity ? 1 : 0)
         let rowCapacity = rowsPerPage(
             pageContentHeight: pageContentSize.height,
             lineHeight: lineHeight,
@@ -141,6 +151,8 @@ final class AlignmentPrintView: NSView {
     private let alignment: AlignmentData
     private let title: String
     private let options: AlignmentPrintOptions
+    private let referenceLabel: String?
+    private let referenceSequence: String?
     private let consensusSequence: String
     private let identityByColumn: [Double]
     private let measuredNameColumnWidth: CGFloat
@@ -170,6 +182,8 @@ final class AlignmentPrintView: NSView {
         self.alignment = alignment
         self.title = title
         self.options = options
+        referenceLabel = options.referenceSequence == nil ? nil : String(format: String(localized: "Ref: %@"), options.referenceName ?? "")
+        referenceSequence = options.referenceSequence
         baseFont = NSFont.monospacedSystemFont(ofSize: options.fontSize, weight: .regular)
         labelFont = NSFont.monospacedSystemFont(ofSize: options.fontSize, weight: .regular)
         headerFont = NSFont.systemFont(ofSize: 11, weight: .semibold)
@@ -331,8 +345,13 @@ final class AlignmentPrintView: NSView {
             y += lineHeight
         }
 
-        if options.includesConsensus || options.includesIdentity {
+        if referenceSequence != nil || options.includesConsensus || options.includesIdentity {
             y += 8
+        }
+        if let referenceLabel, let referenceSequence {
+            drawName(referenceLabel, x: contentX, y: y)
+            drawSequence(referenceSequence, range: page.columnRange, x: sequenceX(contentX), y: y, appliesBackground: options.usesResidueBackground)
+            y += lineHeight
         }
         if options.includesConsensus {
             drawName(String(localized: "Consensus"), x: contentX, y: y)

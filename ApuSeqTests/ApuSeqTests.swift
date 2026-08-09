@@ -707,6 +707,43 @@ struct ApuSeqTests {
         #expect(pages.count == 25)
     }
 
+    @Test func printLayoutIncludesReferenceAuxiliaryLine() {
+        let rows = (0..<5).map { index in
+            AlignmentRow(name: "Seq \(index)", sequence: String(repeating: "A", count: 60))
+        }
+        let alignment = AlignmentData(
+            format: .fasta,
+            rows: rows,
+            length: 60,
+            sequenceKind: .nucleotide
+        )
+        let pagesWithoutReference = AlignmentPrintLayout.pages(
+            alignment: alignment,
+            options: AlignmentPrintOptions(maximumColumnsPerBlock: 100, includesConsensus: true, includesIdentity: true),
+            pageContentSize: CGSize(width: 500, height: 145),
+            nameColumnWidth: 80,
+            characterWidth: 5,
+            lineHeight: 12
+        )
+        let pagesWithReference = AlignmentPrintLayout.pages(
+            alignment: alignment,
+            options: AlignmentPrintOptions(
+                maximumColumnsPerBlock: 100,
+                referenceName: "Seq 0",
+                referenceSequence: rows[0].sequence,
+                includesConsensus: true,
+                includesIdentity: true
+            ),
+            pageContentSize: CGSize(width: 500, height: 145),
+            nameColumnWidth: 80,
+            characterWidth: 5,
+            lineHeight: 12
+        )
+
+        #expect(pagesWithoutReference.count == 3)
+        #expect(pagesWithReference.count == 5)
+    }
+
     @MainActor
     @Test func printViewUsesPrintInfoMarginsForPrintableSize() {
         let printInfo = NSPrintInfo()
