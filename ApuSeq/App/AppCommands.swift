@@ -316,35 +316,39 @@ struct AlignmentCommands: Commands {
 
     var body: some Commands {
         CommandMenu(AppStrings.alignment) {
-            Menu(AppStrings.alignWithMAFFT) {
-                Button(AppStrings.alignEntireAlignment) {
-                    mafftActions?.align()
-                }
-                .disabled(mafftActions?.canAlign != true)
+            if canUseAnyMAFFTAlignment {
+                Menu(AppStrings.alignWithMAFFT) {
+                    Button(AppStrings.alignEntireAlignment) {
+                        mafftActions?.align()
+                    }
+                    .disabled(mafftActions?.canAlign != true)
 
-                Button(AppStrings.alignSelectedColumns) {
-                    mafftActions?.alignSelection()
-                }
-                .disabled(mafftActions?.canAlignSelection != true)
+                    Button(AppStrings.alignSelectedColumns) {
+                        mafftActions?.alignSelection()
+                    }
+                    .disabled(mafftActions?.canAlignSelection != true)
 
-                Menu(AppStrings.aminoAcidGuidedNucleotideAlignment) {
-                    Button(String(localized: "Frame +0")) {
-                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 0)
-                    }
-                    Button(String(localized: "Frame +1")) {
-                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 1)
-                    }
-                    Button(String(localized: "Frame +2")) {
-                        runAminoAcidGuidedNucleotideAlignment(frameOffset: 2)
+                    if mafftActions?.canAlignAminoAcidGuidedNucleotide == true {
+                        Menu(AppStrings.aminoAcidGuidedNucleotideAlignment) {
+                            Button(String(localized: "Frame +0")) {
+                                runAminoAcidGuidedNucleotideAlignment(frameOffset: 0)
+                            }
+                            Button(String(localized: "Frame +1")) {
+                                runAminoAcidGuidedNucleotideAlignment(frameOffset: 1)
+                            }
+                            Button(String(localized: "Frame +2")) {
+                                runAminoAcidGuidedNucleotideAlignment(frameOffset: 2)
+                            }
+                        }
+                    } else {
+                        Button(AppStrings.aminoAcidGuidedNucleotideAlignment) {}
+                            .disabled(true)
                     }
                 }
-                .disabled(mafftActions?.canAlignAminoAcidGuidedNucleotide != true)
+            } else {
+                Button(AppStrings.alignWithMAFFT) {}
+                    .disabled(true)
             }
-            .disabled(
-                mafftActions?.canAlign != true &&
-                mafftActions?.canAlignSelection != true &&
-                mafftActions?.canAlignAminoAcidGuidedNucleotide != true
-            )
 
             Button(AppStrings.removeAllGapColumns) {
                 editActions?.removeAllGapColumns()
@@ -414,14 +418,24 @@ struct AlignmentCommands: Commands {
             }
             .disabled(!canReverseComplement)
 
-            Menu(String(localized: "Translation")) {
-                Button(String(localized: "Frame +0")) { runTranslation(frameOffset: 0) }
-                    .keyboardShortcut("0", modifiers: [.command, .option])
-                Button(String(localized: "Frame +1")) { runTranslation(frameOffset: 1) }
-                Button(String(localized: "Frame +2")) { runTranslation(frameOffset: 2) }
+            if canTranslate {
+                Menu(String(localized: "Translation")) {
+                    Button(String(localized: "Frame +0")) { runTranslation(frameOffset: 0) }
+                        .keyboardShortcut("0", modifiers: [.command, .option])
+                    Button(String(localized: "Frame +1")) { runTranslation(frameOffset: 1) }
+                    Button(String(localized: "Frame +2")) { runTranslation(frameOffset: 2) }
+                }
+            } else {
+                Button(String(localized: "Translation")) {}
+                    .disabled(true)
             }
-            .disabled(!canTranslate)
         }
+    }
+
+    private var canUseAnyMAFFTAlignment: Bool {
+        mafftActions?.canAlign == true ||
+        mafftActions?.canAlignSelection == true ||
+        mafftActions?.canAlignAminoAcidGuidedNucleotide == true
     }
 
     private var canReverseComplement: Bool {
