@@ -677,6 +677,55 @@ struct ApuSeqTests {
         #expect(try document.snapshot(contentType: .plainText) == rawText)
     }
 
+    @Test func identityBarsUseSharedHeightEncoding() {
+        let bars = IdentityBars.barString(from: [0.0, 0.125, 0.5, 1.0])
+
+        #expect(bars == " ▁▄█")
+    }
+
+    @Test func printLayoutWrapsColumnsAndRowsIntoPages() {
+        let rows = (0..<5).map { index in
+            AlignmentRow(name: "Seq \(index)", sequence: String(repeating: "A", count: 130))
+        }
+        let alignment = AlignmentData(
+            format: .fasta,
+            rows: rows,
+            length: 130,
+            sequenceKind: .nucleotide
+        )
+        let pages = AlignmentPrintLayout.pages(
+            alignment: alignment,
+            options: AlignmentPrintOptions(maximumColumnsPerBlock: 100, includesConsensus: true, includesIdentity: true),
+            pageContentSize: CGSize(width: 250, height: 120),
+            nameColumnWidth: 80,
+            characterWidth: 5,
+            lineHeight: 12
+        )
+
+        #expect(pages.first?.columnRange == 0..<31)
+        #expect(pages.first?.rowRange == 0..<1)
+        #expect(pages.count == 25)
+    }
+
+    @MainActor
+    @Test func printViewUsesPrintInfoMarginsForPrintableSize() {
+        let printInfo = NSPrintInfo()
+        printInfo.paperSize = NSSize(width: 595, height: 842)
+        printInfo.leftMargin = 36
+        printInfo.rightMargin = 36
+        printInfo.topMargin = 36
+        printInfo.bottomMargin = 36
+
+        let size = AlignmentPrintView.printablePageSize(for: printInfo)
+        let expectedWidth = printInfo.paperSize.width - printInfo.leftMargin - printInfo.rightMargin
+        let expectedHeight = printInfo.paperSize.height - printInfo.topMargin - printInfo.bottomMargin
+
+        #expect(size.width > 0)
+        #expect(size.height > 0)
+        #expect(size.width <= expectedWidth)
+        #expect(size.height <= expectedHeight)
+    }
+
     @MainActor
     private func waitUntil(
         timeout: Duration = .seconds(2),

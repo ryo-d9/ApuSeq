@@ -23,6 +23,7 @@ struct ApuSeqApp: App {
             AlignmentEditCommands()
             InspectorCommands()
             OpenSourceLicenseCommands()
+            AlignmentPrintCommands()
         }
 
         Window(AppStrings.openSourceLicenses, id: OpenSourceLicensesView.windowID) {

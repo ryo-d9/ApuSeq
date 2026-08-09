@@ -302,6 +302,18 @@ private struct RootView: View {
         )
     }
 
+    private var canPrintAlignment: Bool {
+        model.parseErrorMessage == nil && !displayRows.isEmpty && displayAlignment.length > 0
+    }
+
+    private var alignmentPrintActions: AlignmentPrintActions {
+        AlignmentPrintActions(
+            canPrint: canPrintAlignment,
+            pageSetup: runPageSetup,
+            print: printAlignment
+        )
+    }
+
     private var canAlignWithMAFFT: Bool {
         !isRunningMAFFTAlignment && !document.rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -562,6 +574,7 @@ private struct RootView: View {
         .focusedSceneValue(\.viewerModeActions, viewerModeActions)
         .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
         .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
+        .focusedSceneValue(\.alignmentPrintActions, alignmentPrintActions)
     }
 
     @ViewBuilder
@@ -661,6 +674,22 @@ private struct RootView: View {
             referenceName: selectedReferenceName
         )
         validateCurrentSequenceRow()
+    }
+
+    private func runPageSetup() {
+        NSPageLayout().runModal(with: NSPrintInfo.shared)
+    }
+
+    private func printAlignment() {
+        guard canPrintAlignment else {
+            NSSound.beep()
+            return
+        }
+        AlignmentPrinter.runPrintPanel(
+            alignment: displayAlignment,
+            title: documentTitle,
+            window: NSApp.keyWindow ?? NSApp.mainWindow
+        )
     }
 
     private func validateDisplayOrderMode() {

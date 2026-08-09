@@ -334,7 +334,7 @@ private enum AuxiliaryPanelBuilder {
             appendLine(label: "Consensus", sequence: consensusSequence, appliesColor: true)
         }
         if let conservation {
-            appendLine(label: "Identity", sequence: conservationBars(from: conservation))
+            appendLine(label: "Identity", sequence: IdentityBars.barString(from: conservation))
         }
 
         return AuxiliaryPanelContent(
@@ -345,15 +345,4 @@ private enum AuxiliaryPanelBuilder {
         )
     }
 
-    private static func conservationBars(from values: [Double]) -> String {
-        let glyphs: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
-        var output = String()
-        output.reserveCapacity(values.count)
-        for value in values {
-            let clamped = min(max(value, 0), 1)
-            let index = min(Int((clamped * 8.0).rounded()), 8)
-            output.append(glyphs[index])
-        }
-        return output
-    }
 }

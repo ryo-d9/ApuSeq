@@ -27,6 +27,12 @@ struct AlignmentCopyActions {
     let copySelectionAsFASTA: () -> Void
 }
 
+struct AlignmentPrintActions {
+    let canPrint: Bool
+    let pageSetup: () -> Void
+    let print: () -> Void
+}
+
 struct SequenceNameActions {
     let canFindSequenceName: Bool
     let findSequenceName: () -> Void
@@ -88,6 +94,10 @@ private struct AlignmentCopyActionsKey: FocusedValueKey {
     typealias Value = AlignmentCopyActions
 }
 
+private struct AlignmentPrintActionsKey: FocusedValueKey {
+    typealias Value = AlignmentPrintActions
+}
+
 private struct SequenceNameActionsKey: FocusedValueKey {
     typealias Value = SequenceNameActions
 }
@@ -118,6 +128,11 @@ extension FocusedValues {
     var alignmentCopyActions: AlignmentCopyActions? {
         get { self[AlignmentCopyActionsKey.self] }
         set { self[AlignmentCopyActionsKey.self] = newValue }
+    }
+
+    var alignmentPrintActions: AlignmentPrintActions? {
+        get { self[AlignmentPrintActionsKey.self] }
+        set { self[AlignmentPrintActionsKey.self] = newValue }
     }
 
     var sequenceNameActions: SequenceNameActions? {
@@ -303,6 +318,25 @@ struct OpenSourceLicenseCommands: Commands {
             Button(AppStrings.openSourceLicensesMenuItem) {
                 openWindow(id: OpenSourceLicensesView.windowID)
             }
+        }
+    }
+}
+
+struct AlignmentPrintCommands: Commands {
+    @FocusedValue(\.alignmentPrintActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(replacing: .printItem) {
+            Button(String(localized: "Page Setup…")) {
+                actions?.pageSetup()
+            }
+            .disabled(actions == nil)
+
+            Button(String(localized: "Print…")) {
+                actions?.print()
+            }
+            .keyboardShortcut("p", modifiers: [.command])
+            .disabled(actions?.canPrint != true)
         }
     }
 }
