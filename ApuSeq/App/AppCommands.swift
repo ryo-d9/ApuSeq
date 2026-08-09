@@ -247,6 +247,7 @@ struct ViewPanelCommands: Commands {
             Button(displayActions?.showsReferencePanel == true ? String(localized: "Hide Reference Panel") : String(localized: "Show Reference Panel")) {
                 displayActions?.toggleReferencePanel()
             }
+            .keyboardShortcut("r", modifiers: [.command, .control])
             .disabled(displayActions == nil)
 
             Button(displayActions?.showsConsensusPanel == true ? String(localized: "Hide Consensus Panel") : String(localized: "Show Consensus Panel")) {
