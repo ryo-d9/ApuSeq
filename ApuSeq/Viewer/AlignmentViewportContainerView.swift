@@ -21,8 +21,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private let leftStack = NSStackView()
     private let rightStack = NSStackView()
     private let leftHeaderSpacer = NSView()
+    private let rightHeaderSpacer = NSView()
     private let nameFindBarView = SequenceNameFindBarView()
     private var leftHeaderHeightConstraint: NSLayoutConstraint?
+    private var rightHeaderHeightConstraint: NSLayoutConstraint?
     private var rulerHeightConstraint: NSLayoutConstraint?
     private var leftAuxHeightConstraint: NSLayoutConstraint?
     private var rightAuxHeightConstraint: NSLayoutConstraint?
@@ -263,7 +265,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
         rightStack.orientation = .vertical
         rightStack.spacing = 0
-        rightStack.addArrangedSubview(rulerView)
+        rightStack.addArrangedSubview(rightHeaderSpacer)
         rightStack.addArrangedSubview(sequenceScrollView)
         rightStack.addArrangedSubview(auxiliarySequenceScrollView)
 
@@ -278,6 +280,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             self?.onNameFindClose?()
         }
         leftHeaderSpacer.addSubview(nameFindBarView)
+        rightHeaderSpacer.addSubview(rulerView)
 
         leftAuxHeightConstraint = auxiliaryNameScrollView.heightAnchor.constraint(equalToConstant: 0)
         rightAuxHeightConstraint = auxiliarySequenceScrollView.heightAnchor.constraint(equalToConstant: 0)
@@ -287,8 +290,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         auxiliarySequenceScrollView.isHidden = true
 
         let leftHeaderHeightConstraint = leftHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
+        let rightHeaderHeightConstraint = rightHeaderSpacer.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
         let rulerHeightConstraint = rulerView.heightAnchor.constraint(equalToConstant: AlignmentViewportRulerView.minimumRulerHeight)
         self.leftHeaderHeightConstraint = leftHeaderHeightConstraint
+        self.rightHeaderHeightConstraint = rightHeaderHeightConstraint
         self.rulerHeightConstraint = rulerHeightConstraint
 
         NSLayoutConstraint.activate([
@@ -312,8 +317,13 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
             rightStack.topAnchor.constraint(equalTo: rightPane.topAnchor),
             rightStack.bottomAnchor.constraint(equalTo: rightPane.bottomAnchor),
 
+            rulerView.leadingAnchor.constraint(equalTo: rightHeaderSpacer.leadingAnchor),
+            rulerView.trailingAnchor.constraint(equalTo: rightHeaderSpacer.trailingAnchor),
+            rulerView.topAnchor.constraint(equalTo: rightHeaderSpacer.topAnchor),
+            rulerHeightConstraint,
+
             leftHeaderHeightConstraint,
-            rulerHeightConstraint
+            rightHeaderHeightConstraint
         ])
     }
 
@@ -340,11 +350,13 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     private func updateHeaderHeights() {
         let rulerHeight = rulerHeightConstraint?.constant ?? AlignmentViewportRulerView.minimumRulerHeight
-        let targetLeftHeaderHeight = isNameFindBarPresented
+        let headerHeight = isNameFindBarPresented
             ? max(rulerHeight, Self.nameFindBarHeaderHeight)
             : rulerHeight
-        if abs((leftHeaderHeightConstraint?.constant ?? 0) - targetLeftHeaderHeight) > 0.5 {
-            leftHeaderHeightConstraint?.constant = targetLeftHeaderHeight
+        if abs((leftHeaderHeightConstraint?.constant ?? 0) - headerHeight) > 0.5 ||
+            abs((rightHeaderHeightConstraint?.constant ?? 0) - headerHeight) > 0.5 {
+            leftHeaderHeightConstraint?.constant = headerHeight
+            rightHeaderHeightConstraint?.constant = headerHeight
             needsLayout = true
         }
     }
