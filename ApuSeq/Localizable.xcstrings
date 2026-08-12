@@ -985,34 +985,12 @@
         }
       }
     },
-    "Next" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次へ"
-          }
-        }
-      }
-    },
     "No matches" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "一致なし"
-          }
-        }
-      }
-    },
-    "No sequence name contains \"%@\"." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"%@\" を含むシーケンス名はありません。"
           }
         }
       }
@@ -1233,17 +1211,6 @@
         }
       }
     },
-    "Residues" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "残基数"
-          }
-        }
-      }
-    },
     "Reverse Complement" : {
       "localizations" : {
         "ja" : {
@@ -1414,17 +1381,6 @@
         }
       }
     },
-    "Sequence name" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "シーケンス名"
-          }
-        }
-      }
-    },
     "Sequence name cannot be empty." : {
       "localizations" : {
         "ja" : {
@@ -1556,17 +1512,6 @@
       }
     },
     "Source Characters" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "元の文字数"
-          }
-        }
-      }
-    },
-    "Source Chars" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
