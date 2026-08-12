@@ -707,6 +707,40 @@ struct ApuSeqTests {
         #expect(pages.count == 25)
     }
 
+    @Test func printLayoutDefaultUsesAvailableWidthWithoutColumnCap() {
+        let rows = [
+            AlignmentRow(name: "Seq 0", sequence: String(repeating: "A", count: 160))
+        ]
+        let alignment = AlignmentData(
+            format: .fasta,
+            rows: rows,
+            length: 160,
+            sequenceKind: .nucleotide
+        )
+        let pages = AlignmentPrintLayout.pages(
+            alignment: alignment,
+            options: .default,
+            pageContentSize: CGSize(width: 620, height: 160),
+            nameColumnWidth: 80,
+            characterWidth: 5,
+            lineHeight: 12
+        )
+
+        #expect(pages.first?.columnRange == 0..<105)
+        #expect(pages.count == 2)
+    }
+
+    @Test func printLayoutFallsBackToOneColumnForInvalidCharacterWidth() {
+        let columnsPerBlock = AlignmentPrintLayout.resolvedColumnsPerBlock(
+            maximumColumnsPerBlock: Int.max,
+            pageContentWidth: 620,
+            nameColumnWidth: 80,
+            characterWidth: 0
+        )
+
+        #expect(columnsPerBlock == 1)
+    }
+
     @Test func printLayoutIncludesReferenceAuxiliaryLine() {
         let rows = (0..<5).map { index in
             AlignmentRow(name: "Seq \(index)", sequence: String(repeating: "A", count: 60))
@@ -744,6 +778,27 @@ struct ApuSeqTests {
         #expect(pagesWithReference.count == 5)
     }
 
+    @Test func printInfoUsesClippingPaginationForViewManagedPages() {
+        let printInfo = AlignmentPrinter.configuredPrintInfo()
+
+        #expect(printInfo.horizontalPagination == .clip)
+        #expect(printInfo.verticalPagination == .clip)
+        #expect(!printInfo.isHorizontallyCentered)
+        #expect(!printInfo.isVerticallyCentered)
+    }
+
+    @Test func printPanelKeepsStandardScaleAndAddsApuSeqFontSizeAccessory() {
+        let printPanel = AlignmentPrinter.configuredPrintPanel(settings: AlignmentPrintSettings(fontSize: 9))
+
+        #expect(printPanel.options.contains(.showsPreview))
+        #expect(printPanel.options.contains(.showsScaling))
+        #expect(printPanel.options.contains(.showsPageSetupAccessory))
+        #expect(printPanel.accessoryControllers.contains { $0 is AlignmentPrintAccessoryController })
+        let steppers = printPanel.accessoryControllers
+            .flatMap { $0.view.allDescendants(ofType: NSStepper.self) }
+        #expect(steppers.contains { !$0.valueWraps })
+    }
+
     @MainActor
     @Test func printViewUsesPrintInfoMarginsForPrintableSize() {
         let printInfo = NSPrintInfo()
@@ -764,6 +819,17 @@ struct ApuSeqTests {
     }
 
     @MainActor
+    @Test func printMetricsUsesPrintFontSizeForTextMetrics() {
+        let smallMetrics = AlignmentPrintMetrics(fontSize: 6.75)
+        let largeMetrics = AlignmentPrintMetrics(fontSize: 13.5)
+
+        #expect(smallMetrics.baseFont.pointSize == 6.75)
+        #expect(largeMetrics.baseFont.pointSize == 13.5)
+        #expect(smallMetrics.characterWidth < largeMetrics.characterWidth)
+        #expect(smallMetrics.lineHeight < largeMetrics.lineHeight)
+    }
+
+    @MainActor
     private func waitUntil(
         timeout: Duration = .seconds(2),
         condition: @MainActor @escaping () -> Bool
@@ -775,6 +841,18 @@ struct ApuSeqTests {
                 return
             }
             try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}
+
+private extension NSView {
+    func allDescendants<ViewType: NSView>(ofType type: ViewType.Type) -> [ViewType] {
+        subviews.flatMap { subview in
+            var matches = subview.allDescendants(ofType: type)
+            if let matchingSubview = subview as? ViewType {
+                matches.insert(matchingSubview, at: 0)
+            }
+            return matches
         }
     }
 }

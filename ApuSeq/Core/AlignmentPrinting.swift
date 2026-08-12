@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 struct AlignmentPrintOptions: Equatable {
-    var maximumColumnsPerBlock = 100
+    var maximumColumnsPerBlock = Int.max
     var referenceName: String?
     var referenceSequence: String?
     var includesConsensus = true
@@ -18,6 +18,34 @@ struct AlignmentPrintPage: Equatable {
     let rowRange: Range<Int>
 }
 
+final class AlignmentPrintSettings: NSObject {
+    @objc dynamic var fontSize: Double
+
+    init(fontSize: CGFloat) {
+        self.fontSize = Double(fontSize)
+        super.init()
+    }
+}
+
+struct AlignmentPrintMetrics {
+    let baseFont: NSFont
+    let labelFont: NSFont
+    let headerFont: NSFont
+    let smallFont: NSFont
+    let characterWidth: CGFloat
+    let lineHeight: CGFloat
+
+    init(fontSize: CGFloat) {
+        let resolvedFontSize = max(fontSize, 1)
+        baseFont = NSFont.monospacedSystemFont(ofSize: resolvedFontSize, weight: .regular)
+        labelFont = NSFont.monospacedSystemFont(ofSize: resolvedFontSize, weight: .regular)
+        headerFont = NSFont.systemFont(ofSize: max(11 * (resolvedFontSize / 9), 1), weight: .semibold)
+        smallFont = NSFont.systemFont(ofSize: max(8 * (resolvedFontSize / 9), 1))
+        characterWidth = max(("M" as NSString).size(withAttributes: [.font: baseFont]).width, 1)
+        lineHeight = ceil(baseFont.ascender - baseFont.descender + baseFont.leading + 2)
+    }
+}
+
 enum AlignmentPrinter {
     @MainActor
     static func runPrintPanel(
@@ -27,19 +55,18 @@ enum AlignmentPrinter {
         window: NSWindow?
     ) {
         let printInfo = configuredPrintInfo()
-        let printView = AlignmentPrintView(alignment: alignment, title: title, options: options, printInfo: printInfo)
+        let settings = AlignmentPrintSettings(fontSize: options.fontSize)
+        let printView = AlignmentPrintView(
+            alignment: alignment,
+            title: title,
+            options: options,
+            settings: settings,
+            printInfo: printInfo
+        )
         let operation = NSPrintOperation(view: printView, printInfo: printInfo)
         operation.showsPrintPanel = true
         operation.showsProgressPanel = true
-        operation.printPanel.options = [
-            .showsCopies,
-            .showsPageRange,
-            .showsPaperSize,
-            .showsOrientation,
-            .showsScaling,
-            .showsPageSetupAccessory,
-            .showsPreview
-        ]
+        operation.printPanel = configuredPrintPanel(settings: settings)
 
         if let window {
             operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
@@ -50,11 +77,152 @@ enum AlignmentPrinter {
 
     static func configuredPrintInfo() -> NSPrintInfo {
         let printInfo = (NSPrintInfo.shared.copy() as? NSPrintInfo) ?? NSPrintInfo.shared
-        printInfo.horizontalPagination = .fit
-        printInfo.verticalPagination = .automatic
+        printInfo.horizontalPagination = .clip
+        printInfo.verticalPagination = .clip
         printInfo.isHorizontallyCentered = false
         printInfo.isVerticallyCentered = false
         return printInfo
+    }
+
+    static func configuredPrintPanel(settings: AlignmentPrintSettings) -> NSPrintPanel {
+        let printPanel = NSPrintPanel()
+        printPanel.options = [
+            .showsCopies,
+            .showsPageRange,
+            .showsPaperSize,
+            .showsOrientation,
+            .showsScaling,
+            .showsPageSetupAccessory,
+            .showsPreview
+        ]
+        printPanel.addAccessoryController(AlignmentPrintAccessoryController(settings: settings))
+        return printPanel
+    }
+}
+
+@MainActor
+final class AlignmentPrintAccessoryController: NSViewController, NSPrintPanelAccessorizing {
+    private enum FontSize {
+        static let minimum = 4.0
+        static let maximum = 24.0
+        static let increment = 0.5
+    }
+
+    private let settings: AlignmentPrintSettings
+    private let fontSizeField = NSTextField(frame: .zero)
+    private let stepper = NSStepper(frame: .zero)
+    private let fontSizeFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimum = NSNumber(value: FontSize.minimum)
+        formatter.maximum = NSNumber(value: FontSize.maximum)
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+
+    @objc dynamic var fontSize: Double
+
+    init(settings: AlignmentPrintSettings) {
+        self.settings = settings
+        fontSize = settings.fontSize
+        super.init(nibName: nil, bundle: nil)
+        title = String(localized: "ApuSeq")
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func loadView() {
+        let label = NSTextField(labelWithString: String(localized: "Print Font Size"))
+        label.alignment = .right
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        fontSizeField.translatesAutoresizingMaskIntoConstraints = false
+        fontSizeField.alignment = .right
+        fontSizeField.formatter = fontSizeFormatter
+        fontSizeField.doubleValue = fontSize
+        fontSizeField.target = self
+        fontSizeField.action = #selector(fontSizeFieldChanged(_:))
+
+        stepper.translatesAutoresizingMaskIntoConstraints = false
+        stepper.minValue = FontSize.minimum
+        stepper.maxValue = FontSize.maximum
+        stepper.increment = FontSize.increment
+        stepper.valueWraps = false
+        stepper.doubleValue = fontSize
+        stepper.target = self
+        stepper.action = #selector(stepperChanged(_:))
+
+        let unitLabel = NSTextField(labelWithString: String(localized: "pt"))
+        unitLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 40))
+        container.addSubview(label)
+        container.addSubview(fontSizeField)
+        container.addSubview(stepper)
+        container.addSubview(unitLabel)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            label.centerYAnchor.constraint(equalTo: fontSizeField.centerYAnchor),
+            label.widthAnchor.constraint(equalToConstant: 112),
+            fontSizeField.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 8),
+            fontSizeField.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            fontSizeField.widthAnchor.constraint(equalToConstant: 56),
+            stepper.leadingAnchor.constraint(equalTo: fontSizeField.trailingAnchor, constant: 6),
+            stepper.centerYAnchor.constraint(equalTo: fontSizeField.centerYAnchor),
+            unitLabel.leadingAnchor.constraint(equalTo: stepper.trailingAnchor, constant: 6),
+            unitLabel.centerYAnchor.constraint(equalTo: fontSizeField.centerYAnchor),
+            unitLabel.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor)
+        ])
+        view = container
+    }
+
+    @objc private func fontSizeFieldChanged(_ sender: NSTextField) {
+        setFontSize(sender.doubleValue)
+    }
+
+    @objc private func stepperChanged(_ sender: NSStepper) {
+        setFontSize(sender.doubleValue)
+    }
+
+    private func setFontSize(_ proposedValue: Double) {
+        let clampedValue = min(max(proposedValue, FontSize.minimum), FontSize.maximum)
+        let roundedValue = (clampedValue / FontSize.increment).rounded() * FontSize.increment
+        guard roundedValue != fontSize else {
+            updateControls()
+            return
+        }
+
+        willChangeValue(forKey: "localizedSummaryItems")
+        fontSize = roundedValue
+        settings.fontSize = roundedValue
+        updateControls()
+        didChangeValue(forKey: "localizedSummaryItems")
+    }
+
+    private func updateControls() {
+        fontSizeField.doubleValue = fontSize
+        stepper.doubleValue = fontSize
+    }
+
+    nonisolated func keyPathsForValuesAffectingPreview() -> Set<String> {
+        ["fontSize"]
+    }
+
+    func localizedSummaryItems() -> [[NSPrintPanel.AccessorySummaryKey: String]] {
+        [
+            [
+                .itemName: String(localized: "Print Font Size"),
+                .itemDescription: fontSizeDescription
+            ]
+        ]
+    }
+
+    private var fontSizeDescription: String {
+        String(format: "%.1f pt", fontSize)
     }
 }
 
@@ -111,13 +279,18 @@ enum AlignmentPrintLayout {
         nameColumnWidth: CGFloat,
         characterWidth: CGFloat
     ) -> Int {
-        guard characterWidth > 0 else { return max(maximumColumnsPerBlock, 1) }
-        let sequenceWidth = max(pageContentWidth - nameColumnWidth - 12, characterWidth)
+        guard characterWidth > 0 else { return 1 }
+        let sequenceGap: CGFloat = 12
+        let sequenceWidth = max(pageContentWidth - nameColumnWidth - sequenceGap, characterWidth)
         let fittingColumns = max(Int(floor(sequenceWidth / characterWidth)), 1)
         return max(min(maximumColumnsPerBlock, fittingColumns), 1)
     }
 
-    static func rowsPerPage(pageContentHeight: CGFloat, lineHeight: CGFloat, auxiliaryLineCount: Int) -> Int {
+    static func rowsPerPage(
+        pageContentHeight: CGFloat,
+        lineHeight: CGFloat,
+        auxiliaryLineCount: Int
+    ) -> Int {
         guard lineHeight > 0 else { return 1 }
         let headerHeight: CGFloat = 44
         let blockHeaderHeight = lineHeight + 8
@@ -137,38 +310,36 @@ final class AlignmentPrintView: NSView {
         let rightMargin: CGFloat
         let topMargin: CGFloat
         let bottomMargin: CGFloat
+        let fontSize: Double
 
-        init(printInfo: NSPrintInfo) {
+        init(printInfo: NSPrintInfo, fontSize: Double) {
             paperSize = printInfo.paperSize
             imageableBounds = printInfo.imageablePageBounds
             leftMargin = printInfo.leftMargin
             rightMargin = printInfo.rightMargin
             topMargin = printInfo.topMargin
             bottomMargin = printInfo.bottomMargin
+            self.fontSize = fontSize
         }
     }
 
     private let alignment: AlignmentData
     private let title: String
     private let options: AlignmentPrintOptions
+    private let settings: AlignmentPrintSettings
     private let referenceLabel: String?
     private let referenceSequence: String?
     private let consensusSequence: String
     private let identityByColumn: [Double]
-    private let measuredNameColumnWidth: CGFloat
     private var pages: [AlignmentPrintPage] = []
     private var pageSize = CGSize(width: 1, height: 1)
     private let contentInset: CGFloat = 4
     private var nameColumnWidth: CGFloat = 96
-    private let baseFont: NSFont
-    private let labelFont: NSFont
-    private let headerFont: NSFont
-    private let lineHeight: CGFloat
-    private let characterWidth: CGFloat
-    private let baseAttributes: [NSAttributedString.Key: Any]
-    private let nameAttributes: [NSAttributedString.Key: Any]
-    private let headerAttributes: [NSAttributedString.Key: Any]
-    private let smallAttributes: [NSAttributedString.Key: Any]
+    private var metrics: AlignmentPrintMetrics
+    private var baseAttributes: [NSAttributedString.Key: Any] = [:]
+    private var nameAttributes: [NSAttributedString.Key: Any] = [:]
+    private var headerAttributes: [NSAttributedString.Key: Any] = [:]
+    private var smallAttributes: [NSAttributedString.Key: Any] = [:]
     private var layoutSignature: LayoutSignature?
 
     override var isFlipped: Bool { true }
@@ -177,41 +348,22 @@ final class AlignmentPrintView: NSView {
         alignment: AlignmentData,
         title: String,
         options: AlignmentPrintOptions = .default,
+        settings: AlignmentPrintSettings,
         printInfo: NSPrintInfo
     ) {
         self.alignment = alignment
         self.title = title
         self.options = options
+        self.settings = settings
+        metrics = AlignmentPrintMetrics(fontSize: CGFloat(settings.fontSize))
         referenceLabel = options.referenceSequence == nil ? nil : String(format: String(localized: "Ref: %@"), options.referenceName ?? "")
         referenceSequence = options.referenceSequence
-        baseFont = NSFont.monospacedSystemFont(ofSize: options.fontSize, weight: .regular)
-        labelFont = NSFont.monospacedSystemFont(ofSize: options.fontSize, weight: .regular)
-        headerFont = NSFont.systemFont(ofSize: 11, weight: .semibold)
-        lineHeight = ceil(baseFont.ascender - baseFont.descender + baseFont.leading + 2)
-        characterWidth = max(("M" as NSString).size(withAttributes: [.font: baseFont]).width, 1)
         consensusSequence = options.includesConsensus
             ? AlignmentStatistics.consensusSequence(rows: alignment.rows, length: alignment.length)
             : ""
         identityByColumn = options.includesIdentity
             ? AlignmentStatistics.columnIdentity(rows: alignment.rows)
             : []
-        measuredNameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: alignment.rows, font: labelFont)
-        baseAttributes = [
-            .font: baseFont,
-            .foregroundColor: NSColor.labelColor
-        ]
-        nameAttributes = [
-            .font: labelFont,
-            .foregroundColor: NSColor.secondaryLabelColor
-        ]
-        headerAttributes = [
-            .font: headerFont,
-            .foregroundColor: NSColor.labelColor
-        ]
-        smallAttributes = [
-            .font: NSFont.systemFont(ofSize: 8),
-            .foregroundColor: NSColor.secondaryLabelColor
-        ]
         super.init(frame: .zero)
         updateLayout(for: printInfo)
     }
@@ -255,23 +407,26 @@ final class AlignmentPrintView: NSView {
     }
 
     private func updateLayout(for printInfo: NSPrintInfo) {
-        let signature = LayoutSignature(printInfo: printInfo)
+        let signature = LayoutSignature(printInfo: printInfo, fontSize: settings.fontSize)
         guard signature != layoutSignature else { return }
         layoutSignature = signature
 
+        metrics = Self.printMetrics(settings: settings)
+        updateTextAttributes(for: metrics)
         pageSize = Self.printablePageSize(for: printInfo)
         let contentSize = CGSize(
             width: max(pageSize.width - (contentInset * 2), 1),
             height: max(pageSize.height - (contentInset * 2), 1)
         )
+        let measuredNameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: alignment.rows, font: metrics.labelFont)
         nameColumnWidth = min(max(measuredNameColumnWidth, 96), contentSize.width * 0.34)
         pages = AlignmentPrintLayout.pages(
             alignment: alignment,
             options: options,
             pageContentSize: contentSize,
             nameColumnWidth: nameColumnWidth,
-            characterWidth: characterWidth,
-            lineHeight: lineHeight
+            characterWidth: metrics.characterWidth,
+            lineHeight: metrics.lineHeight
         )
         frame = NSRect(
             x: 0,
@@ -292,6 +447,29 @@ final class AlignmentPrintView: NSView {
             width: max(min(marginContentSize.width, imageableBounds.width), 1),
             height: max(min(marginContentSize.height, imageableBounds.height), 1)
         )
+    }
+
+    static func printMetrics(settings: AlignmentPrintSettings) -> AlignmentPrintMetrics {
+        AlignmentPrintMetrics(fontSize: CGFloat(settings.fontSize))
+    }
+
+    private func updateTextAttributes(for metrics: AlignmentPrintMetrics) {
+        baseAttributes = [
+            .font: metrics.baseFont,
+            .foregroundColor: NSColor.labelColor
+        ]
+        nameAttributes = [
+            .font: metrics.labelFont,
+            .foregroundColor: NSColor.secondaryLabelColor
+        ]
+        headerAttributes = [
+            .font: metrics.headerFont,
+            .foregroundColor: NSColor.labelColor
+        ]
+        smallAttributes = [
+            .font: metrics.smallFont,
+            .foregroundColor: NSColor.secondaryLabelColor
+        ]
     }
 
     private func visiblePageRange(for dirtyRect: NSRect) -> Range<Int> {
@@ -336,13 +514,13 @@ final class AlignmentPrintView: NSView {
             page.columnRange.upperBound
         ) as NSString
         rangeText.draw(at: NSPoint(x: contentX, y: y), withAttributes: smallAttributes)
-        y += lineHeight + 8
+        y += metrics.lineHeight + 8
 
         for rowIndex in page.rowRange {
             let row = alignment.rows[rowIndex]
             drawName(row.name, x: contentX, y: y)
             drawSequence(row.sequence, range: page.columnRange, x: sequenceX(contentX), y: y, appliesBackground: options.usesResidueBackground)
-            y += lineHeight
+            y += metrics.lineHeight
         }
 
         if referenceSequence != nil || options.includesConsensus || options.includesIdentity {
@@ -351,12 +529,12 @@ final class AlignmentPrintView: NSView {
         if let referenceLabel, let referenceSequence {
             drawName(referenceLabel, x: contentX, y: y)
             drawSequence(referenceSequence, range: page.columnRange, x: sequenceX(contentX), y: y, appliesBackground: options.usesResidueBackground)
-            y += lineHeight
+            y += metrics.lineHeight
         }
         if options.includesConsensus {
             drawName(String(localized: "Consensus"), x: contentX, y: y)
             drawSequence(consensusSequence, range: page.columnRange, x: sequenceX(contentX), y: y, appliesBackground: options.usesResidueBackground)
-            y += lineHeight
+            y += metrics.lineHeight
         }
         if options.includesIdentity {
             drawName(String(localized: "Identity"), x: contentX, y: y)
@@ -375,7 +553,7 @@ final class AlignmentPrintView: NSView {
 
     private func drawName(_ name: String, x: CGFloat, y: CGFloat) {
         (name as NSString).draw(
-            with: NSRect(x: x, y: y, width: nameColumnWidth, height: lineHeight),
+            with: NSRect(x: x, y: y, width: nameColumnWidth, height: metrics.lineHeight),
             options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
             attributes: nameAttributes
         )
@@ -403,10 +581,10 @@ final class AlignmentPrintView: NSView {
             guard let start = runStart, let color = runColor, endOffset > start else { return }
             color.setFill()
             NSRect(
-                x: x + CGFloat(start) * characterWidth,
+                x: x + CGFloat(start) * metrics.characterWidth,
                 y: y,
-                width: CGFloat(endOffset - start) * characterWidth,
-                height: lineHeight
+                width: CGFloat(endOffset - start) * metrics.characterWidth,
+                height: metrics.lineHeight
             ).fill()
         }
 
