@@ -787,6 +787,7 @@ struct ApuSeqTests {
         #expect(!printInfo.isVerticallyCentered)
     }
 
+    @MainActor
     @Test func printPanelKeepsStandardScaleAndAddsApuSeqFontSizeAccessory() {
         let printPanel = AlignmentPrinter.configuredPrintPanel(settings: AlignmentPrintSettings(fontSize: 9))
 
