@@ -69,6 +69,16 @@
         }
       }
     },
+    "ApuSeq uses the following software with gratitude to its developers and contributors." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ApuSeqでは以下のソフトウェアを使用しています。開発に携わった皆様に感謝いたします。"
+          }
+        }
+      }
+    },
     "About ApuSeq" : {
       "localizations" : {
         "ja" : {

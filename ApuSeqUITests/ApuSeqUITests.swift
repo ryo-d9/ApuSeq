@@ -135,6 +135,7 @@ final class ApuSeqUITests: XCTestCase {
         XCTAssertTrue(app.windows["About ApuSeq"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["ApuSeq"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Open Source Licenses"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["ApuSeq uses the following software with gratitude to its developers and contributors."].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["MAFFT"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Multiple sequence alignment program"].waitForExistence(timeout: 2))
     }

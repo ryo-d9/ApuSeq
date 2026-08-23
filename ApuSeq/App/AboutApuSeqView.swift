@@ -21,10 +21,17 @@ struct AboutApuSeqView: View {
                 .ignoresSafeArea(.container, edges: .top)
 
             VStack(alignment: .leading, spacing: 12) {
-                Text(AppStrings.openSourceLicenses)
-                    .font(.headline)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppStrings.openSourceLicenses)
+                        .font(.headline)
+
+                    Text(AppStrings.openSourceLicensesDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
 
                 OpenSourceLicensesPane()
             }
