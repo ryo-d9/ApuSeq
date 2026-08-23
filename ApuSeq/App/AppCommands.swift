@@ -425,6 +425,7 @@ struct AlignmentCommands: Commands {
                 Button(AppStrings.setCurrentSequenceAsReference) {
                     sequenceNameActions?.setCurrentSequenceAsReference()
                 }
+                .keyboardShortcut("r", modifiers: [.command, .option])
                 .disabled(sequenceNameActions?.canSetCurrentSequenceAsReference != true)
 
                 Button(AppStrings.clearReference) {
