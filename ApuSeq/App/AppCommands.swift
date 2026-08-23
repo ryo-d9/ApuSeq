@@ -431,6 +431,7 @@ struct AlignmentCommands: Commands {
                 Button(AppStrings.clearReference) {
                     sequenceNameActions?.clearReference()
                 }
+                .keyboardShortcut("r", modifiers: [.command, .option, .shift])
                 .disabled(sequenceNameActions?.canClearReference != true)
 
                 Divider()
