@@ -1435,6 +1435,22 @@
         }
       }
     },
+    "Sequence Name Search Placeholder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配列名"
+          }
+        }
+      }
+    },
     "Sequence Type" : {
       "localizations" : {
         "ja" : {

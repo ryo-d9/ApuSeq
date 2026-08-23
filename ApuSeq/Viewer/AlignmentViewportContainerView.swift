@@ -490,7 +490,7 @@ private final class SequenceNameFindBarView: NSView, NSSearchFieldDelegate {
         footerStackView.addArrangedSubview(statusLabel)
         footerStackView.addArrangedSubview(doneButton)
 
-        searchField.placeholderString = String(localized: "Name")
+        searchField.placeholderString = String(localized: "Sequence Name Search Placeholder")
         searchField.controlSize = .small
         searchField.delegate = self
         searchField.sendsSearchStringImmediately = false
