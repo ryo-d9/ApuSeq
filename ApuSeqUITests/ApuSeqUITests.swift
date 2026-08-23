@@ -124,15 +124,17 @@ final class ApuSeqUITests: XCTestCase {
     }
 
     @MainActor
-    func testHelpMenuOpensOpenSourceLicensesWindow() throws {
+    func testAboutWindowContainsOpenSourceLicenses() throws {
         launchApp()
 
-        openMenu("Help")
-        let licensesItem = app.menuItems["Open Source Licenses..."]
-        XCTAssertTrue(licensesItem.waitForExistence(timeout: 2))
-        licensesItem.click()
+        openMenu("ApuSeq")
+        let aboutItem = app.menuItems["About ApuSeq"]
+        XCTAssertTrue(aboutItem.waitForExistence(timeout: 2))
+        aboutItem.click()
 
-        XCTAssertTrue(app.windows["Open Source Licenses"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.windows["About ApuSeq"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["ApuSeq"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Open Source Licenses"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["MAFFT"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Multiple sequence alignment program"].waitForExistence(timeout: 2))
     }

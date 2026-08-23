@@ -1,8 +1,14 @@
 import SwiftUI
 
 struct OpenSourceLicensesView: View {
-    static let windowID = "open-source-licenses"
+    var body: some View {
+        OpenSourceLicensesPane()
+            .frame(width: 520, height: 380)
+            .navigationTitle(AppStrings.openSourceLicenses)
+    }
+}
 
+struct OpenSourceLicensesPane: View {
     private let mafftLicense = ThirdPartyLicense(
         name: "MAFFT",
         version: "7.526 (2024/Apr/26)",
@@ -14,15 +20,15 @@ struct OpenSourceLicensesView: View {
     )
 
     var body: some View {
-        Form {
-            Section(AppStrings.openSourceLicenses) {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 12) {
                 ThirdPartyLicenseView(item: mafftLicense)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
-        .formStyle(.grouped)
-        .padding(20)
-        .frame(width: 520, height: 380)
-        .navigationTitle(AppStrings.openSourceLicenses)
+        .accessibilityIdentifier("open-source-licenses-pane")
     }
 }
 
@@ -67,17 +73,16 @@ private struct ThirdPartyLicenseView: View {
                 .foregroundStyle(.secondary)
 
             DisclosureGroup(item.licenseName) {
-                ScrollView {
-                    Text(licenseText)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 6)
-                }
-                .frame(minHeight: 180)
-                .onAppear {
-                    loadLicenseTextIfNeeded()
-                }
+                Text(licenseText)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .environment(\.locale, Locale(languageCode: .english))
+                    .environment(\.layoutDirection, .leftToRight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 6)
+                    .onAppear {
+                        loadLicenseTextIfNeeded()
+                    }
             }
             .padding(.top, 4)
         }

@@ -1,6 +1,7 @@
 import Foundation
 
 enum AppStrings {
+    static let aboutApuSeq = String(localized: "About ApuSeq")
     static let addSequence = String(localized: "Add Sequence...")
     static let alignment = String(localized: "Alignment")
     static let copyConsensus = String(localized: "Copy Consensus")
@@ -43,7 +44,6 @@ enum AppStrings {
     static let operationFailed = String(localized: "Operation Failed")
     static let clipboardDoesNotContainFASTA = String(localized: "The clipboard does not contain valid FASTA sequences.")
     static let openSourceLicenses = String(localized: "Open Source Licenses")
-    static let openSourceLicensesMenuItem = String(localized: "Open Source Licenses...")
     static let showInspector = String(localized: "Show Inspector")
     static let hideInspector = String(localized: "Hide Inspector")
     static let reverseComplement = String(localized: "Reverse Complement")

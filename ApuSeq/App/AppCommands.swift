@@ -338,13 +338,13 @@ struct ViewPanelCommands: Commands {
     }
 }
 
-struct OpenSourceLicenseCommands: Commands {
+struct AboutCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        CommandGroup(after: .help) {
-            Button(AppStrings.openSourceLicensesMenuItem) {
-                openWindow(id: OpenSourceLicensesView.windowID)
+        CommandGroup(replacing: .appInfo) {
+            Button(AppStrings.aboutApuSeq) {
+                openWindow(id: AboutApuSeqView.windowID)
             }
         }
     }

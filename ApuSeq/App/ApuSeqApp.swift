@@ -22,14 +22,16 @@ struct ApuSeqApp: App {
             SequenceNameCommands()
             AlignmentEditCommands()
             InspectorToggleCommands()
-            OpenSourceLicenseCommands()
+            AboutCommands()
             AlignmentPrintCommands()
         }
 
-        Window(AppStrings.openSourceLicenses, id: OpenSourceLicensesView.windowID) {
-            OpenSourceLicensesView()
+        Window(AppStrings.aboutApuSeq, id: AboutApuSeqView.windowID) {
+            AboutApuSeqView()
         }
+        .commandsRemoved()
         .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
 
         Settings {
             AppSettingsView()
