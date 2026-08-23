@@ -20,8 +20,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private let rightPane = NSView()
     private let leftStack = NSStackView()
     private let rightStack = NSStackView()
-    private let leftHeaderSpacer = NSView()
-    private let rightHeaderSpacer = NSView()
+    private let leftHeaderSpacer = AlignmentViewportBackgroundView()
+    private let rightHeaderSpacer = AlignmentViewportBackgroundView()
     private let nameFindBarView = SequenceNameFindBarView()
     private var leftHeaderHeightConstraint: NSLayoutConstraint?
     private var rightHeaderHeightConstraint: NSLayoutConstraint?
@@ -397,6 +397,20 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         view !== leftPane
     }
 
+}
+
+private final class AlignmentViewportBackgroundView: NSView {
+    override var isOpaque: Bool { true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.textBackgroundColor.setFill()
+        dirtyRect.fill()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
 }
 
 private final class SequenceNameFindBarView: NSView, NSSearchFieldDelegate {
