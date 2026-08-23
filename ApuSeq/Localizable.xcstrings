@@ -756,7 +756,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コンセンサスパネルを隠す"
+            "value" : "コンセンサスパネルを非表示"
           }
         }
       }
@@ -766,7 +766,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一致率パネルを隠す"
+            "value" : "一致率パネルを非表示"
           }
         }
       }
@@ -776,7 +776,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "インスペクタを隠す"
+            "value" : "インスペクタを非表示"
           }
         }
       }
@@ -786,7 +786,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "参照パネルを隠す"
+            "value" : "参照パネルを非表示"
           }
         }
       }
