@@ -192,9 +192,9 @@ final class ApuSeqUITests: XCTestCase {
         XCTAssertTrue(inspectorButton.waitForExistence(timeout: 5))
         inspectorButton.click()
 
-        XCTAssertTrue(app.staticTexts["Format"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["File Format"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["FASTA"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Sequence Kind"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Sequence Type"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Sequences"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Sites"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Selection"].waitForExistence(timeout: 2))
@@ -440,6 +440,9 @@ final class ApuSeqUITests: XCTestCase {
 
     @MainActor
     private func launchApp() {
+        if !app.launchArguments.contains("-AppleLanguages") {
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + app.launchArguments
+        }
         if !app.launchArguments.contains("-ApplePersistenceIgnoreState") {
             app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"] + app.launchArguments
         }

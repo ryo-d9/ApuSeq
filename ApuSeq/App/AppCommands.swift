@@ -365,13 +365,13 @@ struct AlignmentCommands: Commands {
 
                     if mafftActions?.canAlignAminoAcidGuidedNucleotide == true {
                         Menu(AppStrings.aminoAcidGuidedNucleotideAlignment) {
-                            Button(String(localized: "Frame +0")) {
+                            Button(String(localized: "Frame 1")) {
                                 runAminoAcidGuidedNucleotideAlignment(frameOffset: 0)
                             }
-                            Button(String(localized: "Frame +1")) {
+                            Button(String(localized: "Frame 2")) {
                                 runAminoAcidGuidedNucleotideAlignment(frameOffset: 1)
                             }
-                            Button(String(localized: "Frame +2")) {
+                            Button(String(localized: "Frame 3")) {
                                 runAminoAcidGuidedNucleotideAlignment(frameOffset: 2)
                             }
                         }
@@ -455,10 +455,12 @@ struct AlignmentCommands: Commands {
 
             if canTranslate {
                 Menu(String(localized: "Translation")) {
-                    Button(String(localized: "Frame +0")) { runTranslation(frameOffset: 0) }
-                        .keyboardShortcut("0", modifiers: [.command, .option])
-                    Button(String(localized: "Frame +1")) { runTranslation(frameOffset: 1) }
-                    Button(String(localized: "Frame +2")) { runTranslation(frameOffset: 2) }
+                    Button(String(localized: "Frame 1")) { runTranslation(frameOffset: 0) }
+                        .keyboardShortcut("1", modifiers: [.command, .option])
+                    Button(String(localized: "Frame 2")) { runTranslation(frameOffset: 1) }
+                        .keyboardShortcut("2", modifiers: [.command, .option])
+                    Button(String(localized: "Frame 3")) { runTranslation(frameOffset: 2) }
+                        .keyboardShortcut("3", modifiers: [.command, .option])
                 }
             } else {
                 Button(String(localized: "Translation")) {}

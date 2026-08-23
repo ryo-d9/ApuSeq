@@ -27,13 +27,13 @@ struct FooterBar: View {
             )
             if let selectedStartPosition, let selectedEndPosition, selectedResidueCount > 0 {
                 statusItem(
-                    label: String(localized: "Columns"),
+                    label: String(localized: "Positions"),
                     value: "\(selectedStartPosition)-\(selectedEndPosition)",
                     identifier: "alignment-column-selection"
                 )
             }
             Spacer()
-            Picker(String(localized: "Background"), selection: $backgroundMode) {
+            Picker(String(localized: "Background Color"), selection: $backgroundMode) {
                 ForEach(availableBackgroundModes) { mode in
                     Text(mode.localizedName).tag(mode)
                 }
@@ -106,21 +106,21 @@ struct FileInformationView: View {
     var body: some View {
         List {
             Section(String(localized: "Document")) {
-                LabeledContent(String(localized: "Format"), value: format)
-                LabeledContent(String(localized: "Sequence Kind"), value: sequenceKind)
+                LabeledContent(String(localized: "File Format"), value: format)
+                LabeledContent(String(localized: "Sequence Type"), value: sequenceKind)
                 LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
                 LabeledContent(String(localized: "Sites"), value: "\(siteCount)")
-                LabeledContent(String(localized: "Source Characters"), value: "\(sourceCharacterCount)")
+                LabeledContent(String(localized: "Total Characters"), value: "\(sourceCharacterCount)")
             }
             Section(String(localized: "Selection")) {
                 LabeledContent(String(localized: "Selected Sequences"), value: selectionValue(selectedSequenceCount))
                 LabeledContent(String(localized: "Selected Sites"), value: selectionValue(selectedSiteCount))
-                LabeledContent(String(localized: "Selected Columns"), value: selectedColumnsValue)
+                LabeledContent(String(localized: "Selected Positions"), value: selectedColumnsValue)
             }
             Section(String(localized: "View")) {
                 LabeledContent(String(localized: "Reference Sequence"), value: referenceName ?? String(localized: "None"))
                 LabeledContent(String(localized: "Display Order"), value: displayOrder)
-                LabeledContent(String(localized: "Background"), value: background)
+                LabeledContent(String(localized: "Background Color"), value: background)
             }
         }
         .navigationTitle(String(localized: "Information"))

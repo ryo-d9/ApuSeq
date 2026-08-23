@@ -171,11 +171,11 @@ enum AminoAcidGuidedNucleotideAlignmentError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat:
-            return String(localized: "Amino-acid-guided nucleotide alignment requires FASTA input.")
+            return String(localized: "Codon alignment requires FASTA input.")
         case .unsupportedSequenceKind:
-            return String(localized: "Amino-acid-guided nucleotide alignment is available only for nucleotide sequences.")
+            return String(localized: "Codon alignment is available only for nucleotide sequences.")
         case .insufficientSequences:
-            return String(localized: "At least two coding sequences are required for amino-acid-guided nucleotide alignment.")
+            return String(localized: "At least two coding sequences are required for codon alignment.")
         case .emptyTranslation(let sequenceName):
             return String(localized: "Sequence \"\(sequenceName)\" does not contain a translated coding region in the selected frame.")
         case .alignedSequenceCountMismatch:

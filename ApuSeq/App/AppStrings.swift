@@ -31,13 +31,13 @@ enum AppStrings {
     static let enterEditMode = String(localized: "Enter Edit Mode")
     static let exitEditMode = String(localized: "Exit Edit Mode")
     static let editModeAutosaveWarningTitle = String(localized: "Changes in Edit mode are autosaved with versions.")
-    static let editModeAutosaveWarningMessage = String(localized: "Editing can modify the file. Use File > Revert To to restore an earlier version when available.")
+    static let editModeAutosaveWarningMessage = String(localized: "Editing can modify the file. Use File > Revert To to restore an earlier version.")
     static let alignWithMAFFT = String(localized: "Align with MAFFT")
     static let alignEntireAlignment = String(localized: "Entire Alignment")
     static let alignWithMAFFTAuto = String(localized: "Align with MAFFT Auto")
     static let alignSelectedColumns = String(localized: "Selected Columns")
     static let alignSelectedColumnsWithMAFFTAuto = String(localized: "Align Selected Columns with MAFFT Auto")
-    static let aminoAcidGuidedNucleotideAlignment = String(localized: "Amino-Acid-Guided Nucleotide Alignment")
+    static let aminoAcidGuidedNucleotideAlignment = String(localized: "Codon Alignment")
     static let aligningWithMAFFT = String(localized: "Aligning with MAFFT...")
     static let mafftAlignmentFailed = String(localized: "MAFFT Alignment Failed")
     static let operationFailed = String(localized: "Operation Failed")
@@ -80,7 +80,7 @@ enum AppStrings {
         case .minority:
             return String(localized: "Minority")
         case .reference:
-            return String(localized: "Reference")
+            return String(localized: "Ref Mismatch")
         case .identity:
             return String(localized: "Identity")
         }

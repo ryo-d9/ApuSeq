@@ -64,7 +64,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"%@\" という名前のシーケンスはすでに存在します。"
+            "value" : "\"%@\" という名前の配列はすでに存在します。"
           }
         }
       }
@@ -74,7 +74,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスを追加"
+            "value" : "配列を追加"
           }
         }
       }
@@ -94,7 +94,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスを追加"
+            "value" : "配列を追加"
           }
         }
       }
@@ -104,7 +104,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスを追加..."
+            "value" : "配列を追加..."
           }
         }
       }
@@ -169,32 +169,32 @@
         }
       }
     },
-    "Amino-Acid-Guided Nucleotide Alignment" : {
+    "Codon Alignment" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アミノ酸ガイド付き塩基配列アラインメント"
+            "value" : "コドンアラインメント"
           }
         }
       }
     },
-    "Amino-acid-guided nucleotide alignment is available only for nucleotide sequences." : {
+    "Codon alignment is available only for nucleotide sequences." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アミノ酸ガイド付き塩基配列アラインメントは塩基配列でのみ使用できます。"
+            "value" : "コドンアラインメントは塩基配列でのみ使用できます。"
           }
         }
       }
     },
-    "Amino-acid-guided nucleotide alignment requires FASTA input." : {
+    "Codon alignment requires FASTA input." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アミノ酸ガイド付き塩基配列アラインメントにはFASTA入力が必要です。"
+            "value" : "コドンアラインメントにはFASTA入力が必要です。"
           }
         }
       }
@@ -221,12 +221,12 @@
         }
       }
     },
-    "At least two coding sequences are required for amino-acid-guided nucleotide alignment." : {
+    "At least two coding sequences are required for codon alignment." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アミノ酸ガイド付き塩基配列アラインメントには2つ以上のコード配列が必要です。"
+            "value" : "コドンアラインメントには2つ以上のコード配列が必要です。"
           }
         }
       }
@@ -236,7 +236,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択した列には、少なくとも2つのシーケンスで残基が含まれている必要があります。"
+            "value" : "選択した列には、少なくとも2つの配列で残基が含まれている必要があります。"
           }
         }
       }
@@ -246,17 +246,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MAFFTアラインメントには少なくとも2つのシーケンスが必要です。"
-          }
-        }
-      }
-    },
-    "Background" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "背景"
+            "value" : "MAFFTアラインメントには少なくとも2つの配列が必要です。"
           }
         }
       }
@@ -336,7 +326,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "表示モードでシーケンスの表示順を変更"
+            "value" : "表示モードで配列の表示順を変更"
           }
         }
       }
@@ -347,16 +337,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "編集モードでの変更はバージョン付きで自動保存されます。"
-          }
-        }
-      }
-    },
-    "Choose whether ApuSeq follows the system appearance or uses a fixed light or dark appearance." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ApuSeqをシステムの外観に従わせるか、ライトまたはダークの外観に固定するかを選択します。"
           }
         }
       }
@@ -377,26 +357,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CLUSTAL"
-          }
-        }
-      }
-    },
-    "Codon Table" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コドン表"
-          }
-        }
-      }
-    },
-    "Columns" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "列"
           }
         }
       }
@@ -456,7 +416,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンスをコピー"
+            "value" : "現在の配列をコピー"
           }
         }
       }
@@ -466,7 +426,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンスをFASTAとしてコピー"
+            "value" : "現在の配列をFASTAとしてコピー"
           }
         }
       }
@@ -486,7 +446,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスをコピー"
+            "value" : "配列をコピー"
           }
         }
       }
@@ -506,7 +466,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンス"
+            "value" : "現在の配列"
           }
         }
       }
@@ -526,7 +486,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンスを削除"
+            "value" : "現在の配列を削除"
           }
         }
       }
@@ -536,7 +496,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスを削除"
+            "value" : "配列を削除"
           }
         }
       }
@@ -606,7 +566,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集モードの警告"
+            "value" : "編集モード切り替え時の警告"
           }
         }
       }
@@ -621,12 +581,12 @@
         }
       }
     },
-    "Editing can modify the file. Use File > Revert To to restore an earlier version when available." : {
+    "Editing can modify the file. Use File > Revert To to restore an earlier version." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集するとファイルが変更されます。以前のバージョンに戻せる場合は、ファイル > バージョンを戻すを使用してください。"
+            "value" : "編集するとファイルが変更されます。以前のバージョンはファイル > バージョンを戻すから復元できます。"
           }
         }
       }
@@ -636,7 +596,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新しいシーケンスの名前を入力してください。追加後、編集モードでシーケンスを直接入力またはペーストできます。"
+            "value" : "新しい配列の名前を入力してください。追加後、編集モードで配列を直接入力またはペーストできます。"
           }
         }
       }
@@ -646,7 +606,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このシーケンスの新しい名前を入力してください。"
+            "value" : "この配列の新しい名前を入力してください。"
           }
         }
       }
@@ -656,7 +616,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集モードに入る"
+            "value" : "編集モードにする"
           }
         }
       }
@@ -666,7 +626,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名の一部を入力してください。"
+            "value" : "配列名の一部を入力してください。"
           }
         }
       }
@@ -686,7 +646,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集モードを終了"
+            "value" : "編集モードを解除"
           }
         }
       }
@@ -701,12 +661,22 @@
         }
       }
     },
+    "File Format" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイル形式"
+          }
+        }
+      }
+    },
     "Find Sequence Name" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名を検索"
+            "value" : "配列名を検索"
           }
         }
       }
@@ -716,7 +686,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名を検索..."
+            "value" : "配列名を検索..."
           }
         }
       }
@@ -731,42 +701,32 @@
         }
       }
     },
-    "Format" : {
+    "Frame 1" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "形式"
+            "value" : "フレーム1"
           }
         }
       }
     },
-    "Frame +0" : {
+    "Frame 2" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "フレーム +0"
+            "value" : "フレーム2"
           }
         }
       }
     },
-    "Frame +1" : {
+    "Frame 3" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "フレーム +1"
-          }
-        }
-      }
-    },
-    "Frame +2" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "フレーム +2"
+            "value" : "フレーム3"
           }
         }
       }
@@ -777,6 +737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一般"
+          }
+        }
+      }
+    },
+    "Genetic Code" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遺伝暗号表"
           }
         }
       }
@@ -826,7 +796,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一致率しきい値"
+            "value" : "一致率のしきい値"
           }
         }
       }
@@ -846,7 +816,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "入力データはFASTA、CLUSTAL、MUSCLE、またはプレーンテキストのシーケンス形式ではありません。"
+            "value" : "入力データはFASTA、CLUSTAL、MUSCLE、またはプレーンテキストの配列形式ではありません。"
           }
         }
       }
@@ -916,7 +886,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MAFFTが選択されたすべてのシーケンスを返しませんでした。"
+            "value" : "MAFFTが選択されたすべての配列を返しませんでした。"
           }
         }
       }
@@ -952,7 +922,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "少数派"
+            "value" : "少数残基"
           }
         }
       }
@@ -1074,7 +1044,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "元の順序"
+            "value" : "元の順"
           }
         }
       }
@@ -1119,6 +1089,16 @@
         }
       }
     },
+    "Positions" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "位置"
+          }
+        }
+      }
+    },
     "Print Font Size" : {
       "comment" : "Label for the \"Print Font Size\" field in the alignment print settings.",
       "isCommentAutoGenerated" : true,
@@ -1153,6 +1133,26 @@
         }
       }
     },
+    "Ref Mismatch" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参照不一致"
+          }
+        }
+      }
+    },
+    "Ref:" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参照:"
+          }
+        }
+      }
+    },
     "Ref: %@" : {
       "comment" : "Label for the reference sequence in an alignment print view.",
       "isCommentAutoGenerated" : true,
@@ -1180,7 +1180,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "参照シーケンス"
+            "value" : "参照配列"
           }
         }
       }
@@ -1200,7 +1200,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンス名を変更..."
+            "value" : "現在の配列名を変更..."
           }
         }
       }
@@ -1210,7 +1210,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名を変更"
+            "value" : "配列名を変更"
           }
         }
       }
@@ -1220,7 +1220,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名を変更..."
+            "value" : "配列名を変更..."
           }
         }
       }
@@ -1270,7 +1270,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "下方向に列選択"
+            "value" : "下の列を選択"
           }
         }
       }
@@ -1280,7 +1280,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "上方向に列選択"
+            "value" : "上の列を選択"
           }
         }
       }
@@ -1325,12 +1325,22 @@
         }
       }
     },
+    "Selected Positions" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択位置"
+          }
+        }
+      }
+    },
     "Selected Sequences" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択したシーケンス"
+            "value" : "選択した配列"
           }
         }
       }
@@ -1360,7 +1370,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス"
+            "value" : "配列"
           }
         }
       }
@@ -1370,7 +1380,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択したフレームでは、シーケンス \"%@\" に翻訳できるコード領域が含まれていません。"
+            "value" : "選択したフレームでは、配列 \"%@\" に翻訳できるコード領域が含まれていません。"
           }
         }
       }
@@ -1380,7 +1390,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選択したフレームでは、シーケンス \"%@\" に完全なコドンが含まれていません。"
+            "value" : "選択したフレームでは、配列 \"%@\" に完全なコドンが含まれていません。"
           }
         }
       }
@@ -1390,17 +1400,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス%d: %@"
-          }
-        }
-      }
-    },
-    "Sequence Kind" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "シーケンス種別"
+            "value" : "配列%d: %@"
           }
         }
       }
@@ -1410,7 +1410,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名は空にできません。"
+            "value" : "配列名は空にできません。"
           }
         }
       }
@@ -1420,7 +1420,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名が見つかりません。"
+            "value" : "配列名が見つかりません。"
           }
         }
       }
@@ -1430,7 +1430,17 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス名"
+            "value" : "配列名"
+          }
+        }
+      }
+    },
+    "Sequence Type" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配列の種類"
           }
         }
       }
@@ -1440,7 +1450,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンス"
+            "value" : "配列"
           }
         }
       }
@@ -1460,7 +1470,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在のシーケンスを参照に設定"
+            "value" : "現在の配列を参照に設定"
           }
         }
       }
@@ -1470,7 +1480,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集内容が書類バージョンとして自動保存される可能性があるため、編集モードに入る前に警告を表示します。"
+            "value" : "編集内容が書類バージョンとして自動保存される可能性があるため、編集モードにする前に警告を表示します。"
           }
         }
       }
@@ -1530,17 +1540,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "シーケンスを並べ替え"
-          }
-        }
-      }
-    },
-    "Source Characters" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "元の文字数"
+            "value" : "配列を並べ替え"
           }
         }
       }
@@ -1580,7 +1580,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アミノ酸アラインメントの結果が入力シーケンスと一致しませんでした。"
+            "value" : "アミノ酸アラインメントの結果が入力配列と一致しませんでした。"
           }
         }
       }
@@ -1619,6 +1619,16 @@
         }
       }
     },
+    "Total Characters" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全文字数"
+          }
+        }
+      }
+    },
     "Translation" : {
       "localizations" : {
         "ja" : {
@@ -1644,7 +1654,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "末尾のギャップをトリム"
+            "value" : "末尾のギャップを削除"
           }
         }
       }

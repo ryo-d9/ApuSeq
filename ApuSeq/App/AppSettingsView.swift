@@ -113,7 +113,7 @@ struct AppSettingsView: View {
             }
 
             Section(String(localized: "Translation")) {
-                Picker(String(localized: "Codon Table"), selection: $translationCodonTable) {
+                Picker(String(localized: "Genetic Code"), selection: $translationCodonTable) {
                     ForEach(TranslationCodonTable.allCases) { table in
                         Text(table.displayName).tag(table.rawValue)
                     }
@@ -133,10 +133,6 @@ struct AppSettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
-
-                Text(String(localized: "Choose whether ApuSeq follows the system appearance or uses a fixed light or dark appearance."))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

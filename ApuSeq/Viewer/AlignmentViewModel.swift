@@ -185,8 +185,11 @@ final class AlignmentViewModel {
         let referenceText = showsReferencePanel ? (row(named: referenceName)?.sequence ?? "") : nil
         let consensus = showsConsensusPanel ? cachedConsensusSequence(rows: rows) : nil
         let conservation = showsConservationPanel ? renderedAlignment.identityByColumn : nil
+        let referenceLabel = showsReferencePanel
+            ? String(format: String(localized: "Ref: %@"), referenceName ?? "")
+            : nil
         let built = AuxiliaryPanelBuilder.build(
-            referenceLabel: showsReferencePanel ? "Ref: \(referenceName ?? "")" : nil,
+            referenceLabel: referenceLabel,
             referenceSequence: referenceText,
             consensusSequence: consensus,
             conservation: conservation
@@ -328,13 +331,13 @@ private enum AuxiliaryPanelBuilder {
         }
 
         if referenceSequence != nil {
-            appendLine(label: referenceLabel ?? "Ref:", sequence: referenceSequence ?? "", appliesColor: true)
+            appendLine(label: referenceLabel ?? String(localized: "Ref:"), sequence: referenceSequence ?? "", appliesColor: true)
         }
         if let consensusSequence {
-            appendLine(label: "Consensus", sequence: consensusSequence, appliesColor: true)
+            appendLine(label: String(localized: "Consensus"), sequence: consensusSequence, appliesColor: true)
         }
         if let conservation {
-            appendLine(label: "Identity", sequence: IdentityBars.barString(from: conservation))
+            appendLine(label: String(localized: "Identity"), sequence: IdentityBars.barString(from: conservation))
         }
 
         return AuxiliaryPanelContent(
