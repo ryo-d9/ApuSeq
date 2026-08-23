@@ -55,6 +55,11 @@ struct ViewerModeActions {
     let toggle: () -> Void
 }
 
+struct InspectorToggleActions {
+    let title: String
+    let toggle: () -> Void
+}
+
 struct AlignmentDisplayActions {
     let showsReferencePanel: Bool
     let toggleReferencePanel: () -> Void
@@ -106,6 +111,10 @@ private struct ViewerModeActionsKey: FocusedValueKey {
     typealias Value = ViewerModeActions
 }
 
+private struct InspectorToggleActionsKey: FocusedValueKey {
+    typealias Value = InspectorToggleActions
+}
+
 private struct AlignmentDisplayActionsKey: FocusedValueKey {
     typealias Value = AlignmentDisplayActions
 }
@@ -143,6 +152,11 @@ extension FocusedValues {
     var viewerModeActions: ViewerModeActions? {
         get { self[ViewerModeActionsKey.self] }
         set { self[ViewerModeActionsKey.self] = newValue }
+    }
+
+    var inspectorToggleActions: InspectorToggleActions? {
+        get { self[InspectorToggleActionsKey.self] }
+        set { self[InspectorToggleActionsKey.self] = newValue }
     }
 
     var alignmentDisplayActions: AlignmentDisplayActions? {
@@ -248,6 +262,20 @@ struct ViewerModeCommands: Commands {
                 actions?.toggle()
             }
             .keyboardShortcut("e", modifiers: [.command, .option])
+            .disabled(actions == nil)
+        }
+    }
+}
+
+struct InspectorToggleCommands: Commands {
+    @FocusedValue(\.inspectorToggleActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .toolbar) {
+            Button(actions?.title ?? AppStrings.showInspector) {
+                actions?.toggle()
+            }
+            .keyboardShortcut("i", modifiers: [.command, .control])
             .disabled(actions == nil)
         }
     }

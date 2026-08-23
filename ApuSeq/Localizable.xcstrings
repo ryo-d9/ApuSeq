@@ -771,6 +771,16 @@
         }
       }
     },
+    "Hide Inspector" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インスペクタを隠す"
+          }
+        }
+      }
+    },
     "Hide Reference Panel" : {
       "localizations" : {
         "ja" : {
@@ -962,7 +972,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "名前"
+            "value" : "名前順"
           }
         }
       }
@@ -1527,6 +1537,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一致率パネルを表示"
+          }
+        }
+      }
+    },
+    "Show Inspector" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インスペクタを表示"
           }
         }
       }

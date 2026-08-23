@@ -44,6 +44,8 @@ enum AppStrings {
     static let clipboardDoesNotContainFASTA = String(localized: "The clipboard does not contain valid FASTA sequences.")
     static let openSourceLicenses = String(localized: "Open Source Licenses")
     static let openSourceLicensesMenuItem = String(localized: "Open Source Licenses...")
+    static let showInspector = String(localized: "Show Inspector")
+    static let hideInspector = String(localized: "Hide Inspector")
     static let reverseComplement = String(localized: "Reverse Complement")
     static let website = String(localized: "Website")
     static let cancel = String(localized: "Cancel")

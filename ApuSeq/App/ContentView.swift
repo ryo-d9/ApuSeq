@@ -18,6 +18,31 @@ struct ContentView: View {
     }
 }
 
+private struct CommandFocusedValuesModifier: ViewModifier {
+    let sequenceTransformContext: SequenceTransformContext?
+    let alignmentEditActions: AlignmentEditActions
+    let alignmentCopyActions: AlignmentCopyActions
+    let sequenceNameActions: SequenceNameActions
+    let viewerModeActions: ViewerModeActions
+    let inspectorToggleActions: InspectorToggleActions
+    let alignmentDisplayActions: AlignmentDisplayActions
+    let mafftAlignmentActions: MAFFTAlignmentActions
+    let alignmentPrintActions: AlignmentPrintActions
+
+    func body(content: Content) -> some View {
+        content
+            .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
+            .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
+            .focusedSceneValue(\.alignmentCopyActions, alignmentCopyActions)
+            .focusedSceneValue(\.sequenceNameActions, sequenceNameActions)
+            .focusedSceneValue(\.viewerModeActions, viewerModeActions)
+            .focusedSceneValue(\.inspectorToggleActions, inspectorToggleActions)
+            .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
+            .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
+            .focusedSceneValue(\.alignmentPrintActions, alignmentPrintActions)
+    }
+}
+
 private struct RootView: View {
     private enum ViewerMode: String, CaseIterable, Identifiable {
         case view = "View"
@@ -271,6 +296,13 @@ private struct RootView: View {
         )
     }
 
+    private var inspectorToggleActions: InspectorToggleActions {
+        InspectorToggleActions(
+            title: showsInspector ? AppStrings.hideInspector : AppStrings.showInspector,
+            toggle: { showsInspector.toggle() }
+        )
+    }
+
     private var alignmentDisplayActions: AlignmentDisplayActions {
         AlignmentDisplayActions(
             showsReferencePanel: showsReferencePanel,
@@ -299,6 +331,20 @@ private struct RootView: View {
             alignAminoAcidGuidedNucleotide: startAminoAcidGuidedNucleotideAlignment,
             cancel: cancelMAFFTAlignment,
             isRunning: isRunningMAFFTAlignment
+        )
+    }
+
+    private var commandFocusedValues: CommandFocusedValuesModifier {
+        CommandFocusedValuesModifier(
+            sequenceTransformContext: sequenceTransformContext,
+            alignmentEditActions: alignmentEditActions,
+            alignmentCopyActions: alignmentCopyActions,
+            sequenceNameActions: sequenceNameActions,
+            viewerModeActions: viewerModeActions,
+            inspectorToggleActions: inspectorToggleActions,
+            alignmentDisplayActions: alignmentDisplayActions,
+            mafftAlignmentActions: mafftAlignmentActions,
+            alignmentPrintActions: alignmentPrintActions
         )
     }
 
@@ -478,42 +524,45 @@ private struct RootView: View {
         )
     }
 
+    @ToolbarContentBuilder
+    private var primaryToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Picker(String(localized: "Mode"), selection: viewerModeBinding) {
+                ForEach(ViewerMode.allCases) { mode in
+                    Text(mode.localizedName).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("viewer-mode-picker")
+            .help(String(localized: "Switch between read-only view and edit mode"))
+
+            if canUseNamedSequenceEditing {
+                Button {
+                    addSequence()
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityIdentifier("add-sequence-toolbar-button")
+                .accessibilityLabel(String(localized: "Add a sequence"))
+                .help(String(localized: "Add a sequence"))
+                .disabled(!canAddSequence)
+            }
+
+            Button {
+                showsInspector.toggle()
+            } label: {
+                Image(systemName: "info.circle")
+            }
+            .accessibilityIdentifier("alignment-inspector-button")
+            .accessibilityLabel(String(localized: "Show alignment information"))
+            .help(String(localized: "Show alignment information"))
+        }
+    }
+
     var body: some View {
         contentBody
         .navigationTitle(documentTitle)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Picker(String(localized: "Mode"), selection: viewerModeBinding) {
-                    ForEach(ViewerMode.allCases) { mode in
-                        Text(mode.localizedName).tag(mode)
-                    }
-                }
-                .pickerStyle(.menu)
-                .accessibilityIdentifier("viewer-mode-picker")
-                .help(String(localized: "Switch between read-only view and edit mode"))
-
-                if canUseNamedSequenceEditing {
-                    Button {
-                        addSequence()
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityIdentifier("add-sequence-toolbar-button")
-                    .accessibilityLabel(String(localized: "Add a sequence"))
-                    .help(String(localized: "Add a sequence"))
-                    .disabled(!canAddSequence)
-                }
-
-                Button {
-                    showsInspector.toggle()
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .accessibilityIdentifier("alignment-inspector-button")
-                .accessibilityLabel(String(localized: "Show alignment information"))
-                .help(String(localized: "Show alignment information"))
-            }
-        }
+        .toolbar { primaryToolbar }
         .inspector(isPresented: $showsInspector) {
             FileInformationView(
                 format: AppStrings.alignmentFormatName(model.alignment.format),
@@ -567,14 +616,7 @@ private struct RootView: View {
         .onChange(of: alignmentFontSize) { _, _ in rerender() }
         .onChange(of: displayOrderMode) { _, _ in rerender() }
         .onChange(of: viewerMode) { _, _ in rerender() }
-        .focusedSceneValue(\.sequenceTransformContext, sequenceTransformContext)
-        .focusedSceneValue(\.alignmentEditActions, alignmentEditActions)
-        .focusedSceneValue(\.alignmentCopyActions, alignmentCopyActions)
-        .focusedSceneValue(\.sequenceNameActions, sequenceNameActions)
-        .focusedSceneValue(\.viewerModeActions, viewerModeActions)
-        .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
-        .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
-        .focusedSceneValue(\.alignmentPrintActions, alignmentPrintActions)
+        .modifier(commandFocusedValues)
     }
 
     @ViewBuilder

@@ -21,7 +21,7 @@ struct ApuSeqApp: App {
             ColumnSelectionCommands()
             SequenceNameCommands()
             AlignmentEditCommands()
-            InspectorCommands()
+            InspectorToggleCommands()
             OpenSourceLicenseCommands()
             AlignmentPrintCommands()
         }
