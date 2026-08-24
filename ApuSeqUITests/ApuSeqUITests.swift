@@ -117,7 +117,10 @@ final class ApuSeqUITests: XCTestCase {
 
         app.typeKey(",", modifierFlags: [.command])
 
-        XCTAssertTrue(app.staticTexts["General"].waitForExistence(timeout: 5))
+        let generalTab = app.buttons["General"]
+        XCTAssertTrue(generalTab.waitForExistence(timeout: 5))
+        generalTab.click()
+
         XCTAssertTrue(app.staticTexts["Font Size"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Identity Threshold"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Translation"].waitForExistence(timeout: 2))
