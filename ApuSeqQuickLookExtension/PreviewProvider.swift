@@ -180,7 +180,14 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         var preview = truncatedLines.joined(separator: "\n")
 
         if lines.count > lineLimit || wasByteLimited {
-            preview += "\n\n... (preview truncated: showing first \(lineLimit) lines)"
+            let message = String(
+                format: NSLocalizedString(
+                    "Preview truncated: showing first %d lines",
+                    comment: "Quick Look message shown when the preview omits additional lines."
+                ),
+                lineLimit
+            )
+            preview += "\n\n... (\(message))"
         }
 
         return preview
@@ -190,6 +197,10 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
         guard line.count > limit else { return line }
 
         let endIndex = line.index(line.startIndex, offsetBy: limit)
-        return String(line[..<endIndex]) + " ... (line truncated)"
+        let message = NSLocalizedString(
+            "Line truncated",
+            comment: "Quick Look message shown when a long line is shortened."
+        )
+        return String(line[..<endIndex]) + " ... (\(message))"
     }
 }

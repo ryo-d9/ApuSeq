@@ -275,7 +275,7 @@ struct InspectorToggleCommands: Commands {
             Button(actions?.title ?? AppStrings.showInspector) {
                 actions?.toggle()
             }
-            .keyboardShortcut("i", modifiers: [.command, .control])
+            .keyboardShortcut("i", modifiers: [.command, .shift])
             .disabled(actions == nil)
         }
     }

@@ -143,7 +143,7 @@ struct AppSettingsView: View {
             Section(String(localized: "Edit Mode")) {
                 Toggle(String(localized: "Edit Mode Warning"), isOn: $showEditModeAutosaveWarning)
 
-                Text(String(localized: "Show a warning before entering Edit mode because edits can be autosaved with document versions."))
+                Text(String(localized: "Show a warning before entering Edit mode because edits are autosaved."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

@@ -772,7 +772,7 @@ private struct RootView: View {
         let existingNames = Set(model.alignment.rows.map(\.name))
         guard let name = promptForSequenceName(
             title: AppStrings.addSequenceTitle,
-            informativeText: String(localized: "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added."),
+            informativeText: String(localized: "Enter a name for the new sequence."),
             defaultName: nextSequenceName(),
             existingNames: existingNames
         ) else { return }

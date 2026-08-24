@@ -124,7 +124,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配列を追加..."
+            "value" : "配列を追加…"
           }
         }
       }
@@ -164,7 +164,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MAFFTでアライン中..."
+            "value" : "MAFFTでアライン中…"
           }
         }
       }
@@ -611,12 +611,12 @@
         }
       }
     },
-    "Enter a name for the new sequence. You can type or paste the sequence directly in Edit mode after it is added." : {
+    "Enter a name for the new sequence." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新しい配列の名前を入力してください。追加後、編集モードで配列を直接入力またはペーストできます。"
+            "value" : "新しい配列の名前を入力してください。"
           }
         }
       }
@@ -706,7 +706,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配列名を検索..."
+            "value" : "配列名を検索…"
           }
         }
       }
@@ -766,7 +766,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "遺伝暗号表"
+            "value" : "遺伝暗号"
           }
         }
       }
@@ -1220,7 +1220,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現在の配列名を変更..."
+            "value" : "現在の配列名を変更…"
           }
         }
       }
@@ -1240,7 +1240,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配列名を変更..."
+            "value" : "配列名を変更…"
           }
         }
       }
@@ -1511,12 +1511,12 @@
         }
       }
     },
-    "Show a warning before entering Edit mode because edits can be autosaved with document versions." : {
+    "Show a warning before entering Edit mode because edits are autosaved." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集内容が書類バージョンとして自動保存される可能性があるため、編集モードにする前に警告を表示します。"
+            "value" : "編集モードにする前に、編集内容が自動保存されることを警告します。"
           }
         }
       }
@@ -1660,7 +1660,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "印刷できるアライメントがありません。"
+            "value" : "印刷できるアラインメントがありません。"
           }
         }
       }
