@@ -282,7 +282,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "名前順"
+            "value" : "配列名順"
           }
         }
       }
@@ -543,6 +543,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "表示順"
+          }
+        }
+      }
+    },
+    "Display Order Name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配列名"
+          }
+        }
+      }
+    },
+    "Display Order UPGMA" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UPGMA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UPGMA"
           }
         }
       }
@@ -999,16 +1031,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "多重配列アラインメントプログラム"
-          }
-        }
-      }
-    },
-    "Name" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名前順"
           }
         }
       }
@@ -1717,16 +1739,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "末尾のギャップを削除"
-          }
-        }
-      }
-    },
-    "UPGMA" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "UPGMA"
           }
         }
       }

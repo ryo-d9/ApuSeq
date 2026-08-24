@@ -94,9 +94,9 @@ enum AppStrings {
         case .original:
             return String(localized: "Original")
         case .name:
-            return String(localized: "Name")
+            return String(localized: "Display Order Name")
         case .upgma:
-            return String(localized: "UPGMA")
+            return String(localized: "Display Order UPGMA")
         }
     }
 
