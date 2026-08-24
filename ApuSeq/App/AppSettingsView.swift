@@ -127,7 +127,7 @@ struct AppSettingsView: View {
     private var appearanceSettings: some View {
         Form {
             Section(String(localized: "Appearance")) {
-                Picker(String(localized: "Appearance"), selection: $appearanceMode) {
+                Picker(String(localized: "Appearance Mode"), selection: $appearanceMode) {
                     ForEach(AppAppearanceMode.allCases) { mode in
                         Text(mode.localizedName).tag(mode.rawValue)
                     }
