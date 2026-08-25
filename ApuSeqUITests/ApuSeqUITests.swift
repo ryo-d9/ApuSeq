@@ -169,7 +169,7 @@ final class ApuSeqUITests: XCTestCase {
         app.typeKey("e", modifierFlags: [.command, .option])
 
         let dialog = app.dialogs.firstMatch
-        XCTAssertTrue(dialog.staticTexts["Changes in Edit mode are autosaved with versions."].waitForExistence(timeout: 5))
+        XCTAssertTrue(dialog.staticTexts["Changes in Edit mode are autosaved."].waitForExistence(timeout: 5))
         XCTAssertTrue(dialog.buttons["Cancel"].waitForExistence(timeout: 2))
         dialog.buttons["Cancel"].click()
     }

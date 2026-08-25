@@ -11,7 +11,7 @@ ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequ
 
 - **Common features**
   - Reference, Consensus, and Identity panels
-  - Background coloring modes: None, Residue, Minority, Reference, and Identity
+  - Background coloring modes: None, Residue, Minority, Ref Mismatch, and Identity
   - Copy Sequence and Copy as FASTA from the context menu
   - Nucleotide translation with selectable codon tables
   - Reverse complement generation for nucleotide alignments
@@ -35,7 +35,7 @@ Background coloring can be changed from the footer or View > Background Color.
 
 ## Editing Behavior
 
-Changes in edit mode can be autosaved and are managed by the system versions workflow.
+Changes in edit mode are autosaved. Use File > Revert To to restore an earlier version.
 
 - Typing and deletion edit the selected sequence rows. Shorter rows are temporarily padded with trailing `-` characters to preserve alignment length.
 - Insert gap columns with Edit > Insert Gap Column, and remove all-gap columns with Alignment > Remove All-Gap Columns.
@@ -43,7 +43,7 @@ Changes in edit mode can be autosaved and are managed by the system versions wor
 - Sort sequences by name or UPGMA (3–300 sequences).
 - Reverse Complement, Translation, and Align with MAFFT create new FASTA documents.
 - Selected columns can be realigned independently using MAFFT.
-- Coding nucleotide FASTA sequences can be translated, aligned as amino acids with MAFFT, and mapped back to nucleotide codons with Alignment > Align with MAFFT > Amino-Acid-Guided Nucleotide Alignment.
+- Coding nucleotide FASTA sequences can be translated, aligned as amino acids with MAFFT, and mapped back to nucleotide codons with Alignment > Align with MAFFT > Codon Alignment.
 
 ## Quick Look
 
@@ -70,7 +70,7 @@ The Quick Look extension provides a compact HTML preview for supported alignment
 
 1. Open `ApuSeq.xcodeproj` in Xcode.
 2. Select the `ApuSeq` scheme.
-3. Build and run with Command-R.
+3. Build and run with `⌘R`.
 
 For Quick Look development, use the `ApuSeqQuickLookExtension` target and install the built app so macOS can discover the extension.
 
@@ -84,4 +84,4 @@ The following materials are not covered by the MIT License unless explicitly sta
 
 Documentation screenshots may use alignments derived from public NCBI sequence records. See `SampleData/README.md` for accession numbers and source information.
 
-MAFFT 7.526 (2024/Apr/26) is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or Help > Open Source Licenses in the app.
+MAFFT 7.526 (2024/Apr/26) is bundled under its BSD-style license. See `Vendor/MAFFT/LICENSE-MAFFT.txt` or the About ApuSeq window in the app.

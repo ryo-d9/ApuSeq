@@ -27,7 +27,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "%1$@: %2$@"
           }
         },
@@ -337,12 +337,12 @@
         }
       }
     },
-    "Changes in Edit mode are autosaved with versions." : {
+    "Changes in Edit mode are autosaved." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集モードでの変更はバージョン付きで自動保存されます。"
+            "value" : "編集モードでの変更は自動保存されます。"
           }
         }
       }
@@ -403,7 +403,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Columns %1$d-%2$d"
           }
         },
@@ -649,12 +649,12 @@
         }
       }
     },
-    "Editing can modify the file. Use File > Revert To to restore an earlier version." : {
+    "Edits are saved to the file. Use File > Revert To to restore an earlier version." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編集するとファイルが変更されます。以前のバージョンはファイル > バージョンを戻すから復元できます。"
+            "value" : "編集内容はファイルに反映されます。以前の状態に戻すには、ファイル > バージョンを戻すを使用してください。"
           }
         }
       }
@@ -973,7 +973,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "MAFFT failed with exit status %1$d: %2$@"
           }
         },
@@ -1113,7 +1113,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Page %1$d of %2$d"
           }
         },

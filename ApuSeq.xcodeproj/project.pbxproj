@@ -508,7 +508,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;
@@ -529,7 +529,7 @@
 				INFOPLIST_FILE = ApuSeq/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				"INFOPLIST_KEY_NSHumanReadableCopyright[sdk=*]" = "Copyright © 2026 Ryo Suda";
+				"INFOPLIST_KEY_NSHumanReadableCopyright[sdk=*]" = "Copyright © 2026 Ryo A Suda";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -555,7 +555,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;
@@ -576,7 +576,7 @@
 				INFOPLIST_FILE = ApuSeq/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				"INFOPLIST_KEY_NSHumanReadableCopyright[sdk=*]" = "Copyright © 2026 Ryo Suda";
+				"INFOPLIST_KEY_NSHumanReadableCopyright[sdk=*]" = "Copyright © 2026 Ryo A Suda";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -724,7 +724,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;
@@ -751,7 +751,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = BWQNJKHB97;
 				ENABLE_APP_SANDBOX = YES;

@@ -2,7 +2,7 @@
 //  ApuSeqApp.swift
 //  ApuSeq
 //
-//  Created by Ryo Suda on 2026/04/27.
+//  Created by Ryo A Suda on 2026/04/27.
 //
 
 import SwiftUI

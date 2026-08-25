@@ -10,14 +10,14 @@ Use these small synthetic files to verify ApuSeq's document opening, alignment d
   - Direct download: https://raw.githubusercontent.com/ryo-d9/ApuSeq/main/SampleData/demo.fasta
 - CDS FASTA: `cds-demo.fasta`
   - Direct download: https://raw.githubusercontent.com/ryo-d9/ApuSeq/main/SampleData/cds-demo.fasta
-  - Use with Alignment > Align with MAFFT > Amino-Acid-Guided Nucleotide Alignment > Frame +0
+  - Use with Alignment > Align with MAFFT > Codon Alignment > Frame 1
 - CLUSTAL: `demo.clustal`
   - Direct download: https://raw.githubusercontent.com/ryo-d9/ApuSeq/main/SampleData/demo.clustal
 
 ## Synthetic examples
 
 - `demo.fasta` - FASTA nucleotide alignment with gaps, mixed names, and a short trailing-gap case
-- `cds-demo.fasta` - FASTA coding-sequence example for amino-acid-guided nucleotide alignment
+- `cds-demo.fasta` - FASTA coding-sequence example for codon alignment
 - `demo.clustal` - CLUSTAL alignment using the same general sequence set
 
 The sequences in these files are synthetic and are not derived from biological samples.
