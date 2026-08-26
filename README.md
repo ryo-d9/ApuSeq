@@ -13,10 +13,10 @@ ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequ
   - Reference, Consensus, and Identity panels
   - Background coloring modes: None, Residue, Minority, Ref Mismatch, and Identity
   - Copy Sequence and Copy as FASTA from the context menu
-  - Nucleotide translation with selectable codon tables
+  - Nucleotide translation with selectable genetic codes
   - Reverse complement generation for nucleotide alignments
   - Bundled MAFFT 7.526 alignment (`--auto`)
-  - Amino-acid-guided nucleotide alignment for coding FASTA sequences
+  - Codon alignment for coding FASTA sequences
   - Quick Look preview extension with lightweight residue coloring
 - **View mode**
   - Display ordering: Original, Name, and UPGMA
