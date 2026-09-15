@@ -103,27 +103,115 @@ struct FileInformationView: View {
     let displayOrder: String
     let background: String
 
+    @State private var isDocumentExpanded = true
+    @State private var isSelectionExpanded = true
+    @State private var isViewExpanded = true
+
     var body: some View {
-        List {
-            Section(String(localized: "Document")) {
-                LabeledContent(String(localized: "File Format"), value: format)
-                LabeledContent(String(localized: "Sequence Type"), value: sequenceKind)
-                LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
-                LabeledContent(String(localized: "Sites"), value: "\(siteCount)")
-                LabeledContent(String(localized: "Total Characters"), value: "\(sourceCharacterCount)")
+        ScrollView {
+            VStack(spacing: 8) {
+                DisclosureGroup(
+                    String(localized: "Document"),
+                    isExpanded: $isDocumentExpanded
+                ) {
+                    DocumentInformationSection(
+                        format: format,
+                        sequenceKind: sequenceKind,
+                        sequenceCount: sequenceCount,
+                        siteCount: siteCount,
+                        sourceCharacterCount: sourceCharacterCount
+                    )
+                }
+
+                DisclosureGroup(
+                    String(localized: "Selection"),
+                    isExpanded: $isSelectionExpanded
+                ) {
+                    SelectionInformationSection(
+                        selectedSequenceCount: selectedSequenceCount,
+                        selectedSiteCount: selectedSiteCount,
+                        selectedStartPosition: selectedStartPosition,
+                        selectedEndPosition: selectedEndPosition
+                    )
+                }
+
+                DisclosureGroup(
+                    String(localized: "View"),
+                    isExpanded: $isViewExpanded
+                ) {
+                    ViewInformationSection(
+                        referenceName: referenceName,
+                        displayOrder: displayOrder,
+                        background: background
+                    )
+                }
             }
-            Section(String(localized: "Selection")) {
-                LabeledContent(String(localized: "Selected Sequences"), value: selectionValue(selectedSequenceCount))
-                LabeledContent(String(localized: "Selected Sites"), value: selectionValue(selectedSiteCount))
-                LabeledContent(String(localized: "Selected Positions"), value: selectedColumnsValue)
-            }
-            Section(String(localized: "View")) {
-                LabeledContent(String(localized: "Reference Sequence"), value: referenceName ?? String(localized: "None"))
-                LabeledContent(String(localized: "Display Order"), value: displayOrder)
-                LabeledContent(String(localized: "Background Color"), value: background)
-            }
+            .disclosureGroupStyle(InspectorDisclosureGroupStyle())
+            .padding(12)
         }
+        .background(.regularMaterial, ignoresSafeAreaEdges: .all)
+        .controlSize(.small)
+        .inspectorColumnWidth(min: 220, ideal: 260, max: 360)
         .navigationTitle(String(localized: "Information"))
+    }
+}
+
+private struct InspectorDisclosureGroupStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        DisclosureGroup(isExpanded: configuration.$isExpanded) {
+            configuration.content
+                .padding(.top, -6)
+                .padding(.horizontal, -12)
+        } label: {
+            configuration.label
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .fixedSize()
+        }
+    }
+}
+
+private struct DocumentInformationSection: View {
+    let format: String
+    let sequenceKind: String
+    let sequenceCount: Int
+    let siteCount: Int
+    let sourceCharacterCount: Int
+
+    var body: some View {
+        Form {
+            LabeledContent(String(localized: "File Format"), value: format)
+            LabeledContent(String(localized: "Sequence Type"), value: sequenceKind)
+            LabeledContent(String(localized: "Sequences"), value: "\(sequenceCount)")
+            LabeledContent(String(localized: "Sites"), value: "\(siteCount)")
+            LabeledContent(String(localized: "Total Characters"), value: "\(sourceCharacterCount)")
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct SelectionInformationSection: View {
+    let selectedSequenceCount: Int
+    let selectedSiteCount: Int
+    let selectedStartPosition: Int?
+    let selectedEndPosition: Int?
+
+    var body: some View {
+        Form {
+            LabeledContent(
+                String(localized: "Selected Sequences"),
+                value: selectionValue(selectedSequenceCount)
+            )
+            LabeledContent(
+                String(localized: "Selected Sites"),
+                value: selectionValue(selectedSiteCount)
+            )
+            LabeledContent(
+                String(localized: "Selected Positions"),
+                value: selectedColumnsValue
+            )
+        }
+        .formStyle(.grouped)
     }
 
     private var selectedColumnsValue: String {
@@ -136,4 +224,40 @@ struct FileInformationView: View {
     private func selectionValue(_ count: Int) -> String {
         count > 0 ? "\(count)" : String(localized: "None")
     }
+}
+
+private struct ViewInformationSection: View {
+    let referenceName: String?
+    let displayOrder: String
+    let background: String
+
+    var body: some View {
+        Form {
+            LabeledContent(
+                String(localized: "Reference Sequence"),
+                value: referenceName ?? String(localized: "None")
+            )
+            LabeledContent(String(localized: "Display Order"), value: displayOrder)
+            LabeledContent(String(localized: "Background Color"), value: background)
+        }
+        .formStyle(.grouped)
+    }
+}
+
+#Preview("File Information") {
+    FileInformationView(
+        format: "FASTA",
+        sequenceKind: String(localized: "Nucleotide"),
+        sequenceCount: 24,
+        siteCount: 1_248,
+        sourceCharacterCount: 31_152,
+        selectedSequenceCount: 2,
+        selectedSiteCount: 42,
+        selectedStartPosition: 101,
+        selectedEndPosition: 142,
+        referenceName: "Reference",
+        displayOrder: String(localized: "Original"),
+        background: String(localized: "Residue")
+    )
+    .frame(width: 260, height: 520)
 }

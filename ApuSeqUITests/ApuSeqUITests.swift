@@ -203,7 +203,7 @@ final class ApuSeqUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sequence Type"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Sequences"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Sites"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Selection"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Selected Sequences"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Reference Sequence"].waitForExistence(timeout: 2))
     }
 

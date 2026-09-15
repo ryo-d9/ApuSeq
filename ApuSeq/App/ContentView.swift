@@ -534,6 +534,7 @@ private struct RootView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .labelsHidden()
             } label: {
                 Text(viewerMode.localizedName)
             }
