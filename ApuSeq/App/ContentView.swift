@@ -557,7 +557,7 @@ private struct RootView: View {
             Button {
                 showsInspector.toggle()
             } label: {
-                Image(systemName: "info.circle")
+                Image(systemName: "sidebar.trailing")
             }
             .accessibilityIdentifier("alignment-inspector-button")
             .accessibilityLabel(String(localized: "Show alignment information"))
