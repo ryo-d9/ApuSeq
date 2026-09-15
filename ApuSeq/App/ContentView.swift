@@ -527,12 +527,17 @@ private struct RootView: View {
     @ToolbarContentBuilder
     private var primaryToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            Picker(String(localized: "Mode"), selection: viewerModeBinding) {
-                ForEach(ViewerMode.allCases) { mode in
-                    Text(mode.localizedName).tag(mode)
+            Menu {
+                Picker(String(localized: "Mode"), selection: viewerModeBinding) {
+                    ForEach(ViewerMode.allCases) { mode in
+                        Text(mode.localizedName).tag(mode)
+                    }
                 }
+                .pickerStyle(.inline)
+            } label: {
+                Text(viewerMode.localizedName)
             }
-            .pickerStyle(.menu)
+            .fixedSize()
             .accessibilityIdentifier("viewer-mode-picker")
             .help(String(localized: "Switch between read-only view and edit mode"))
 
