@@ -26,6 +26,24 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     private var referenceTextForBackground: NSString?
     private var identityColorThreshold = 0.5
 
+    func replaceAlignmentText(_ text: String) {
+        guard let textStorage else { return }
+        let font = font ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textStorage.beginEditing()
+        textStorage.replaceCharacters(
+            in: NSRange(location: 0, length: textStorage.length),
+            with: text
+        )
+        textStorage.setAttributes(
+            [
+                .font: font,
+                .foregroundColor: NSColor.labelColor
+            ],
+            range: NSRange(location: 0, length: textStorage.length)
+        )
+        textStorage.endEditing()
+    }
+
     func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
         guard let textStorage else { return }
         guard !ranges.isEmpty, alignmentLength > 0 else { return }

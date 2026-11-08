@@ -8,19 +8,31 @@ enum AlignmentRowOrdering {
     }
 
     nonisolated static func nameOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
-        rows.sorted {
-            $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        orderedIndicesByName(rows).map { rows[$0] }
+    }
+
+    nonisolated static func orderedIndicesByName(_ rows: [AlignmentRow]) -> [Int] {
+        rows.indices.sorted {
+            rows[$0].name.localizedStandardCompare(rows[$1].name) == .orderedAscending
         }
     }
 
     nonisolated static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
-        AlignmentClusterer.upgmaOrderedRows(rows)
+        upgmaOrderedIndices(rows).map { rows[$0] }
+    }
+
+    nonisolated static func upgmaOrderedIndices(_ rows: [AlignmentRow]) -> [Int] {
+        AlignmentClusterer.upgmaOrderedIndices(rows)
     }
 }
 
 enum AlignmentClusterer {
     nonisolated static func upgmaOrderedRows(_ rows: [AlignmentRow]) -> [AlignmentRow] {
-        guard AlignmentRowOrdering.canOrderWithUPGMA(rowCount: rows.count) else { return rows }
+        upgmaOrderedIndices(rows).map { rows[$0] }
+    }
+
+    nonisolated static func upgmaOrderedIndices(_ rows: [AlignmentRow]) -> [Int] {
+        guard AlignmentRowOrdering.canOrderWithUPGMA(rowCount: rows.count) else { return Array(rows.indices) }
 
         let count = rows.count
         let sequences = rows.map { $0.sequence as NSString }
@@ -75,8 +87,8 @@ enum AlignmentClusterer {
             activeCount -= 1
         }
 
-        guard let root = isActive.firstIndex(of: true) else { return rows }
-        return members[root].map { rows[$0] }
+        guard let root = isActive.firstIndex(of: true) else { return Array(rows.indices) }
+        return members[root]
     }
 
     nonisolated private static func sequenceDistance(_ first: NSString, _ second: NSString) -> Double {

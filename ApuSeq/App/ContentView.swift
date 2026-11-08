@@ -125,7 +125,10 @@ private struct RootView: View {
     }
 
     private var displayRows: [AlignmentRow] {
-        model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
+        guard !model.displayedRowIndices.isEmpty else { return model.alignment.rows }
+        return model.displayedRowIndices.compactMap { index in
+            model.alignment.rows[safe: index]
+        }
     }
 
     private var currentSequenceRow: AlignmentRow? {
@@ -482,7 +485,7 @@ private struct RootView: View {
     private var alignmentViewport: AlignmentTextViewport {
         AlignmentTextViewport(
             nameAttributedText: model.renderedAlignment.nameAttributedText,
-            sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
+            sequenceText: model.renderedAlignment.sequenceText,
             namesChecksum: model.renderedAlignment.namesChecksum,
             sequenceChecksum: model.renderedAlignment.sequenceChecksum,
             alignmentLength: displayAlignment.length,

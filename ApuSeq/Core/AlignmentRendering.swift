@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 struct RenderedAlignment: @unchecked Sendable {
-    let sequenceAttributedText: NSAttributedString
+    let sequenceText: String
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
     let identityByColumn: [Double]
@@ -11,7 +11,7 @@ struct RenderedAlignment: @unchecked Sendable {
     let sequenceChecksum: UInt64
 
     nonisolated static let empty = RenderedAlignment(
-        sequenceAttributedText: NSAttributedString(string: ""),
+        sequenceText: "",
         nameAttributedText: NSAttributedString(string: ""),
         nameColumnWidth: 120,
         identityByColumn: [],
@@ -38,52 +38,44 @@ struct RenderedFingerprint: Equatable {
 enum AlignmentRenderer {
     nonisolated static func render(
         _ alignment: AlignmentData,
+        rowIndices: [Int]? = nil,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
 
-        let nameWidth = alignment.rows.map { $0.name.count }.max() ?? 0
+        let resolvedRowIndices = rowIndices ?? Array(alignment.rows.indices)
+        let rows = resolvedRowIndices.map { alignment.rows[$0] }
+        let nameWidth = rows.map { $0.name.count }.max() ?? 0
         let baseFont = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: baseFont,
-            .foregroundColor: NSColor.labelColor
-        ]
         let nameAttributes: [NSAttributedString.Key: Any] = [
             .font: baseFont,
             .foregroundColor: NSColor.secondaryLabelColor
         ]
 
         let namesAttributed = NSMutableAttributedString()
-        let sequenceAttributed = NSMutableAttributedString()
-        let identityByColumn = needsIdentityByColumn ? AlignmentStatistics.columnIdentity(rows: alignment.rows) : []
-        let majorityResidueByColumn = needsMajorityResidueByColumn ? AlignmentStatistics.majorityResidues(rows: alignment.rows) : []
+        var sequenceText = String()
+        sequenceText.reserveCapacity(rows.reduce(0) { $0 + ($1.sequence as NSString).length + 1 })
+        let identityByColumn = needsIdentityByColumn ? AlignmentStatistics.columnIdentity(rows: rows) : []
+        let majorityResidueByColumn = needsMajorityResidueByColumn ? AlignmentStatistics.majorityResidues(rows: rows) : []
         var namesHasher = Hasher()
         var sequenceHasher = Hasher()
 
-        for row in alignment.rows {
+        for row in rows {
             let paddedName = row.name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
             let nameLine = paddedName + "\n"
             let sequenceLine = row.sequence + "\n"
             namesHasher.combine(nameLine)
             sequenceHasher.combine(sequenceLine)
 
-            let sequenceLineStart = sequenceAttributed.length
-
             namesAttributed.append(NSAttributedString(string: nameLine, attributes: nameAttributes))
-            sequenceAttributed.append(NSAttributedString(string: sequenceLine, attributes: baseAttributes))
-
-            sequenceAttributed.addAttribute(
-                .residueSymbol,
-                value: true,
-                range: NSRange(location: sequenceLineStart, length: (row.sequence as NSString).length)
-            )
+            sequenceText += sequenceLine
         }
 
-        let nameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: alignment.rows, font: baseFont)
+        let nameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: rows, font: baseFont)
         return RenderedAlignment(
-            sequenceAttributedText: sequenceAttributed,
+            sequenceText: sequenceText,
             nameAttributedText: namesAttributed,
             nameColumnWidth: nameColumnWidth,
             identityByColumn: identityByColumn,
@@ -290,10 +282,6 @@ extension Array {
         guard indices.contains(index) else { return nil }
         return self[index]
     }
-}
-
-extension NSAttributedString.Key {
-    nonisolated static let residueSymbol = NSAttributedString.Key("ApuSeq.ResidueSymbol")
 }
 
 enum ResiduePalette {

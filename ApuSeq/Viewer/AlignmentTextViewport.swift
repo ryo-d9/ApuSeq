@@ -3,7 +3,7 @@ import SwiftUI
 
 struct AlignmentTextViewport: NSViewRepresentable {
     let nameAttributedText: NSAttributedString
-    let sequenceAttributedText: NSAttributedString
+    let sequenceText: String
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
     let alignmentLength: Int
@@ -158,7 +158,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             namesChecksum: namesChecksum,
             sequenceChecksum: sequenceChecksum,
             nameLength: nameAttributedText.length,
-            sequenceLength: sequenceAttributedText.length
+            sequenceLength: (sequenceText as NSString).length
         )
         if context.coordinator.lastContentVersion != contentVersion ||
             context.coordinator.lastRenderedFingerprint != fingerprint {
@@ -177,7 +177,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             )
             let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
             containerView.nameColumnView.rowNames = displayedRowNames
-            containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
+            containerView.sequenceTextView.replaceAlignmentText(sequenceText)
             containerView.sequenceTextView.alignmentLength = alignmentLength
             context.coordinator.restoreSelection(
                 selectedRanges,

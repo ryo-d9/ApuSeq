@@ -653,9 +653,71 @@ struct ApuSeqTests {
         )
         try await waitUntil { viewModel.contentVersion > 0 }
 
-        #expect(viewModel.displayedRows.map { $0.name } == ["sample 1", "sample 2", "sample 10"])
+        #expect(viewModel.displayedRowIndices.map { viewModel.alignment.rows[$0].name } == ["sample 1", "sample 2", "sample 10"])
         #expect(viewModel.alignment.rows.map { $0.name } == ["sample 10", "sample 2", "sample 1"])
         #expect(viewModel.renderedDisplayOrderMode == .name)
+    }
+
+    @Test func rendersLargeAlignmentAsPlainSequenceText() {
+        let rowCount = 200
+        let siteCount = 2_000
+        let rows = (0..<rowCount).map { index in
+            AlignmentRow(
+                name: "Sequence \(index)",
+                sequence: String(repeating: index.isMultiple(of: 2) ? "A" : "C", count: siteCount)
+            )
+        }
+        let alignment = AlignmentData(
+            format: .fasta,
+            rows: rows,
+            length: siteCount,
+            sequenceKind: .nucleotide
+        )
+
+        let rendered = AlignmentRenderer.render(
+            alignment,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: true,
+            fontSize: 12
+        )
+
+        #expect((rendered.sequenceText as NSString).length == rowCount * (siteCount + 1))
+        #expect(rendered.identityByColumn.count == siteCount)
+        #expect(rendered.majorityResidueByColumn.count == siteCount)
+    }
+
+    @Test @MainActor func statisticsOnlyRerenderDoesNotReplaceTextContent() async throws {
+        let viewModel = AlignmentViewModel()
+        viewModel.alignment = AlignmentData(
+            format: .fasta,
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "AC-T")
+            ],
+            length: 4,
+            sequenceKind: .nucleotide
+        )
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.contentVersion > 0 }
+        let textContentVersion = viewModel.contentVersion
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.count == 4 }
+
+        #expect(viewModel.contentVersion == textContentVersion)
     }
 
     @Test func documentSnapshotReturnsCurrentRawText() throws {

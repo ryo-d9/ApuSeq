@@ -6,7 +6,7 @@ import Observation
 final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
-    var displayedRows: [AlignmentRow] = []
+    var displayedRowIndices: [Int] = []
     var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
@@ -20,7 +20,7 @@ final class AlignmentViewModel {
     private var cachedRenderMajorityMode = false
     private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
     private var cachedAlignment: RenderedAlignment?
-    private var cachedDisplayedRows: [AlignmentRow] = []
+    private var cachedDisplayedRowIndices: [Int] = []
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
@@ -40,7 +40,7 @@ final class AlignmentViewModel {
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alignment = .empty
             renderedAlignment = .empty
-            displayedRows = []
+            displayedRowIndices = []
             renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
@@ -73,7 +73,7 @@ final class AlignmentViewModel {
                 await MainActor.run {
                     alignment = .empty
                     renderedAlignment = .empty
-                    displayedRows = []
+                    displayedRowIndices = []
                     renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
@@ -106,11 +106,11 @@ final class AlignmentViewModel {
             cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedRenderOrderMode = displayOrderMode
             cachedAlignment = nil
-            cachedDisplayedRows = []
+            cachedDisplayedRowIndices = []
         }
 
         if let cachedAlignment {
-            apply(cachedAlignment, displayedRows: cachedDisplayedRows, displayOrderMode: displayOrderMode)
+            apply(cachedAlignment, displayedRowIndices: cachedDisplayedRowIndices, displayOrderMode: displayOrderMode)
             return
         }
 
@@ -121,36 +121,37 @@ final class AlignmentViewModel {
         let currentVersion = alignmentVersion
 
         renderTask = Task(priority: .userInitiated) {
-            let renderResult: (RenderedAlignment, [AlignmentRow]) = await runOnBackground {
-                let orderedRows: [AlignmentRow]
+            let renderResult: (RenderedAlignment, [Int]) = await runOnBackground {
+                let orderedIndices: [Int]
                 switch displayOrderMode {
                 case .original:
-                    orderedRows = baseRows
+                    orderedIndices = Array(baseRows.indices)
                 case .name:
-                    orderedRows = AlignmentRowOrdering.nameOrderedRows(baseRows)
+                    orderedIndices = AlignmentRowOrdering.orderedIndicesByName(baseRows)
                 case .upgma:
-                    orderedRows = AlignmentRowOrdering.upgmaOrderedRows(baseRows)
+                    orderedIndices = AlignmentRowOrdering.upgmaOrderedIndices(baseRows)
                 }
-                let displayAlignment = AlignmentData(
+                let sourceAlignment = AlignmentData(
                     format: format,
-                    rows: orderedRows,
+                    rows: baseRows,
                     length: length,
                     sequenceKind: sequenceKind
                 )
                 let rendered = AlignmentRenderer.render(
-                    displayAlignment,
+                    sourceAlignment,
+                    rowIndices: orderedIndices,
                     needsIdentityByColumn: needsIdentityByColumn,
                     needsMajorityResidueByColumn: needsMajorityResidueByColumn,
                     fontSize: fontSize
                 )
-                return (rendered, orderedRows)
+                return (rendered, orderedIndices)
             }
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentVersion == alignmentVersion else { return }
                 cachedAlignment = renderResult.0
-                cachedDisplayedRows = renderResult.1
-                apply(renderResult.0, displayedRows: renderResult.1, displayOrderMode: displayOrderMode)
+                cachedDisplayedRowIndices = renderResult.1
+                apply(renderResult.0, displayedRowIndices: renderResult.1, displayOrderMode: displayOrderMode)
             }
         }
     }
@@ -210,18 +211,24 @@ final class AlignmentViewModel {
 
     private func apply(
         _ rendered: RenderedAlignment,
-        displayedRows: [AlignmentRow],
+        displayedRowIndices: [Int],
         displayOrderMode: AlignmentDisplayOrderMode
     ) {
+        let textChanged = renderedAlignment.namesChecksum != rendered.namesChecksum ||
+            renderedAlignment.sequenceChecksum != rendered.sequenceChecksum ||
+            renderedAlignment.nameAttributedText.length != rendered.nameAttributedText.length ||
+            (renderedAlignment.sequenceText as NSString).length != (rendered.sequenceText as NSString).length
         renderedAlignment = rendered
-        self.displayedRows = displayedRows
+        self.displayedRowIndices = displayedRowIndices
         renderedDisplayOrderMode = displayOrderMode
-        contentVersion += 1
+        if textChanged {
+            contentVersion += 1
+        }
     }
 
     private func clearCache() {
         cachedAlignment = nil
-        cachedDisplayedRows = []
+        cachedDisplayedRowIndices = []
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
