@@ -1,13 +1,16 @@
 import AppKit
+import Carbon.HIToolbox
 import XCTest
 
 final class ApuSeqUITests: XCTestCase {
     private var app: XCUIApplication!
     private var temporaryFiles: [URL] = []
+    private var originalInputSource: TISInputSource?
 
     @MainActor
     override func setUpWithError() throws {
         continueAfterFailure = false
+        try selectASCIICapableInputSource()
         app = XCUIApplication()
     }
 
@@ -15,10 +18,32 @@ final class ApuSeqUITests: XCTestCase {
     override func tearDownWithError() throws {
         app?.terminate()
         app = nil
+        restoreOriginalInputSource()
         for url in temporaryFiles {
             try? FileManager.default.removeItem(at: url)
         }
         temporaryFiles.removeAll()
+    }
+
+    private func selectASCIICapableInputSource() throws {
+        originalInputSource = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue()
+        guard let inputSource = TISCopyCurrentASCIICapableKeyboardInputSource()?.takeRetainedValue() else {
+            throw XCTSkip("No ASCII-capable keyboard input source is available for UI testing.")
+        }
+        let status = TISSelectInputSource(inputSource)
+        guard status == noErr else {
+            throw NSError(
+                domain: NSOSStatusErrorDomain,
+                code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Could not select an ASCII-capable keyboard input source."]
+            )
+        }
+    }
+
+    private func restoreOriginalInputSource() {
+        guard let originalInputSource else { return }
+        TISSelectInputSource(originalInputSource)
+        self.originalInputSource = nil
     }
 
     @MainActor
