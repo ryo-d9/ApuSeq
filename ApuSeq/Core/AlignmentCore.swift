@@ -14,6 +14,85 @@ nonisolated struct AlignmentRow: Equatable, Sendable {
     nonisolated let sequence: String
 }
 
+nonisolated struct AlignmentTextEditResult: Sendable {
+    let alignment: AlignmentData
+    let changedColumns: Range<Int>
+}
+
+enum AlignmentTextEditor {
+    nonisolated static func apply(
+        text: String,
+        editedRanges: [NSRange],
+        alignmentLength: Int,
+        to alignment: AlignmentData
+    ) -> AlignmentTextEditResult? {
+        guard alignmentLength >= 0 else { return nil }
+        let rowCount = alignment.rows.count
+        guard rowCount > 0 else { return nil }
+
+        let text = text as NSString
+        let stride = alignmentLength + 1
+        let expectedLength = rowCount * stride
+        guard text.length == expectedLength else { return nil }
+
+        let changedRows: Set<Int>
+        if editedRanges.isEmpty {
+            changedRows = Set(alignment.rows.indices)
+        } else {
+            changedRows = Set(editedRanges.compactMap { range in
+                guard range.location >= 0, range.location < expectedLength else { return nil }
+                return min(range.location / stride, rowCount - 1)
+            })
+        }
+        guard !changedRows.isEmpty else { return nil }
+
+        var rows = alignment.rows
+        for rowIndex in changedRows {
+            let sequenceRange = NSRange(location: rowIndex * stride, length: alignmentLength)
+            rows[rowIndex] = AlignmentRow(
+                name: rows[rowIndex].name,
+                sequence: text.substring(with: sequenceRange)
+            )
+        }
+
+        let changedColumns = changedColumnRange(
+            editedRanges: editedRanges,
+            oldLength: alignment.length,
+            newLength: alignmentLength
+        )
+        let editedAlignment = AlignmentData(
+            format: alignment.format,
+            rows: rows,
+            length: alignmentLength,
+            sequenceKind: AlignmentParser.inferSequenceKind(from: rows)
+        )
+        return AlignmentTextEditResult(alignment: editedAlignment, changedColumns: changedColumns)
+    }
+
+    nonisolated private static func changedColumnRange(
+        editedRanges: [NSRange],
+        oldLength: Int,
+        newLength: Int
+    ) -> Range<Int> {
+        guard newLength > 0 else { return 0..<0 }
+        guard !editedRanges.isEmpty else { return 0..<newLength }
+
+        let stride = newLength + 1
+        let firstChangedColumn = editedRanges.reduce(newLength) { partialResult, range in
+            min(partialResult, min(range.location % stride, newLength - 1))
+        }
+        if oldLength != newLength {
+            return firstChangedColumn..<newLength
+        }
+
+        let lastChangedColumn = editedRanges.reduce(firstChangedColumn) { partialResult, range in
+            let start = min(range.location % stride, newLength - 1)
+            return max(partialResult, min(start + max(range.length, 1), newLength))
+        }
+        return firstChangedColumn..<max(firstChangedColumn + 1, lastChangedColumn)
+    }
+}
+
 enum SequenceKind: String, Sendable {
     case nucleotide = "Nucleotide"
     case aminoAcid = "Amino acid"
@@ -245,7 +324,7 @@ enum AlignmentParser {
         )
     }
 
-    nonisolated private static func inferSequenceKind(from rows: [AlignmentRow]) -> SequenceKind {
+    nonisolated static func inferSequenceKind(from rows: [AlignmentRow]) -> SequenceKind {
         let nucleotideSet = Set("ACGTUNRYSWKMBDHV")
         for row in rows {
             for scalar in row.sequence.unicodeScalars {

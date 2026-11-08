@@ -42,6 +42,9 @@ enum AlignmentRenderer {
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
         includesSequenceText: Bool = true,
+        previousIdentityByColumn: [Double] = [],
+        previousMajorityResidueByColumn: [UInt16] = [],
+        changedColumns: Range<Int>? = nil,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
@@ -60,8 +63,20 @@ enum AlignmentRenderer {
         if includesSequenceText {
             sequenceText?.reserveCapacity(rows.reduce(0) { $0 + ($1.sequence as NSString).length + 1 })
         }
-        let identityByColumn = needsIdentityByColumn ? AlignmentStatistics.columnIdentity(rows: rows) : []
-        let majorityResidueByColumn = needsMajorityResidueByColumn ? AlignmentStatistics.majorityResidues(rows: rows) : []
+        let identityByColumn = needsIdentityByColumn
+            ? AlignmentStatistics.columnIdentity(
+                rows: rows,
+                previous: previousIdentityByColumn,
+                changedColumns: changedColumns
+            )
+            : []
+        let majorityResidueByColumn = needsMajorityResidueByColumn
+            ? AlignmentStatistics.majorityResidues(
+                rows: rows,
+                previous: previousMajorityResidueByColumn,
+                changedColumns: changedColumns
+            )
+            : []
         var namesHasher = Hasher()
         var sequenceHasher = Hasher()
 
@@ -100,14 +115,23 @@ enum AlignmentStatistics {
     }
 
     nonisolated static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
+        columnIdentity(rows: rows, previous: [], changedColumns: nil)
+    }
+
+    nonisolated static func columnIdentity(
+        rows: [AlignmentRow],
+        previous: [Double],
+        changedColumns: Range<Int>?
+    ) -> [Double] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
-        var identity: [Double] = Array(repeating: 0, count: length)
+        var identity = resized(previous, to: length, defaultValue: 0)
+        let columns = resolvedColumns(changedColumns, existingCount: previous.count, length: length)
         var counts: [Int] = Array(repeating: 0, count: 128)
         var touched: [Int] = []
         touched.reserveCapacity(16)
 
-        for column in 0..<length {
+        for column in columns {
             var totalCount = 0
             var mostCommonCount = 0
 
@@ -189,14 +213,23 @@ enum AlignmentStatistics {
     }
 
     nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+        majorityResidues(rows: rows, previous: [], changedColumns: nil)
+    }
+
+    nonisolated static func majorityResidues(
+        rows: [AlignmentRow],
+        previous: [UInt16],
+        changedColumns: Range<Int>?
+    ) -> [UInt16] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
-        var majority: [UInt16] = Array(repeating: 0, count: length)
+        var majority = resized(previous, to: length, defaultValue: 0)
+        let columns = resolvedColumns(changedColumns, existingCount: previous.count, length: length)
         var counts: [Int] = Array(repeating: 0, count: 128)
         var touched: [Int] = []
         touched.reserveCapacity(16)
 
-        for column in 0..<length {
+        for column in columns {
             var bestBucket = 0
             var bestCount = 0
 
@@ -223,6 +256,27 @@ enum AlignmentStatistics {
         }
 
         return majority
+    }
+
+    nonisolated private static func resolvedColumns(
+        _ requested: Range<Int>?,
+        existingCount: Int,
+        length: Int
+    ) -> Range<Int> {
+        guard existingCount > 0, let requested else { return 0..<length }
+        let lowerBound = min(max(requested.lowerBound, 0), length)
+        let upperBound = min(max(requested.upperBound, lowerBound), length)
+        return lowerBound..<upperBound
+    }
+
+    nonisolated private static func resized<Element>(
+        _ values: [Element],
+        to count: Int,
+        defaultValue: Element
+    ) -> [Element] {
+        if values.count == count { return values }
+        if values.count > count { return Array(values.prefix(count)) }
+        return values + Array(repeating: defaultValue, count: count - values.count)
     }
 
     nonisolated private static func residueBucketIndex(_ residue: UInt16) -> Int? {

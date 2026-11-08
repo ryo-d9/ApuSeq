@@ -414,6 +414,61 @@ struct ApuSeqTests {
         #expect(rendered.majorityResidueByColumn.isEmpty)
     }
 
+    @Test func textEditUpdatesOnlyAddressedRowsAndReportsChangedColumns() throws {
+        let alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "A-GT"),
+                AlignmentRow(name: "C", sequence: "AC-T")
+            ],
+            format: .fasta
+        )
+        let editedText = "ACGT\nAAGT\nAC-T\n"
+
+        let result = try #require(
+            AlignmentTextEditor.apply(
+                text: editedText,
+                editedRanges: [NSRange(location: 6, length: 1)],
+                alignmentLength: 4,
+                to: alignment
+            )
+        )
+
+        #expect(result.alignment.rows == [
+            AlignmentRow(name: "A", sequence: "ACGT"),
+            AlignmentRow(name: "B", sequence: "AAGT"),
+            AlignmentRow(name: "C", sequence: "AC-T")
+        ])
+        #expect(result.changedColumns == 1..<2)
+    }
+
+    @Test func partialStatisticsMatchFullRecalculation() {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "ACGT"),
+            AlignmentRow(name: "B", sequence: "AAGT"),
+            AlignmentRow(name: "C", sequence: "AC-T")
+        ]
+        let previousRows = [
+            AlignmentRow(name: "A", sequence: "ACGT"),
+            AlignmentRow(name: "B", sequence: "A-GT"),
+            AlignmentRow(name: "C", sequence: "AC-T")
+        ]
+
+        let identity = AlignmentStatistics.columnIdentity(
+            rows: rows,
+            previous: AlignmentStatistics.columnIdentity(rows: previousRows),
+            changedColumns: 1..<2
+        )
+        let majority = AlignmentStatistics.majorityResidues(
+            rows: rows,
+            previous: AlignmentStatistics.majorityResidues(rows: previousRows),
+            changedColumns: 1..<2
+        )
+
+        #expect(identity == AlignmentStatistics.columnIdentity(rows: rows))
+        #expect(majority == AlignmentStatistics.majorityResidues(rows: rows))
+    }
+
     @Test func rendererUsesMeasuredNameColumnWidth() {
         let fontSize = 18.0
         let name = "Wide Sequence Name"
@@ -748,6 +803,7 @@ struct ApuSeqTests {
         )
         viewModel.applyEditorAlignment(
             editedAlignment,
+            changedColumns: 0..<5,
             fontSize: 12,
             needsIdentityByColumn: true,
             needsMajorityResidueByColumn: false,
@@ -781,6 +837,19 @@ struct ApuSeqTests {
 
         document.rawText = ">Seq2\nTGCA\n"
         #expect(try document.snapshot(contentType: .plainText) == ">Seq2\nTGCA\n")
+    }
+
+    @Test func documentSnapshotSerializesPendingAlignmentBeforeDebounceCompletes() throws {
+        let document = ApuSeqDocument(rawText: ">Old\nAAAA\n")
+        let pending = AlignmentParser.normalize(
+            rows: [AlignmentRow(name: "New", sequence: "ACGT")],
+            format: .fasta
+        )
+
+        document.stageForSerialization(pending)
+
+        #expect(try document.snapshot(contentType: .plainText) == ">New\nACGT\n")
+        #expect(document.rawText == ">Old\nAAAA\n")
     }
 
     @Test func documentInitializesGeneratedRawTextWithoutMutation() throws {

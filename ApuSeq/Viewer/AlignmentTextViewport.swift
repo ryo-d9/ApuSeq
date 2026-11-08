@@ -4,6 +4,7 @@ import SwiftUI
 struct AlignmentTextChange {
     let text: String
     let editedRanges: [NSRange]
+    let alignmentLength: Int
 }
 
 struct AlignmentTextViewport: NSViewRepresentable {
@@ -338,10 +339,17 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            guard let sequenceView = textView as? AlignmentViewportSequenceTextView else { return }
             guard textView.isEditable else { return }
             guard !isProgrammaticTextUpdate else { return }
-            let editedRanges = (textView as? AlignmentViewportSequenceTextView)?.consumeEditedRanges() ?? []
-            onSequenceEdited?(AlignmentTextChange(text: textView.string, editedRanges: editedRanges))
+            let editedRanges = sequenceView.consumeEditedRanges()
+            onSequenceEdited?(
+                AlignmentTextChange(
+                    text: textView.string,
+                    editedRanges: editedRanges,
+                    alignmentLength: sequenceView.alignmentLength
+                )
+            )
         }
 
         func textView(

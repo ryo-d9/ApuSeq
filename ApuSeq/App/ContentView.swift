@@ -91,6 +91,9 @@ private struct RootView: View {
     @State private var operationErrorMessage = ""
     @State private var showsOperationError = false
     @State private var editorGeneratedDocumentText: String?
+    @State private var pendingDocumentAlignment: AlignmentData?
+    @State private var documentSerializationTask: Task<Void, Never>?
+    @State private var documentSerializationGeneration = 0
 
     @SceneStorage("showReferencePanel") private var showsReferencePanel = false
     @SceneStorage("showConsensusPanel") private var showsConsensusPanel = false
@@ -604,11 +607,13 @@ private struct RootView: View {
         }
         .onDisappear {
             cancelMAFFTAlignment()
+            flushPendingDocumentSerialization()
         }
         .onChange(of: document.rawText) { _, newText in
             if editorGeneratedDocumentText == newText {
                 editorGeneratedDocumentText = nil
             } else {
+                cancelPendingDocumentSerialization()
                 parseAndRender()
             }
         }
@@ -664,6 +669,9 @@ private struct RootView: View {
         guard mode != viewerMode else { return }
         if mode == .edit, viewerMode != .edit, showEditModeAutosaveWarning {
             guard confirmEnteringEditMode() else { return }
+        }
+        if viewerMode == .edit, mode != .edit {
+            flushPendingDocumentSerialization()
         }
         viewerMode = mode
     }
@@ -774,22 +782,56 @@ private struct RootView: View {
 
     private func applyEditedSequenceText(_ change: AlignmentTextChange) {
         guard viewerMode == .edit else { return }
-        guard let rows = rows(fromEditedSequenceText: change.text) else { return }
-        let editedAlignment = AlignmentParser.normalize(
-            rows: rows,
-            format: preferredFormatForNamedSequenceEditing
-        )
-        let rebuilt = rebuildAlignment(fromRows: editedAlignment.rows)
-        guard document.rawText != rebuilt else { return }
-        // NSTextView owns character-level undo. Updating the document here keeps
-        // autosave in sync without storing a second full-text undo snapshot.
+        guard let edit = AlignmentTextEditor.apply(
+            text: change.text,
+            editedRanges: change.editedRanges,
+            alignmentLength: change.alignmentLength,
+            to: model.alignment
+        ) else { return }
+        // NSTextView owns character-level undo. The model follows immediately;
+        // document serialization is coalesced separately for autosave.
         model.applyEditorAlignment(
-            editedAlignment,
+            edit.alignment,
+            changedColumns: edit.changedColumns,
             fontSize: alignmentFontSize,
             needsIdentityByColumn: needsIdentityByColumn,
             needsMajorityResidueByColumn: needsMajorityResidueByColumn,
             referenceName: selectedReferenceName
         )
+        scheduleDocumentSerialization(for: edit.alignment)
+    }
+
+    private func scheduleDocumentSerialization(for alignment: AlignmentData) {
+        documentSerializationTask?.cancel()
+        documentSerializationGeneration += 1
+        let generation = documentSerializationGeneration
+        pendingDocumentAlignment = alignment
+        document.stageForSerialization(alignment)
+        documentSerializationTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, generation == documentSerializationGeneration else { return }
+            commitDocumentSerialization(alignment)
+        }
+    }
+
+    private func flushPendingDocumentSerialization() {
+        guard let pendingDocumentAlignment else { return }
+        cancelPendingDocumentSerialization()
+        commitDocumentSerialization(pendingDocumentAlignment)
+    }
+
+    private func cancelPendingDocumentSerialization() {
+        documentSerializationGeneration += 1
+        documentSerializationTask?.cancel()
+        documentSerializationTask = nil
+        pendingDocumentAlignment = nil
+    }
+
+    private func commitDocumentSerialization(_ alignment: AlignmentData) {
+        documentSerializationTask = nil
+        pendingDocumentAlignment = nil
+        let rebuilt = rebuildAlignment(fromRows: alignment.rows)
+        guard document.rawText != rebuilt else { return }
         editorGeneratedDocumentText = rebuilt
         document.rawText = rebuilt
     }
@@ -1142,6 +1184,7 @@ private struct RootView: View {
     }
 
     private func applyDocumentRawText(_ newText: String, undoActionName: String) {
+        cancelPendingDocumentSerialization()
         let currentText = document.rawText
         guard currentText != newText else { return }
         registerRawTextUndo(from: newText, to: currentText, actionName: undoActionName)
@@ -1254,19 +1297,6 @@ private struct RootView: View {
         }
         existingNames.insert(candidate)
         return candidate
-    }
-
-    private func rows(fromEditedSequenceText editedText: String) -> [AlignmentRow]? {
-        var sequenceLines = editedText
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .map(String.init)
-        if sequenceLines.last == "" {
-            sequenceLines.removeLast()
-        }
-        guard sequenceLines.count == displayRows.count else { return nil }
-        return zip(displayRows, sequenceLines).map { row, sequence in
-            AlignmentRow(name: row.name, sequence: sequence)
-        }
     }
 
     private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {

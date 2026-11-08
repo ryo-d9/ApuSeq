@@ -26,6 +26,7 @@ final class AlignmentViewModel {
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
     private var cachedAuxiliaryContent: AuxiliaryPanelContent = .empty
+    private var pendingEditorChangedColumns: Range<Int>?
 
     func parseAndRender(
         rawText: String,
@@ -174,6 +175,7 @@ final class AlignmentViewModel {
 
     func applyEditorAlignment(
         _ editedAlignment: AlignmentData,
+        changedColumns: Range<Int>,
         fontSize: Double,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
@@ -181,18 +183,73 @@ final class AlignmentViewModel {
     ) {
         parseTask?.cancel()
         renderTask?.cancel()
+        let accumulatedChangedColumns: Range<Int>
+        if let pendingEditorChangedColumns {
+            if alignment.length == editedAlignment.length {
+                accumulatedChangedColumns = min(pendingEditorChangedColumns.lowerBound, changedColumns.lowerBound)..<max(
+                    pendingEditorChangedColumns.upperBound,
+                    changedColumns.upperBound
+                )
+            } else {
+                accumulatedChangedColumns = 0..<editedAlignment.length
+            }
+        } else {
+            accumulatedChangedColumns = changedColumns
+        }
+        let previousIdentityByColumn = renderedAlignment.identityByColumn
+        let previousMajorityResidueByColumn = renderedAlignment.majorityResidueByColumn
         alignment = editedAlignment
         alignmentVersion += 1
         parseErrorMessage = nil
         clearCache()
-        rerender(
+        pendingEditorChangedColumns = accumulatedChangedColumns
+        renderEditorAlignment(
             fontSize: fontSize,
             needsIdentityByColumn: needsIdentityByColumn,
             needsMajorityResidueByColumn: needsMajorityResidueByColumn,
-            displayOrderMode: .original,
-            referenceName: referenceName,
-            preservesTextStorage: true
+            previousIdentityByColumn: previousIdentityByColumn,
+            previousMajorityResidueByColumn: previousMajorityResidueByColumn,
+            changedColumns: accumulatedChangedColumns
         )
+    }
+
+    private func renderEditorAlignment(
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        previousIdentityByColumn: [Double],
+        previousMajorityResidueByColumn: [UInt16],
+        changedColumns: Range<Int>
+    ) {
+        let sourceAlignment = alignment
+        let currentVersion = alignmentVersion
+        renderTask = Task(priority: .userInitiated) {
+            let rendered = await runOnBackground {
+                AlignmentRenderer.render(
+                    sourceAlignment,
+                    needsIdentityByColumn: needsIdentityByColumn,
+                    needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                    includesSequenceText: false,
+                    previousIdentityByColumn: previousIdentityByColumn,
+                    previousMajorityResidueByColumn: previousMajorityResidueByColumn,
+                    changedColumns: changedColumns,
+                    fontSize: fontSize
+                )
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard currentVersion == alignmentVersion else { return }
+                cachedAlignment = rendered
+                cachedDisplayedRowIndices = Array(sourceAlignment.rows.indices)
+                apply(
+                    rendered,
+                    displayedRowIndices: cachedDisplayedRowIndices,
+                    displayOrderMode: .original,
+                    preservesTextStorage: true
+                )
+                pendingEditorChangedColumns = nil
+            }
+        }
     }
 
     func row(named name: String?) -> AlignmentRow? {
@@ -279,6 +336,7 @@ final class AlignmentViewModel {
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
         cachedAuxiliaryContent = .empty
+        pendingEditorChangedColumns = nil
     }
 
     private func cachedConsensusSequence(rows: [AlignmentRow]) -> String {
