@@ -90,6 +90,7 @@ private struct RootView: View {
     @State private var showsMAFFTAlignmentError = false
     @State private var operationErrorMessage = ""
     @State private var showsOperationError = false
+    @State private var editorGeneratedDocumentText: String?
 
     @SceneStorage("showReferencePanel") private var showsReferencePanel = false
     @SceneStorage("showConsensusPanel") private var showsConsensusPanel = false
@@ -604,7 +605,13 @@ private struct RootView: View {
         .onDisappear {
             cancelMAFFTAlignment()
         }
-        .onChange(of: document.rawText) { _, _ in parseAndRender() }
+        .onChange(of: document.rawText) { _, newText in
+            if editorGeneratedDocumentText == newText {
+                editorGeneratedDocumentText = nil
+            } else {
+                parseAndRender()
+            }
+        }
         .onChange(of: model.alignment.rows.count) { _, _ in
             validateDisplayOrderMode()
             validateCurrentSequenceRow()
@@ -765,12 +772,25 @@ private struct RootView: View {
         }
     }
 
-    private func applyEditedSequenceText(_ editedText: String) {
+    private func applyEditedSequenceText(_ change: AlignmentTextChange) {
         guard viewerMode == .edit else { return }
-        guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
+        guard let rows = rows(fromEditedSequenceText: change.text) else { return }
+        let editedAlignment = AlignmentParser.normalize(
+            rows: rows,
+            format: preferredFormatForNamedSequenceEditing
+        )
+        let rebuilt = rebuildAlignment(fromRows: editedAlignment.rows)
         guard document.rawText != rebuilt else { return }
         // NSTextView owns character-level undo. Updating the document here keeps
         // autosave in sync without storing a second full-text undo snapshot.
+        model.applyEditorAlignment(
+            editedAlignment,
+            fontSize: alignmentFontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            referenceName: selectedReferenceName
+        )
+        editorGeneratedDocumentText = rebuilt
         document.rawText = rebuilt
     }
 
@@ -1234,7 +1254,7 @@ private struct RootView: View {
         return candidate
     }
 
-    private func rebuildAlignment(fromEditedSequenceText editedText: String) -> String? {
+    private func rows(fromEditedSequenceText editedText: String) -> [AlignmentRow]? {
         var sequenceLines = editedText
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
@@ -1242,10 +1262,9 @@ private struct RootView: View {
             sequenceLines.removeLast()
         }
         guard sequenceLines.count == displayRows.count else { return nil }
-        let rows = zip(displayRows, sequenceLines).map { row, sequence in
+        return zip(displayRows, sequenceLines).map { row, sequence in
             AlignmentRow(name: row.name, sequence: sequence)
         }
-        return rebuildAlignment(fromRows: rows)
     }
 
     private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {

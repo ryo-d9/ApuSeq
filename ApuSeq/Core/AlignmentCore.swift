@@ -229,7 +229,7 @@ enum AlignmentParser {
         return normalize(rows: rows, format: .plainText)
     }
 
-    nonisolated private static func normalize(rows: [AlignmentRow], format: AlignmentFormat) -> AlignmentData {
+    nonisolated static func normalize(rows: [AlignmentRow], format: AlignmentFormat) -> AlignmentData {
         let maxLength = rows.map { ($0.sequence as NSString).length }.max() ?? 0
         let normalizedRows = rows.enumerated().map { index, row in
             let cleanName = row.name.isEmpty ? "Sequence \(index + 1)" : row.name

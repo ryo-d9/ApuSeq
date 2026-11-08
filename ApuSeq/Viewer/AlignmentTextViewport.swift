@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+struct AlignmentTextChange {
+    let text: String
+    let editedRanges: [NSRange]
+}
+
 struct AlignmentTextViewport: NSViewRepresentable {
     let nameAttributedText: NSAttributedString
     let sequenceText: String
@@ -28,7 +33,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let auxiliaryLineCount: Int
     let isEditMode: Bool
     let canEditSequenceNames: Bool
-    let onSequenceEdited: (String) -> Void
+    let onSequenceEdited: (AlignmentTextChange) -> Void
     @Binding var selectedResidueCount: Int
     @Binding var selectedSequenceCount: Int
     @Binding var selectedStartPosition: Int?
@@ -235,7 +240,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var lastFontSize = -1.0
         var lastRenderedFingerprint = RenderedFingerprint.empty
         var lastNameSearchRequestID = -1
-        var onSequenceEdited: ((String) -> Void)?
+        var onSequenceEdited: ((AlignmentTextChange) -> Void)?
         var isProgrammaticTextUpdate = false
 
         private struct SelectionSummary: Equatable {
@@ -333,7 +338,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             guard textView.isEditable else { return }
             guard !isProgrammaticTextUpdate else { return }
-            onSequenceEdited?(textView.string)
+            let editedRanges = (textView as? AlignmentViewportSequenceTextView)?.consumeEditedRanges() ?? []
+            onSequenceEdited?(AlignmentTextChange(text: textView.string, editedRanges: editedRanges))
         }
 
         func textView(

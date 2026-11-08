@@ -720,6 +720,45 @@ struct ApuSeqTests {
         #expect(viewModel.contentVersion == textContentVersion)
     }
 
+    @Test @MainActor func editorAlignmentUpdatePreservesExistingTextStorageVersion() async throws {
+        let viewModel = AlignmentViewModel()
+        viewModel.alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "AC-T")
+            ],
+            format: .fasta
+        )
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.contentVersion > 0 }
+        let textContentVersion = viewModel.contentVersion
+
+        let editedAlignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "AACGT"),
+                AlignmentRow(name: "B", sequence: "AC-T-")
+            ],
+            format: .fasta
+        )
+        viewModel.applyEditorAlignment(
+            editedAlignment,
+            fontSize: 12,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: false,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.count == 5 }
+
+        #expect(viewModel.alignment.rows == editedAlignment.rows)
+        #expect(viewModel.contentVersion == textContentVersion)
+    }
+
     @Test func documentSnapshotReturnsCurrentRawText() throws {
         let rawText = ">Seq1\nACGT\n"
         let document = ApuSeqDocument(rawText: rawText)

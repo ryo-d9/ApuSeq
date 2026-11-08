@@ -88,7 +88,8 @@ final class AlignmentViewModel {
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
         displayOrderMode: AlignmentDisplayOrderMode,
-        referenceName: String?
+        referenceName: String?,
+        preservesTextStorage: Bool = false
     ) {
         renderTask?.cancel()
 
@@ -110,7 +111,12 @@ final class AlignmentViewModel {
         }
 
         if let cachedAlignment {
-            apply(cachedAlignment, displayedRowIndices: cachedDisplayedRowIndices, displayOrderMode: displayOrderMode)
+            apply(
+                cachedAlignment,
+                displayedRowIndices: cachedDisplayedRowIndices,
+                displayOrderMode: displayOrderMode,
+                preservesTextStorage: preservesTextStorage
+            )
             return
         }
 
@@ -151,9 +157,37 @@ final class AlignmentViewModel {
                 guard currentVersion == alignmentVersion else { return }
                 cachedAlignment = renderResult.0
                 cachedDisplayedRowIndices = renderResult.1
-                apply(renderResult.0, displayedRowIndices: renderResult.1, displayOrderMode: displayOrderMode)
+                apply(
+                    renderResult.0,
+                    displayedRowIndices: renderResult.1,
+                    displayOrderMode: displayOrderMode,
+                    preservesTextStorage: preservesTextStorage
+                )
             }
         }
+    }
+
+    func applyEditorAlignment(
+        _ editedAlignment: AlignmentData,
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        referenceName: String?
+    ) {
+        parseTask?.cancel()
+        renderTask?.cancel()
+        alignment = editedAlignment
+        alignmentVersion += 1
+        parseErrorMessage = nil
+        clearCache()
+        rerender(
+            fontSize: fontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: .original,
+            referenceName: referenceName,
+            preservesTextStorage: true
+        )
     }
 
     func row(named name: String?) -> AlignmentRow? {
@@ -212,7 +246,8 @@ final class AlignmentViewModel {
     private func apply(
         _ rendered: RenderedAlignment,
         displayedRowIndices: [Int],
-        displayOrderMode: AlignmentDisplayOrderMode
+        displayOrderMode: AlignmentDisplayOrderMode,
+        preservesTextStorage: Bool = false
     ) {
         let textChanged = renderedAlignment.namesChecksum != rendered.namesChecksum ||
             renderedAlignment.sequenceChecksum != rendered.sequenceChecksum ||
@@ -221,7 +256,7 @@ final class AlignmentViewModel {
         renderedAlignment = rendered
         self.displayedRowIndices = displayedRowIndices
         renderedDisplayOrderMode = displayOrderMode
-        if textChanged {
+        if textChanged && !preservesTextStorage {
             contentVersion += 1
         }
     }

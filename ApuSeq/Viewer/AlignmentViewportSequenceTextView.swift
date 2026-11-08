@@ -23,6 +23,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     var columnSelectionAnchor: Int?
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
+    private var pendingEditedRanges: [NSRange] = []
 
     var alignmentLength = 0
     private var identityByColumn: [Double] = []
@@ -134,6 +135,17 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             }
         }
         textStorage.endEditing()
+        switch direction {
+        case .forward:
+            pendingEditedRanges = patches.map(\.newRange)
+        case .reverse:
+            pendingEditedRanges = patches.map(\.oldRange)
+        }
+    }
+
+    func consumeEditedRanges() -> [NSRange] {
+        defer { pendingEditedRanges = [] }
+        return pendingEditedRanges
     }
 
     private func registerPatchUndo(
