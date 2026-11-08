@@ -8,7 +8,7 @@ struct AlignmentTextChange {
 
 struct AlignmentTextViewport: NSViewRepresentable {
     let nameAttributedText: NSAttributedString
-    let sequenceText: String
+    let sequenceText: String?
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
     let alignmentLength: Int
@@ -159,43 +159,45 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.sequenceTextView.rowNames = displayedRowNames
         context.coordinator.isProgrammaticTextUpdate = true
 
-        let fingerprint = RenderedFingerprint(
-            namesChecksum: namesChecksum,
-            sequenceChecksum: sequenceChecksum,
-            nameLength: nameAttributedText.length,
-            sequenceLength: (sequenceText as NSString).length
-        )
-        if context.coordinator.lastContentVersion != contentVersion ||
-            context.coordinator.lastRenderedFingerprint != fingerprint {
-            let previousAlignmentLength = containerView.sequenceTextView.alignmentLength
-            let selectedRanges = context.coordinator.logicalRanges(
-                from: containerView.sequenceTextView.selectedRanges.map(\.rangeValue),
-                alignmentLength: previousAlignmentLength
+        if let sequenceText {
+            let fingerprint = RenderedFingerprint(
+                namesChecksum: namesChecksum,
+                sequenceChecksum: sequenceChecksum,
+                nameLength: nameAttributedText.length,
+                sequenceLength: (sequenceText as NSString).length
             )
-            let columnSelectionRanges = context.coordinator.logicalRanges(
-                from: containerView.sequenceTextView.columnSelectionRanges,
-                alignmentLength: previousAlignmentLength
-            )
-            let columnSelectionAnchor = context.coordinator.logicalLocation(
-                from: containerView.sequenceTextView.columnSelectionAnchor,
-                alignmentLength: previousAlignmentLength
-            )
-            let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
-            containerView.nameColumnView.rowNames = displayedRowNames
-            containerView.sequenceTextView.replaceAlignmentText(sequenceText)
-            containerView.sequenceTextView.alignmentLength = alignmentLength
-            context.coordinator.restoreSelection(
-                selectedRanges,
-                columnSelectionRanges: columnSelectionRanges,
-                columnSelectionAnchor: columnSelectionAnchor,
-                columnSelectionWidth: columnSelectionWidth,
-                in: containerView.sequenceTextView
-            )
-            context.coordinator.lastContentVersion = contentVersion
-            context.coordinator.lastRenderedFingerprint = fingerprint
-            DispatchQueue.main.async { [weak sequenceTextView = containerView.sequenceTextView, weak coordinator = context.coordinator] in
-                guard let sequenceTextView, let coordinator else { return }
-                coordinator.updateSelectedResidueCount(in: sequenceTextView)
+            if context.coordinator.lastContentVersion != contentVersion ||
+                context.coordinator.lastRenderedFingerprint != fingerprint {
+                let previousAlignmentLength = containerView.sequenceTextView.alignmentLength
+                let selectedRanges = context.coordinator.logicalRanges(
+                    from: containerView.sequenceTextView.selectedRanges.map(\.rangeValue),
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionRanges = context.coordinator.logicalRanges(
+                    from: containerView.sequenceTextView.columnSelectionRanges,
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionAnchor = context.coordinator.logicalLocation(
+                    from: containerView.sequenceTextView.columnSelectionAnchor,
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
+                containerView.nameColumnView.rowNames = displayedRowNames
+                containerView.sequenceTextView.replaceAlignmentText(sequenceText)
+                containerView.sequenceTextView.alignmentLength = alignmentLength
+                context.coordinator.restoreSelection(
+                    selectedRanges,
+                    columnSelectionRanges: columnSelectionRanges,
+                    columnSelectionAnchor: columnSelectionAnchor,
+                    columnSelectionWidth: columnSelectionWidth,
+                    in: containerView.sequenceTextView
+                )
+                context.coordinator.lastContentVersion = contentVersion
+                context.coordinator.lastRenderedFingerprint = fingerprint
+                DispatchQueue.main.async { [weak sequenceTextView = containerView.sequenceTextView, weak coordinator = context.coordinator] in
+                    guard let sequenceTextView, let coordinator else { return }
+                    coordinator.updateSelectedResidueCount(in: sequenceTextView)
+                }
             }
         }
         context.coordinator.isProgrammaticTextUpdate = false

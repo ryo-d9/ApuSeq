@@ -19,6 +19,7 @@ final class AlignmentViewModel {
     private var cachedRenderIdentityMode = false
     private var cachedRenderMajorityMode = false
     private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
+    private var cachedRenderIncludesSequenceText = false
     private var cachedAlignment: RenderedAlignment?
     private var cachedDisplayedRowIndices: [Int] = []
     private var cachedConsensusKey: ConsensusKey?
@@ -92,13 +93,15 @@ final class AlignmentViewModel {
         preservesTextStorage: Bool = false
     ) {
         renderTask?.cancel()
+        let includesSequenceText = !preservesTextStorage
 
         let cacheKeyMatches =
             cachedRenderVersion == alignmentVersion &&
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
             cachedRenderIdentityMode == needsIdentityByColumn &&
             cachedRenderMajorityMode == needsMajorityResidueByColumn &&
-            cachedRenderOrderMode == displayOrderMode
+            cachedRenderOrderMode == displayOrderMode &&
+            cachedRenderIncludesSequenceText == includesSequenceText
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
@@ -106,6 +109,7 @@ final class AlignmentViewModel {
             cachedRenderIdentityMode = needsIdentityByColumn
             cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedRenderOrderMode = displayOrderMode
+            cachedRenderIncludesSequenceText = includesSequenceText
             cachedAlignment = nil
             cachedDisplayedRowIndices = []
         }
@@ -148,6 +152,7 @@ final class AlignmentViewModel {
                     rowIndices: orderedIndices,
                     needsIdentityByColumn: needsIdentityByColumn,
                     needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                    includesSequenceText: includesSequenceText,
                     fontSize: fontSize
                 )
                 return (rendered, orderedIndices)
@@ -252,7 +257,7 @@ final class AlignmentViewModel {
         let textChanged = renderedAlignment.namesChecksum != rendered.namesChecksum ||
             renderedAlignment.sequenceChecksum != rendered.sequenceChecksum ||
             renderedAlignment.nameAttributedText.length != rendered.nameAttributedText.length ||
-            (renderedAlignment.sequenceText as NSString).length != (rendered.sequenceText as NSString).length
+            renderedAlignment.sequenceText.map { ($0 as NSString).length } != rendered.sequenceText.map { ($0 as NSString).length }
         renderedAlignment = rendered
         self.displayedRowIndices = displayedRowIndices
         renderedDisplayOrderMode = displayOrderMode
@@ -269,6 +274,7 @@ final class AlignmentViewModel {
         cachedRenderIdentityMode = false
         cachedRenderMajorityMode = false
         cachedRenderOrderMode = .original
+        cachedRenderIncludesSequenceText = false
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil

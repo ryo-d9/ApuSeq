@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 struct RenderedAlignment: @unchecked Sendable {
-    let sequenceText: String
+    let sequenceText: String?
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
     let identityByColumn: [Double]
@@ -41,6 +41,7 @@ enum AlignmentRenderer {
         rowIndices: [Int]? = nil,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
+        includesSequenceText: Bool = true,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
@@ -55,8 +56,10 @@ enum AlignmentRenderer {
         ]
 
         let namesAttributed = NSMutableAttributedString()
-        var sequenceText = String()
-        sequenceText.reserveCapacity(rows.reduce(0) { $0 + ($1.sequence as NSString).length + 1 })
+        var sequenceText: String? = includesSequenceText ? String() : nil
+        if includesSequenceText {
+            sequenceText?.reserveCapacity(rows.reduce(0) { $0 + ($1.sequence as NSString).length + 1 })
+        }
         let identityByColumn = needsIdentityByColumn ? AlignmentStatistics.columnIdentity(rows: rows) : []
         let majorityResidueByColumn = needsMajorityResidueByColumn ? AlignmentStatistics.majorityResidues(rows: rows) : []
         var namesHasher = Hasher()
@@ -70,7 +73,7 @@ enum AlignmentRenderer {
             sequenceHasher.combine(sequenceLine)
 
             namesAttributed.append(NSAttributedString(string: nameLine, attributes: nameAttributes))
-            sequenceText += sequenceLine
+            sequenceText?.append(sequenceLine)
         }
 
         let nameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: rows, font: baseFont)

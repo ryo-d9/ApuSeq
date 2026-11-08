@@ -681,7 +681,7 @@ struct ApuSeqTests {
             fontSize: 12
         )
 
-        #expect((rendered.sequenceText as NSString).length == rowCount * (siteCount + 1))
+        #expect(rendered.sequenceText.map { ($0 as NSString).length } == rowCount * (siteCount + 1))
         #expect(rendered.identityByColumn.count == siteCount)
         #expect(rendered.majorityResidueByColumn.count == siteCount)
     }
@@ -757,6 +757,18 @@ struct ApuSeqTests {
 
         #expect(viewModel.alignment.rows == editedAlignment.rows)
         #expect(viewModel.contentVersion == textContentVersion)
+        #expect(viewModel.renderedAlignment.sequenceText == nil)
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.sequenceText != nil }
+
+        #expect(viewModel.renderedAlignment.sequenceText == "AACGT\nAC-T-\n")
     }
 
     @Test func documentSnapshotReturnsCurrentRawText() throws {
