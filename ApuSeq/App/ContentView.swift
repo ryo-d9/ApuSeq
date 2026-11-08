@@ -1044,12 +1044,13 @@ private struct RootView: View {
 
     private func startMAFFTAlignment() {
         guard canAlignWithMAFFT else { return }
-        let rawText = document.rawText
+        let rows = model.alignment.rows
         isRunningMAFFTAlignment = true
         mafftAlignmentTask = Task { @MainActor in
             do {
-                let aligned = try await MAFFTAligner.alignAuto(rawText: rawText)
+                let alignedRows = try await MAFFTAligner.alignAuto(rows: rows)
                 guard !Task.isCancelled else { return }
+                let aligned = AlignmentSerializer.serialize(rows: alignedRows, preferredFormat: .fasta)
                 finishMAFFTAlignment()
                 newDocument {
                     ApuSeqDocument(rawText: aligned)
@@ -1093,16 +1094,17 @@ private struct RootView: View {
 
     private func startAminoAcidGuidedNucleotideAlignment(frameOffset: Int, codonTable: TranslationCodonTable) {
         guard canAlignAminoAcidGuidedNucleotide else { return }
-        let rawText = document.rawText
+        let rows = model.alignment.rows
         isRunningMAFFTAlignment = true
         mafftAlignmentTask = Task { @MainActor in
             do {
-                let aligned = try await AminoAcidGuidedNucleotideAligner.align(
-                    rawText: rawText,
+                let alignedRows = try await AminoAcidGuidedNucleotideAligner.align(
+                    rows: rows,
                     frameOffset: frameOffset,
                     codonTable: codonTable
                 )
                 guard !Task.isCancelled else { return }
+                let aligned = AlignmentSerializer.serialize(rows: alignedRows, preferredFormat: .fasta)
                 finishMAFFTAlignment()
                 newDocument {
                     ApuSeqDocument(rawText: aligned)

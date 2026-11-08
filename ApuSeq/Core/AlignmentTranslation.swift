@@ -199,11 +199,24 @@ enum AminoAcidGuidedNucleotideAligner {
         guard alignment.sequenceKind == .nucleotide else {
             throw AminoAcidGuidedNucleotideAlignmentError.unsupportedSequenceKind
         }
-        guard alignment.rows.count >= 2 else {
+        let rows = try await align(
+            rows: alignment.rows,
+            frameOffset: frameOffset,
+            codonTable: codonTable
+        )
+        return AlignmentSerializer.serialize(rows: rows, preferredFormat: .fasta)
+    }
+
+    nonisolated static func align(
+        rows: [AlignmentRow],
+        frameOffset: Int,
+        codonTable: TranslationCodonTable
+    ) async throws -> [AlignmentRow] {
+        guard rows.count >= 2 else {
             throw AminoAcidGuidedNucleotideAlignmentError.insufficientSequences
         }
 
-        let translations = try alignment.rows.map { row in
+        let translations = try rows.map { row in
             try AlignmentTranslator.translatedCodingSequence(
                 row.sequence,
                 sequenceName: row.name,
@@ -212,25 +225,24 @@ enum AminoAcidGuidedNucleotideAligner {
                 requiresCompleteCodons: true
             )
         }
-        for (row, translation) in zip(alignment.rows, translations) where translation.aminoAcids.isEmpty {
+        for (row, translation) in zip(rows, translations) where translation.aminoAcids.isEmpty {
             throw AminoAcidGuidedNucleotideAlignmentError.emptyTranslation(sequenceName: row.name)
         }
-        let aminoAcidRows = zip(alignment.rows, translations).map { row, translation in
+        let aminoAcidRows = zip(rows, translations).map { row, translation in
             AlignmentRow(name: row.name, sequence: mafftCompatibleAminoAcidSequence(translation.aminoAcids))
         }
         let alignedAminoAcidRows = try await MAFFTAligner.alignAuto(rows: aminoAcidRows)
         guard alignedAminoAcidRows.count == translations.count else {
             throw AminoAcidGuidedNucleotideAlignmentError.alignedSequenceCountMismatch
         }
-        let nucleotideRows = try alignedAminoAcidRows.enumerated().map { index, alignedRow in
+        return try alignedAminoAcidRows.enumerated().map { index, alignedRow in
             let codonSequence = try backMapCodons(
                 alignedAminoAcidSequence: alignedRow.sequence,
                 codons: translations[index].codons,
                 sequenceName: alignedRow.name
             )
-            return AlignmentRow(name: alignment.rows[index].name, sequence: codonSequence)
+            return AlignmentRow(name: rows[index].name, sequence: codonSequence)
         }
-        return AlignmentSerializer.serialize(rows: nucleotideRows, preferredFormat: .fasta)
     }
 
     nonisolated static func backMapCodons(
