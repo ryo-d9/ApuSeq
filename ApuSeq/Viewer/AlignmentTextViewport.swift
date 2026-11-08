@@ -13,8 +13,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
     let alignmentLength: Int
-    let identityByColumn: [Double]
-    let majorityResidueByColumn: [UInt16]
+    let identityByColumn: [Float]
+    let majorityResidueByColumn: [UInt8]
     let backgroundMode: AlignmentBackgroundMode
     let referenceSequenceForBackground: String?
     let identityColorThreshold: Double

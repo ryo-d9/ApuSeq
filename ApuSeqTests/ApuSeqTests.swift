@@ -832,14 +832,21 @@ struct ApuSeqTests {
         let document = ApuSeqDocument(rawText: rawText)
 
         let snapshot = try document.snapshot(contentType: .plainText)
-
-        #expect(snapshot == rawText)
+        guard case .rawText(let snapshotText) = snapshot else {
+            Issue.record("Expected a raw-text document snapshot")
+            return
+        }
+        #expect(snapshotText == rawText)
 
         document.rawText = ">Seq2\nTGCA\n"
-        #expect(try document.snapshot(contentType: .plainText) == ">Seq2\nTGCA\n")
+        guard case .rawText(let updatedText) = try document.snapshot(contentType: .plainText) else {
+            Issue.record("Expected a raw-text document snapshot")
+            return
+        }
+        #expect(updatedText == ">Seq2\nTGCA\n")
     }
 
-    @Test func documentSnapshotSerializesPendingAlignmentBeforeDebounceCompletes() throws {
+    @Test func documentSnapshotCapturesPendingAlignmentBeforeDebounceCompletes() throws {
         let document = ApuSeqDocument(rawText: ">Old\nAAAA\n")
         let pending = AlignmentParser.normalize(
             rows: [AlignmentRow(name: "New", sequence: "ACGT")],
@@ -848,7 +855,11 @@ struct ApuSeqTests {
 
         document.stageForSerialization(pending)
 
-        #expect(try document.snapshot(contentType: .plainText) == ">New\nACGT\n")
+        guard case .alignment(let snapshotAlignment) = try document.snapshot(contentType: .plainText) else {
+            Issue.record("Expected an unserialized alignment snapshot")
+            return
+        }
+        #expect(snapshotAlignment.rows == pending.rows)
         #expect(document.rawText == ">Old\nAAAA\n")
     }
 
@@ -856,7 +867,11 @@ struct ApuSeqTests {
         let rawText = ">Translated\nMK*"
         let document = ApuSeqDocument(rawText: rawText)
 
-        #expect(try document.snapshot(contentType: .plainText) == rawText)
+        guard case .rawText(let snapshotText) = try document.snapshot(contentType: .plainText) else {
+            Issue.record("Expected a raw-text document snapshot")
+            return
+        }
+        #expect(snapshotText == rawText)
     }
 
     @Test func identityBarsUseSharedHeightEncoding() {

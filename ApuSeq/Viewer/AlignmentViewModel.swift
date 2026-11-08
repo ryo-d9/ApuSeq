@@ -217,8 +217,8 @@ final class AlignmentViewModel {
         fontSize: Double,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
-        previousIdentityByColumn: [Double],
-        previousMajorityResidueByColumn: [UInt16],
+        previousIdentityByColumn: [Float],
+        previousMajorityResidueByColumn: [UInt8],
         changedColumns: Range<Int>
     ) {
         let sourceAlignment = alignment
@@ -271,7 +271,7 @@ final class AlignmentViewModel {
             showsConservationPanel: showsConservationPanel,
             identityCount: renderedAlignment.identityByColumn.count,
             identityChecksum: renderedAlignment.identityByColumn.reduce(into: 1469598103934665603) { partialResult, value in
-                partialResult = (partialResult ^ UInt64(bitPattern: Int64(value.bitPattern))) &* 1099511628211
+                partialResult = (partialResult ^ UInt64(value.bitPattern)) &* 1099511628211
             }
         )
         if key == cachedAuxiliaryKey {
@@ -417,7 +417,7 @@ private enum AuxiliaryPanelBuilder {
         referenceLabel: String?,
         referenceSequence: String?,
         consensusSequence: String?,
-        conservation: [Double]?
+        conservation: [Float]?
     ) -> AuxiliaryPanelContent {
         var left: [String] = []
         var right: [String] = []

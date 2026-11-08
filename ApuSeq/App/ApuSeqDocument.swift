@@ -13,7 +13,10 @@ import UniformTypeIdentifiers
 
 @Observable
 final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
-    typealias Snapshot = String
+    enum Snapshot: Sendable {
+        case rawText(String)
+        case alignment(AlignmentData)
+    }
 
     // ReferenceFileDocument still requires ObservableObject; Observation drives SwiftUI reads.
     @ObservationIgnored
@@ -64,25 +67,32 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
         storage = Storage(rawText: decoded, pendingAlignment: nil)
     }
 
-    func snapshot(contentType: UTType) throws -> String {
+    func snapshot(contentType: UTType) throws -> Snapshot {
         let snapshotSource = withLockedStorage { storage in
             (storage.rawText, storage.pendingAlignment)
         }
         if let pendingAlignment = snapshotSource.1 {
-            return AlignmentSerializer.serialize(
-                rows: pendingAlignment.rows,
-                preferredFormat: pendingAlignment.format
-            )
+            return .alignment(pendingAlignment)
         }
-        return snapshotSource.0
+        return .rawText(snapshotSource.0)
     }
 
     func stageForSerialization(_ alignment: AlignmentData) {
         updateStorage { $0.pendingAlignment = alignment }
     }
 
-    func fileWrapper(snapshot: String, configuration: WriteConfiguration) throws -> FileWrapper {
-        let data = Data(snapshot.utf8)
+    func fileWrapper(snapshot: Snapshot, configuration: WriteConfiguration) throws -> FileWrapper {
+        let text: String
+        switch snapshot {
+        case .rawText(let rawText):
+            text = rawText
+        case .alignment(let alignment):
+            text = AlignmentSerializer.serialize(
+                rows: alignment.rows,
+                preferredFormat: alignment.format
+            )
+        }
+        let data = Data(text.utf8)
         return .init(regularFileWithContents: data)
     }
 

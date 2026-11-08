@@ -330,7 +330,7 @@ final class AlignmentPrintView: NSView {
     private let referenceLabel: String?
     private let referenceSequence: String?
     private let consensusSequence: String
-    private let identityByColumn: [Double]
+    private let identityByColumn: [Float]
     private var pages: [AlignmentPrintPage] = []
     private var pageSize = CGSize(width: 1, height: 1)
     private let contentInset: CGFloat = 4

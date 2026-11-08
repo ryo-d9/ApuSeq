@@ -26,8 +26,8 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     private var pendingEditedRanges: [NSRange] = []
 
     var alignmentLength = 0
-    private var identityByColumn: [Double] = []
-    private var majorityResidueByColumn: [UInt16] = []
+    private var identityByColumn: [Float] = []
+    private var majorityResidueByColumn: [UInt8] = []
     private var backgroundMode: AlignmentBackgroundMode = .residue
     private var referenceSequenceForBackground: String?
     private var referenceTextForBackground: NSString?
@@ -411,8 +411,8 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     func updateAlignmentDisplay(
         alignmentLength: Int,
-        identityByColumn: [Double],
-        majorityResidueByColumn: [UInt16],
+        identityByColumn: [Float],
+        majorityResidueByColumn: [UInt8],
         backgroundMode: AlignmentBackgroundMode,
         referenceSequenceForBackground: String?,
         identityColorThreshold: Double
@@ -509,7 +509,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         case .minority:
             let residue = normalizedResidueCode(text.character(at: textIndex))
             guard let majorityResidue = majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
-            guard residue != majorityResidue else { return nil }
+            guard residue != UInt16(majorityResidue) else { return nil }
             return ResiduePalette.backgroundColor(for: residue)
         case .reference:
             guard let referenceTextForBackground, column < referenceTextForBackground.length else { return nil }

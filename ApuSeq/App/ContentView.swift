@@ -475,7 +475,7 @@ private struct RootView: View {
         case .minority:
             let normalizedResidue = normalizedResidueCode(residue)
             guard let majorityResidue = model.renderedAlignment.majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
-            guard normalizedResidue != majorityResidue else { return nil }
+            guard normalizedResidue != UInt16(majorityResidue) else { return nil }
             return ResiduePalette.backgroundColor(for: normalizedResidue)
         case .reference:
             return ReferenceDifferencePalette.backgroundColor(for: residue, referenceResidue: referenceResidue)

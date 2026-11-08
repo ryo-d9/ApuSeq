@@ -5,8 +5,8 @@ struct RenderedAlignment: @unchecked Sendable {
     let sequenceText: String?
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
-    let identityByColumn: [Double]
-    let majorityResidueByColumn: [UInt16]
+    let identityByColumn: [Float]
+    let majorityResidueByColumn: [UInt8]
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
 
@@ -42,8 +42,8 @@ enum AlignmentRenderer {
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
         includesSequenceText: Bool = true,
-        previousIdentityByColumn: [Double] = [],
-        previousMajorityResidueByColumn: [UInt16] = [],
+        previousIdentityByColumn: [Float] = [],
+        previousMajorityResidueByColumn: [UInt8] = [],
         changedColumns: Range<Int>? = nil,
         fontSize: Double
     ) -> RenderedAlignment {
@@ -114,15 +114,15 @@ enum AlignmentStatistics {
         return ceil(nameTextWidth + horizontalPadding)
     }
 
-    nonisolated static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
+    nonisolated static func columnIdentity(rows: [AlignmentRow]) -> [Float] {
         columnIdentity(rows: rows, previous: [], changedColumns: nil)
     }
 
     nonisolated static func columnIdentity(
         rows: [AlignmentRow],
-        previous: [Double],
+        previous: [Float],
         changedColumns: Range<Int>?
-    ) -> [Double] {
+    ) -> [Float] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
         var identity = resized(previous, to: length, defaultValue: 0)
@@ -156,7 +156,7 @@ enum AlignmentStatistics {
                 touched.removeAll(keepingCapacity: true)
                 continue
             }
-            identity[column] = Double(mostCommonCount) / Double(totalCount)
+            identity[column] = Float(mostCommonCount) / Float(totalCount)
             for bucket in touched {
                 counts[bucket] = 0
             }
@@ -212,15 +212,15 @@ enum AlignmentStatistics {
         return result
     }
 
-    nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+    nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt8] {
         majorityResidues(rows: rows, previous: [], changedColumns: nil)
     }
 
     nonisolated static func majorityResidues(
         rows: [AlignmentRow],
-        previous: [UInt16],
+        previous: [UInt8],
         changedColumns: Range<Int>?
-    ) -> [UInt16] {
+    ) -> [UInt8] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
         var majority = resized(previous, to: length, defaultValue: 0)
@@ -248,7 +248,7 @@ enum AlignmentStatistics {
                 }
             }
 
-            majority[column] = UInt16(bestBucket)
+            majority[column] = UInt8(bestBucket)
             for bucket in touched {
                 counts[bucket] = 0
             }
@@ -287,9 +287,9 @@ enum AlignmentStatistics {
 }
 
 enum IdentityPalette {
-    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor? {
+    static func backgroundColor(for identity: Float, threshold: Double) -> NSColor? {
         let clamped = min(max(identity, 0), 1)
-        let clampedThreshold = min(max(threshold, 0), 1)
+        let clampedThreshold = Float(min(max(threshold, 0), 1))
         if clamped >= 1.0 {
             return NSColor.systemBlue.withAlphaComponent(0.56)
         }
@@ -310,12 +310,12 @@ enum IdentityPalette {
 enum IdentityBars {
     nonisolated private static let glyphs: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
-    nonisolated static func barIndex(for value: Double) -> Int {
+    nonisolated static func barIndex(for value: Float) -> Int {
         let clamped = min(max(value, 0), 1)
         return min(Int((clamped * 8.0).rounded()), 8)
     }
 
-    nonisolated static func barString<C: Collection>(from values: C) -> String where C.Element == Double {
+    nonisolated static func barString<C: Collection>(from values: C) -> String where C.Element == Float {
         var output = String()
         output.reserveCapacity(values.count)
         for value in values {
