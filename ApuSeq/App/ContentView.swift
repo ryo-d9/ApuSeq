@@ -769,7 +769,9 @@ private struct RootView: View {
         guard viewerMode == .edit else { return }
         guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
         guard document.rawText != rebuilt else { return }
-        applyDocumentRawText(rebuilt, undoActionName: String(localized: "Edit"))
+        // NSTextView owns character-level undo. Updating the document here keeps
+        // autosave in sync without storing a second full-text undo snapshot.
+        document.rawText = rebuilt
     }
 
     private func addSequence() {
