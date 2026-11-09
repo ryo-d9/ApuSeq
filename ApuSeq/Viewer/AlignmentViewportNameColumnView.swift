@@ -9,6 +9,9 @@ final class AlignmentViewportNameColumnView: NSView {
     var highlightedRowIndex: Int? {
         didSet { needsDisplay = true }
     }
+    var currentRowIndex: Int? {
+        didSet { needsDisplay = true }
+    }
     var verticalOffset: CGFloat = 0 {
         didSet {
             if abs(verticalOffset - oldValue) > 0.5 {
@@ -50,9 +53,14 @@ final class AlignmentViewportNameColumnView: NSView {
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = .byTruncatingTail
-        let attributes: [NSAttributedString.Key: Any] = [
+        let regularAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor.secondaryLabelColor,
+            .paragraphStyle: paragraphStyle
+        ]
+        let currentRowAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.labelColor,
             .paragraphStyle: paragraphStyle
         ]
 
@@ -68,6 +76,7 @@ final class AlignmentViewportNameColumnView: NSView {
                 NSColor.selectedContentBackgroundColor.withAlphaComponent(0.16).setFill()
                 NSRect(x: 0, y: y, width: bounds.width, height: lineHeight).fill()
             }
+            let attributes = row == currentRowIndex ? currentRowAttributes : regularAttributes
             (rowNames[row] as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
         }
     }

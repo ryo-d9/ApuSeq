@@ -57,6 +57,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.rowNames = displayedRowNames
         nameColumnView.rowIDs = displayedRowIDs
         nameColumnView.highlightedRowIndex = highlightedNameRowIndex
+        nameColumnView.currentRowIndex = currentSequenceRowIndex
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
@@ -138,6 +139,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             onSetReference: onSetReference
         )
         containerView.updateHighlightedNameRow(highlightedNameRowIndex)
+        containerView.updateCurrentNameRow(currentSequenceRowIndex)
         containerView.onNameFindTextChanged = onNameFindTextChanged
         containerView.onNameFindSubmit = onNameFindSubmit
         containerView.onNameFindClose = onNameFindClose

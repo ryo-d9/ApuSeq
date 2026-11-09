@@ -128,6 +128,10 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameColumnView.highlightedRowIndex = row
     }
 
+    func updateCurrentNameRow(_ row: Int?) {
+        nameColumnView.currentRowIndex = row
+    }
+
     func updateNameFindBar(
         isPresented: Bool,
         text: String,
