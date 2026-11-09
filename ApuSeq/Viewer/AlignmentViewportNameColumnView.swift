@@ -5,6 +5,7 @@ final class AlignmentViewportNameColumnView: NSView {
         didSet { needsDisplay = true }
     }
     var rowSequences: [String] = []
+    var rowIDs: [AlignmentRowID] = []
     var highlightedRowIndex: Int? {
         didSet { needsDisplay = true }
     }
@@ -22,9 +23,9 @@ final class AlignmentViewportNameColumnView: NSView {
     var canEditSequenceNames = true
     var onAddSequence: (() -> Void)?
     var onAddFASTAFromClipboard: (() -> Void)?
-    var onRenameSequence: ((Int) -> Void)?
-    var onDeleteSequence: ((Int) -> Void)?
-    var onSetReference: ((Int?) -> Void)?
+    var onRenameSequence: ((AlignmentRowID) -> Void)?
+    var onDeleteSequence: ((AlignmentRowID) -> Void)?
+    var onSetReference: ((AlignmentRowID?) -> Void)?
     var onScrollWheel: ((NSEvent) -> Void)?
 
     private let textInset = NSSize(width: 12, height: 12)
@@ -105,7 +106,7 @@ final class AlignmentViewportNameColumnView: NSView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
-        guard row >= 0, row < rowNames.count else {
+        guard row >= 0, row < rowNames.count, row < rowIDs.count else {
             guard isEditMode && canEditSequenceNames else { return super.menu(for: event) }
             let menu = NSMenu(title: AppStrings.sequenceMenu)
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
@@ -120,17 +121,17 @@ final class AlignmentViewportNameColumnView: NSView {
         let menu = NSMenu(title: AppStrings.referenceMenu)
         let copyItem = NSMenuItem(title: AppStrings.copySequence, action: #selector(copySequenceFromMenu(_:)), keyEquivalent: "")
         copyItem.target = self
-        copyItem.representedObject = row
+        copyItem.representedObject = rowIDs[row]
         menu.addItem(copyItem)
         let copyFASTAItem = NSMenuItem(title: AppStrings.copyAsFASTA, action: #selector(copyFASTAFromMenu(_:)), keyEquivalent: "")
         copyFASTAItem.target = self
-        copyFASTAItem.representedObject = row
+        copyFASTAItem.representedObject = rowIDs[row]
         menu.addItem(copyFASTAItem)
         menu.addItem(.separator())
 
         let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
         setItem.target = self
-        setItem.representedObject = row
+        setItem.representedObject = rowIDs[row]
         menu.addItem(setItem)
 
         let clearItem = NSMenuItem(title: AppStrings.clearReference, action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
@@ -149,13 +150,13 @@ final class AlignmentViewportNameColumnView: NSView {
 
             let renameItem = NSMenuItem(title: AppStrings.renameSequence, action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
             renameItem.target = self
-            renameItem.representedObject = row
+            renameItem.representedObject = rowIDs[row]
             menu.addItem(renameItem)
 
             if rowNames.count > 1 {
                 let deleteItem = NSMenuItem(title: AppStrings.deleteSequence, action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
                 deleteItem.target = self
-                deleteItem.representedObject = row
+                deleteItem.representedObject = rowIDs[row]
                 menu.addItem(deleteItem)
             }
         }
@@ -190,7 +191,7 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     @objc private func setReferenceFromMenu(_ sender: NSMenuItem) {
-        onSetReference?(sender.representedObject as? Int)
+        onSetReference?(sender.representedObject as? AlignmentRowID)
     }
 
     @objc private func clearReferenceFromMenu(_ sender: NSMenuItem) {
@@ -198,16 +199,19 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     @objc private func copySequenceFromMenu(_ sender: NSMenuItem) {
-        guard let row = sender.representedObject as? Int else { return }
-        guard row >= 0, row < rowSequences.count else { return }
+        guard let rowID = sender.representedObject as? AlignmentRowID,
+              let row = rowIDs.firstIndex(of: rowID),
+              row < rowSequences.count else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(rowSequences[row], forType: .string)
     }
 
     @objc private func copyFASTAFromMenu(_ sender: NSMenuItem) {
-        guard let row = sender.representedObject as? Int else { return }
-        guard row >= 0, row < rowNames.count, row < rowSequences.count else { return }
+        guard let rowID = sender.representedObject as? AlignmentRowID,
+              let row = rowIDs.firstIndex(of: rowID),
+              row < rowNames.count,
+              row < rowSequences.count else { return }
         let fasta = AlignmentSerializer.serialize(
             rows: [AlignmentRow(name: rowNames[row], sequence: rowSequences[row])],
             preferredFormat: .fasta
@@ -226,12 +230,12 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     @objc private func renameSequenceFromMenu(_ sender: NSMenuItem) {
-        guard let row = sender.representedObject as? Int else { return }
-        onRenameSequence?(row)
+        guard let rowID = sender.representedObject as? AlignmentRowID else { return }
+        onRenameSequence?(rowID)
     }
 
     @objc private func deleteSequenceFromMenu(_ sender: NSMenuItem) {
-        guard let row = sender.representedObject as? Int else { return }
-        onDeleteSequence?(row)
+        guard let rowID = sender.representedObject as? AlignmentRowID else { return }
+        onDeleteSequence?(rowID)
     }
 }

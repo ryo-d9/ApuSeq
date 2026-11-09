@@ -22,6 +22,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let contentVersion: Int
     let defaultNameColumnWidth: CGFloat
     let displayedRowNames: [String]
+    let displayedRowIDs: [AlignmentRowID]
     let displayedRowSequences: [String]
     let highlightedNameRowIndex: Int?
     let nameSearchRequestID: Int
@@ -42,9 +43,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var currentSequenceRowIndex: Int?
     let onAddSequence: () -> Void
     let onAddFASTAFromClipboard: () -> Void
-    let onRenameSequence: (Int) -> Void
-    let onDeleteSequence: (Int) -> Void
-    let onSetReference: (Int?) -> Void
+    let onRenameSequence: (AlignmentRowID) -> Void
+    let onDeleteSequence: (AlignmentRowID) -> Void
+    let onSetReference: (AlignmentRowID?) -> Void
     let onNameFindTextChanged: (String) -> Void
     let onNameFindSubmit: (Int) -> Void
     let onNameFindClose: () -> Void
@@ -54,6 +55,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.setAccessibilityIdentifier("alignment-name-column")
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
+        nameColumnView.rowIDs = displayedRowIDs
         nameColumnView.highlightedRowIndex = highlightedNameRowIndex
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
@@ -94,6 +96,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.onNameFindClose = onNameFindClose
         containerView.updateNameRows(
             displayedRowNames,
+            rowIDs: displayedRowIDs,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,
@@ -124,6 +127,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(
             displayedRowNames,
+            rowIDs: displayedRowIDs,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,

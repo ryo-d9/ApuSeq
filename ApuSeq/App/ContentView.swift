@@ -518,6 +518,7 @@ private struct RootView: View {
             contentVersion: model.contentVersion,
             defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
             displayedRowNames: displayRows.map(\.name),
+            displayedRowIDs: displayRows.map(\.id),
             displayedRowSequences: displayRows.map(\.sequence),
             highlightedNameRowIndex: highlightedNameRowIndex,
             nameSearchRequestID: nameSearchRequestID,
@@ -538,8 +539,8 @@ private struct RootView: View {
             currentSequenceRowIndex: currentSequenceRowIndexBinding,
             onAddSequence: addSequence,
             onAddFASTAFromClipboard: addFASTAFromClipboard,
-            onRenameSequence: renameDisplayedSequence,
-            onDeleteSequence: deleteDisplayedSequence,
+            onRenameSequence: renameSequence,
+            onDeleteSequence: deleteSequence,
             onSetReference: setReference,
             onNameFindTextChanged: updateSequenceNameSearchText,
             onNameFindSubmit: searchSequenceName,
@@ -705,8 +706,8 @@ private struct RootView: View {
         backgroundMode = mode
     }
 
-    private func setReference(_ displayedRowIndex: Int?) {
-        selectedReferenceRowID = displayedRowIndex.flatMap { displayRows[safe: $0]?.id }
+    private func setReference(_ rowID: AlignmentRowID?) {
+        selectedReferenceRowID = rowID
         if selectedReferenceRowID != nil {
             showsReferencePanel = true
         }
@@ -891,12 +892,12 @@ private struct RootView: View {
         applyDocumentRows(rows, undoActionName: AppStrings.addFASTAFromClipboard)
     }
 
-    private func renameDisplayedSequence(at displayedRowIndex: Int) {
+    private func renameSequence(id rowID: AlignmentRowID) {
         guard canUseNamedSequenceEditing else { return }
-        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+        guard let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == rowID }) else { return }
 
         var rows = model.alignment.rows
-        let oldName = rows[displayedRowIndex].name
+        let oldName = rows[rowIndex].name
         var existingNames = Set(rows.map(\.name))
         existingNames.remove(oldName)
 
@@ -908,22 +909,22 @@ private struct RootView: View {
         ) else { return }
         guard newName != oldName else { return }
 
-        rows[displayedRowIndex] = AlignmentRow(
-            id: rows[displayedRowIndex].id,
+        rows[rowIndex] = AlignmentRow(
+            id: rows[rowIndex].id,
             name: newName,
-            sequence: rows[displayedRowIndex].sequence
+            sequence: rows[rowIndex].sequence
         )
         applyDocumentRows(rows, undoActionName: AppStrings.renameSequenceTitle)
     }
 
-    private func deleteDisplayedSequence(at displayedRowIndex: Int) {
+    private func deleteSequence(id rowID: AlignmentRowID) {
         guard canUseNamedSequenceEditing else { return }
         guard model.alignment.rows.count > 1 else { return }
-        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+        guard let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == rowID }) else { return }
 
-        let rowToDelete = model.alignment.rows[displayedRowIndex]
+        let rowToDelete = model.alignment.rows[rowIndex]
         var rows = model.alignment.rows
-        rows.remove(at: displayedRowIndex)
+        rows.remove(at: rowIndex)
 
         if selectedReferenceRowID == rowToDelete.id {
             selectedReferenceRowID = nil
@@ -932,15 +933,13 @@ private struct RootView: View {
     }
 
     private func renameCurrentSequence() {
-        guard let currentSequenceRowID,
-              let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == currentSequenceRowID }) else { return }
-        renameDisplayedSequence(at: rowIndex)
+        guard let currentSequenceRowID else { return }
+        renameSequence(id: currentSequenceRowID)
     }
 
     private func deleteCurrentSequence() {
-        guard let currentSequenceRowID,
-              let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == currentSequenceRowID }) else { return }
-        deleteDisplayedSequence(at: rowIndex)
+        guard let currentSequenceRowID else { return }
+        deleteSequence(id: currentSequenceRowID)
     }
 
     private func removeAllGapColumns() {
@@ -1021,7 +1020,7 @@ private struct RootView: View {
             NSSound.beep()
             return
         }
-        setReference(displayRows.firstIndex(where: { $0.id == currentSequenceRow.id }))
+        setReference(currentSequenceRow.id)
     }
 
     private func clearReference() {
