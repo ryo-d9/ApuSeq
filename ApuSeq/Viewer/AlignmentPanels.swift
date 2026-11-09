@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct FooterBar: View {
@@ -147,6 +148,7 @@ struct FileInformationView: View {
                 }
             }
             .disclosureGroupStyle(InspectorDisclosureGroupStyle())
+            .labeledContentStyle(InspectorLabeledContentStyle())
             .padding(12)
         }
         .background(.regularMaterial, ignoresSafeAreaEdges: .all)
@@ -167,6 +169,32 @@ private struct InspectorDisclosureGroupStyle: DisclosureGroupStyle {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .fixedSize()
+        }
+    }
+}
+
+private struct InspectorLabeledContentStyle: LabeledContentStyle {
+    @Environment(\.controlSize) private var controlSize
+
+    func makeBody(configuration: Configuration) -> some View {
+        LabeledContent {
+            configuration.content
+        } label: {
+            configuration.label
+                .font(.system(size: NSFont.systemFontSize(for: controlSize.nsControlSize)))
+        }
+    }
+}
+
+private extension ControlSize {
+    var nsControlSize: NSControl.ControlSize {
+        switch self {
+        case .mini: .mini
+        case .small: .small
+        case .regular: .regular
+        case .large: .large
+        case .extraLarge: .extraLarge
+        @unknown default: .regular
         }
     }
 }
