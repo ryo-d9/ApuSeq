@@ -1,14 +1,20 @@
 import AppKit
 import SwiftUI
 
+struct AlignmentTextChange {
+    let text: String
+    let editedRanges: [NSRange]
+    let alignmentLength: Int
+}
+
 struct AlignmentTextViewport: NSViewRepresentable {
     let nameAttributedText: NSAttributedString
-    let sequenceAttributedText: NSAttributedString
+    let sequenceText: String?
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
     let alignmentLength: Int
-    let identityByColumn: [Double]
-    let majorityResidueByColumn: [UInt16]
+    let identityByColumn: [Float]
+    let majorityResidueByColumn: [UInt8]
     let backgroundMode: AlignmentBackgroundMode
     let referenceSequenceForBackground: String?
     let identityColorThreshold: Double
@@ -16,6 +22,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let contentVersion: Int
     let defaultNameColumnWidth: CGFloat
     let displayedRowNames: [String]
+    let displayedRowIDs: [AlignmentRowID]
     let displayedRowSequences: [String]
     let highlightedNameRowIndex: Int?
     let nameSearchRequestID: Int
@@ -28,7 +35,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let auxiliaryLineCount: Int
     let isEditMode: Bool
     let canEditSequenceNames: Bool
-    let onSequenceEdited: (String) -> Void
+    let onSequenceEdited: (AlignmentTextChange) -> Void
     @Binding var selectedResidueCount: Int
     @Binding var selectedSequenceCount: Int
     @Binding var selectedStartPosition: Int?
@@ -36,9 +43,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
     @Binding var currentSequenceRowIndex: Int?
     let onAddSequence: () -> Void
     let onAddFASTAFromClipboard: () -> Void
-    let onRenameSequence: (Int) -> Void
-    let onDeleteSequence: (Int) -> Void
-    let onSetReference: (String?) -> Void
+    let onRenameSequence: (AlignmentRowID) -> Void
+    let onDeleteSequence: (AlignmentRowID) -> Void
+    let onSetReference: (AlignmentRowID?) -> Void
     let onNameFindTextChanged: (String) -> Void
     let onNameFindSubmit: (Int) -> Void
     let onNameFindClose: () -> Void
@@ -48,6 +55,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         nameColumnView.setAccessibilityIdentifier("alignment-name-column")
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         nameColumnView.rowNames = displayedRowNames
+        nameColumnView.rowIDs = displayedRowIDs
         nameColumnView.highlightedRowIndex = highlightedNameRowIndex
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
@@ -88,6 +96,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.onNameFindClose = onNameFindClose
         containerView.updateNameRows(
             displayedRowNames,
+            rowIDs: displayedRowIDs,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,
@@ -118,6 +127,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(
             displayedRowNames,
+            rowIDs: displayedRowIDs,
             sequences: displayedRowSequences,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,
@@ -154,43 +164,45 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.sequenceTextView.rowNames = displayedRowNames
         context.coordinator.isProgrammaticTextUpdate = true
 
-        let fingerprint = RenderedFingerprint(
-            namesChecksum: namesChecksum,
-            sequenceChecksum: sequenceChecksum,
-            nameLength: nameAttributedText.length,
-            sequenceLength: sequenceAttributedText.length
-        )
-        if context.coordinator.lastContentVersion != contentVersion ||
-            context.coordinator.lastRenderedFingerprint != fingerprint {
-            let previousAlignmentLength = containerView.sequenceTextView.alignmentLength
-            let selectedRanges = context.coordinator.logicalRanges(
-                from: containerView.sequenceTextView.selectedRanges.map(\.rangeValue),
-                alignmentLength: previousAlignmentLength
+        if let sequenceText {
+            let fingerprint = RenderedFingerprint(
+                namesChecksum: namesChecksum,
+                sequenceChecksum: sequenceChecksum,
+                nameLength: nameAttributedText.length,
+                sequenceLength: (sequenceText as NSString).length
             )
-            let columnSelectionRanges = context.coordinator.logicalRanges(
-                from: containerView.sequenceTextView.columnSelectionRanges,
-                alignmentLength: previousAlignmentLength
-            )
-            let columnSelectionAnchor = context.coordinator.logicalLocation(
-                from: containerView.sequenceTextView.columnSelectionAnchor,
-                alignmentLength: previousAlignmentLength
-            )
-            let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
-            containerView.nameColumnView.rowNames = displayedRowNames
-            containerView.sequenceTextView.textStorage?.setAttributedString(sequenceAttributedText)
-            containerView.sequenceTextView.alignmentLength = alignmentLength
-            context.coordinator.restoreSelection(
-                selectedRanges,
-                columnSelectionRanges: columnSelectionRanges,
-                columnSelectionAnchor: columnSelectionAnchor,
-                columnSelectionWidth: columnSelectionWidth,
-                in: containerView.sequenceTextView
-            )
-            context.coordinator.lastContentVersion = contentVersion
-            context.coordinator.lastRenderedFingerprint = fingerprint
-            DispatchQueue.main.async { [weak sequenceTextView = containerView.sequenceTextView, weak coordinator = context.coordinator] in
-                guard let sequenceTextView, let coordinator else { return }
-                coordinator.updateSelectedResidueCount(in: sequenceTextView)
+            if context.coordinator.lastContentVersion != contentVersion ||
+                context.coordinator.lastRenderedFingerprint != fingerprint {
+                let previousAlignmentLength = containerView.sequenceTextView.alignmentLength
+                let selectedRanges = context.coordinator.logicalRanges(
+                    from: containerView.sequenceTextView.selectedRanges.map(\.rangeValue),
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionRanges = context.coordinator.logicalRanges(
+                    from: containerView.sequenceTextView.columnSelectionRanges,
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionAnchor = context.coordinator.logicalLocation(
+                    from: containerView.sequenceTextView.columnSelectionAnchor,
+                    alignmentLength: previousAlignmentLength
+                )
+                let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
+                containerView.nameColumnView.rowNames = displayedRowNames
+                containerView.sequenceTextView.replaceAlignmentText(sequenceText)
+                containerView.sequenceTextView.alignmentLength = alignmentLength
+                context.coordinator.restoreSelection(
+                    selectedRanges,
+                    columnSelectionRanges: columnSelectionRanges,
+                    columnSelectionAnchor: columnSelectionAnchor,
+                    columnSelectionWidth: columnSelectionWidth,
+                    in: containerView.sequenceTextView
+                )
+                context.coordinator.lastContentVersion = contentVersion
+                context.coordinator.lastRenderedFingerprint = fingerprint
+                DispatchQueue.main.async { [weak sequenceTextView = containerView.sequenceTextView, weak coordinator = context.coordinator] in
+                    guard let sequenceTextView, let coordinator else { return }
+                    coordinator.updateSelectedResidueCount(in: sequenceTextView)
+                }
             }
         }
         context.coordinator.isProgrammaticTextUpdate = false
@@ -235,7 +247,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var lastFontSize = -1.0
         var lastRenderedFingerprint = RenderedFingerprint.empty
         var lastNameSearchRequestID = -1
-        var onSequenceEdited: ((String) -> Void)?
+        var onSequenceEdited: ((AlignmentTextChange) -> Void)?
         var isProgrammaticTextUpdate = false
 
         private struct SelectionSummary: Equatable {
@@ -331,9 +343,17 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            guard let sequenceView = textView as? AlignmentViewportSequenceTextView else { return }
             guard textView.isEditable else { return }
             guard !isProgrammaticTextUpdate else { return }
-            onSequenceEdited?(textView.string)
+            let editedRanges = sequenceView.consumeEditedRanges()
+            onSequenceEdited?(
+                AlignmentTextChange(
+                    text: textView.string,
+                    editedRanges: editedRanges,
+                    alignmentLength: sequenceView.alignmentLength
+                )
+            )
         }
 
         func textView(

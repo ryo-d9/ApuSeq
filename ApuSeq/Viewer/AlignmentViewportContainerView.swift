@@ -97,19 +97,21 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
 
     func updateNameRows(
         _ names: [String],
+        rowIDs: [AlignmentRowID],
         sequences: [String],
         isEditMode: Bool,
         canEditSequenceNames: Bool,
         onAddSequence: @escaping () -> Void,
         onAddFASTAFromClipboard: @escaping () -> Void,
-        onRenameSequence: @escaping (Int) -> Void,
-        onDeleteSequence: @escaping (Int) -> Void,
-        onSetReference: @escaping (String?) -> Void
+        onRenameSequence: @escaping (AlignmentRowID) -> Void,
+        onDeleteSequence: @escaping (AlignmentRowID) -> Void,
+        onSetReference: @escaping (AlignmentRowID?) -> Void
     ) {
         if nameColumnView.rowNames != names {
             nameColumnView.rowNames = names
         }
         nameColumnView.rowSequences = sequences
+        nameColumnView.rowIDs = rowIDs
         sequenceTextView.rowNames = names
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames

@@ -2,16 +2,16 @@ import AppKit
 import Foundation
 
 struct RenderedAlignment: @unchecked Sendable {
-    let sequenceAttributedText: NSAttributedString
+    let sequenceText: String?
     let nameAttributedText: NSAttributedString
     let nameColumnWidth: CGFloat
-    let identityByColumn: [Double]
-    let majorityResidueByColumn: [UInt16]
+    let identityByColumn: [Float]
+    let majorityResidueByColumn: [UInt8]
     let namesChecksum: UInt64
     let sequenceChecksum: UInt64
 
     nonisolated static let empty = RenderedAlignment(
-        sequenceAttributedText: NSAttributedString(string: ""),
+        sequenceText: "",
         nameAttributedText: NSAttributedString(string: ""),
         nameColumnWidth: 120,
         identityByColumn: [],
@@ -38,52 +38,62 @@ struct RenderedFingerprint: Equatable {
 enum AlignmentRenderer {
     nonisolated static func render(
         _ alignment: AlignmentData,
+        rowIndices: [Int]? = nil,
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
+        includesSequenceText: Bool = true,
+        previousIdentityByColumn: [Float] = [],
+        previousMajorityResidueByColumn: [UInt8] = [],
+        changedColumns: Range<Int>? = nil,
         fontSize: Double
     ) -> RenderedAlignment {
         guard !alignment.rows.isEmpty else { return .empty }
 
-        let nameWidth = alignment.rows.map { $0.name.count }.max() ?? 0
+        let resolvedRowIndices = rowIndices ?? Array(alignment.rows.indices)
+        let rows = resolvedRowIndices.map { alignment.rows[$0] }
+        let nameWidth = rows.map { $0.name.count }.max() ?? 0
         let baseFont = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: baseFont,
-            .foregroundColor: NSColor.labelColor
-        ]
         let nameAttributes: [NSAttributedString.Key: Any] = [
             .font: baseFont,
             .foregroundColor: NSColor.secondaryLabelColor
         ]
 
         let namesAttributed = NSMutableAttributedString()
-        let sequenceAttributed = NSMutableAttributedString()
-        let identityByColumn = needsIdentityByColumn ? AlignmentStatistics.columnIdentity(rows: alignment.rows) : []
-        let majorityResidueByColumn = needsMajorityResidueByColumn ? AlignmentStatistics.majorityResidues(rows: alignment.rows) : []
+        var sequenceText: String? = includesSequenceText ? String() : nil
+        if includesSequenceText {
+            sequenceText?.reserveCapacity(rows.reduce(0) { $0 + ($1.sequence as NSString).length + 1 })
+        }
+        let identityByColumn = needsIdentityByColumn
+            ? AlignmentStatistics.columnIdentity(
+                rows: rows,
+                previous: previousIdentityByColumn,
+                changedColumns: changedColumns
+            )
+            : []
+        let majorityResidueByColumn = needsMajorityResidueByColumn
+            ? AlignmentStatistics.majorityResidues(
+                rows: rows,
+                previous: previousMajorityResidueByColumn,
+                changedColumns: changedColumns
+            )
+            : []
         var namesHasher = Hasher()
         var sequenceHasher = Hasher()
 
-        for row in alignment.rows {
+        for row in rows {
             let paddedName = row.name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
             let nameLine = paddedName + "\n"
             let sequenceLine = row.sequence + "\n"
             namesHasher.combine(nameLine)
             sequenceHasher.combine(sequenceLine)
 
-            let sequenceLineStart = sequenceAttributed.length
-
             namesAttributed.append(NSAttributedString(string: nameLine, attributes: nameAttributes))
-            sequenceAttributed.append(NSAttributedString(string: sequenceLine, attributes: baseAttributes))
-
-            sequenceAttributed.addAttribute(
-                .residueSymbol,
-                value: true,
-                range: NSRange(location: sequenceLineStart, length: (row.sequence as NSString).length)
-            )
+            sequenceText?.append(sequenceLine)
         }
 
-        let nameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: alignment.rows, font: baseFont)
+        let nameColumnWidth = AlignmentStatistics.nameColumnWidth(rows: rows, font: baseFont)
         return RenderedAlignment(
-            sequenceAttributedText: sequenceAttributed,
+            sequenceText: sequenceText,
             nameAttributedText: namesAttributed,
             nameColumnWidth: nameColumnWidth,
             identityByColumn: identityByColumn,
@@ -104,15 +114,24 @@ enum AlignmentStatistics {
         return ceil(nameTextWidth + horizontalPadding)
     }
 
-    nonisolated static func columnIdentity(rows: [AlignmentRow]) -> [Double] {
+    nonisolated static func columnIdentity(rows: [AlignmentRow]) -> [Float] {
+        columnIdentity(rows: rows, previous: [], changedColumns: nil)
+    }
+
+    nonisolated static func columnIdentity(
+        rows: [AlignmentRow],
+        previous: [Float],
+        changedColumns: Range<Int>?
+    ) -> [Float] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
-        var identity: [Double] = Array(repeating: 0, count: length)
+        var identity = resized(previous, to: length, defaultValue: 0)
+        let columns = resolvedColumns(changedColumns, existingCount: previous.count, length: length)
         var counts: [Int] = Array(repeating: 0, count: 128)
         var touched: [Int] = []
         touched.reserveCapacity(16)
 
-        for column in 0..<length {
+        for column in columns {
             var totalCount = 0
             var mostCommonCount = 0
 
@@ -137,7 +156,7 @@ enum AlignmentStatistics {
                 touched.removeAll(keepingCapacity: true)
                 continue
             }
-            identity[column] = Double(mostCommonCount) / Double(totalCount)
+            identity[column] = Float(mostCommonCount) / Float(totalCount)
             for bucket in touched {
                 counts[bucket] = 0
             }
@@ -193,15 +212,24 @@ enum AlignmentStatistics {
         return result
     }
 
-    nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt16] {
+    nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt8] {
+        majorityResidues(rows: rows, previous: [], changedColumns: nil)
+    }
+
+    nonisolated static func majorityResidues(
+        rows: [AlignmentRow],
+        previous: [UInt8],
+        changedColumns: Range<Int>?
+    ) -> [UInt8] {
         guard let length = rows.first?.sequence.count, length > 0 else { return [] }
         let sequences = rows.map { $0.sequence as NSString }
-        var majority: [UInt16] = Array(repeating: 0, count: length)
+        var majority = resized(previous, to: length, defaultValue: 0)
+        let columns = resolvedColumns(changedColumns, existingCount: previous.count, length: length)
         var counts: [Int] = Array(repeating: 0, count: 128)
         var touched: [Int] = []
         touched.reserveCapacity(16)
 
-        for column in 0..<length {
+        for column in columns {
             var bestBucket = 0
             var bestCount = 0
 
@@ -220,7 +248,7 @@ enum AlignmentStatistics {
                 }
             }
 
-            majority[column] = UInt16(bestBucket)
+            majority[column] = UInt8(bestBucket)
             for bucket in touched {
                 counts[bucket] = 0
             }
@@ -228,6 +256,27 @@ enum AlignmentStatistics {
         }
 
         return majority
+    }
+
+    nonisolated private static func resolvedColumns(
+        _ requested: Range<Int>?,
+        existingCount: Int,
+        length: Int
+    ) -> Range<Int> {
+        guard existingCount > 0, let requested else { return 0..<length }
+        let lowerBound = min(max(requested.lowerBound, 0), length)
+        let upperBound = min(max(requested.upperBound, lowerBound), length)
+        return lowerBound..<upperBound
+    }
+
+    nonisolated private static func resized<Element>(
+        _ values: [Element],
+        to count: Int,
+        defaultValue: Element
+    ) -> [Element] {
+        if values.count == count { return values }
+        if values.count > count { return Array(values.prefix(count)) }
+        return values + Array(repeating: defaultValue, count: count - values.count)
     }
 
     nonisolated private static func residueBucketIndex(_ residue: UInt16) -> Int? {
@@ -238,9 +287,9 @@ enum AlignmentStatistics {
 }
 
 enum IdentityPalette {
-    static func backgroundColor(for identity: Double, threshold: Double) -> NSColor? {
+    static func backgroundColor(for identity: Float, threshold: Double) -> NSColor? {
         let clamped = min(max(identity, 0), 1)
-        let clampedThreshold = min(max(threshold, 0), 1)
+        let clampedThreshold = Float(min(max(threshold, 0), 1))
         if clamped >= 1.0 {
             return NSColor.systemBlue.withAlphaComponent(0.56)
         }
@@ -261,12 +310,12 @@ enum IdentityPalette {
 enum IdentityBars {
     nonisolated private static let glyphs: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
-    nonisolated static func barIndex(for value: Double) -> Int {
+    nonisolated static func barIndex(for value: Float) -> Int {
         let clamped = min(max(value, 0), 1)
         return min(Int((clamped * 8.0).rounded()), 8)
     }
 
-    nonisolated static func barString<C: Collection>(from values: C) -> String where C.Element == Double {
+    nonisolated static func barString<C: Collection>(from values: C) -> String where C.Element == Float {
         var output = String()
         output.reserveCapacity(values.count)
         for value in values {
@@ -290,10 +339,6 @@ extension Array {
         guard indices.contains(index) else { return nil }
         return self[index]
     }
-}
-
-extension NSAttributedString.Key {
-    nonisolated static let residueSymbol = NSAttributedString.Key("ApuSeq.ResidueSymbol")
 }
 
 enum ResiduePalette {

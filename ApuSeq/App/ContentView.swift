@@ -83,19 +83,23 @@ private struct RootView: View {
     @State private var showsSequenceNameFindBar = false
     @State private var sequenceNameFindFocusRequestID = 0
     @State private var sequenceNameSearchMessage: String?
-    @State private var currentSequenceRowIndex: Int?
+    @State private var currentSequenceRowID: AlignmentRowID?
     @State private var isRunningMAFFTAlignment = false
     @State private var mafftAlignmentTask: Task<Void, Never>?
     @State private var mafftAlignmentErrorMessage = ""
     @State private var showsMAFFTAlignmentError = false
     @State private var operationErrorMessage = ""
     @State private var showsOperationError = false
+    @State private var editorGeneratedDocumentText: String?
+    @State private var pendingDocumentAlignment: AlignmentData?
+    @State private var documentSerializationTask: Task<Void, Never>?
+    @State private var documentSerializationGeneration = 0
 
     @SceneStorage("showReferencePanel") private var showsReferencePanel = false
     @SceneStorage("showConsensusPanel") private var showsConsensusPanel = false
     @SceneStorage("showConservationPanel") private var showsConservationPanel = false
 
-    @State private var selectedReferenceName: String?
+    @State private var selectedReferenceRowID: AlignmentRowID?
     @State private var viewerMode: ViewerMode = .view
 
     private var needsIdentityByColumn: Bool {
@@ -110,8 +114,16 @@ private struct RootView: View {
         selectedReferenceSequence != nil
     }
 
+    private var selectedReferenceRow: AlignmentRow? {
+        model.row(id: selectedReferenceRowID)
+    }
+
+    private var selectedReferenceName: String? {
+        selectedReferenceRow?.name
+    }
+
     private var selectedReferenceSequence: String? {
-        model.row(named: selectedReferenceName)?.sequence
+        selectedReferenceRow?.sequence
     }
 
     private var referenceSequenceForBackground: String? {
@@ -125,15 +137,26 @@ private struct RootView: View {
     }
 
     private var displayRows: [AlignmentRow] {
-        model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
+        guard !model.displayedRowIndices.isEmpty else { return model.alignment.rows }
+        return model.displayedRowIndices.compactMap { index in
+            model.alignment.rows[safe: index]
+        }
     }
 
     private var currentSequenceRow: AlignmentRow? {
-        guard let currentSequenceRowIndex,
-              displayRows.indices.contains(currentSequenceRowIndex) else {
-            return nil
-        }
-        return displayRows[currentSequenceRowIndex]
+        model.row(id: currentSequenceRowID)
+    }
+
+    private var currentSequenceRowIndexBinding: Binding<Int?> {
+        Binding(
+            get: {
+                guard let currentSequenceRowID else { return nil }
+                return displayRows.firstIndex(where: { $0.id == currentSequenceRowID })
+            },
+            set: { index in
+                currentSequenceRowID = index.flatMap { displayRows[safe: $0]?.id }
+            }
+        )
     }
 
     private var sequenceNameSearchStatusText: String? {
@@ -223,7 +246,7 @@ private struct RootView: View {
 
     private var auxiliaryPanel: AuxiliaryPanelContent {
         model.auxiliaryPanelContent(
-            referenceName: selectedReferenceName,
+            referenceID: selectedReferenceRowID,
             showsReferencePanel: showsReferencePanel,
             showsConsensusPanel: showsConsensusPanel,
             showsConservationPanel: showsConservationPanel
@@ -468,7 +491,7 @@ private struct RootView: View {
         case .minority:
             let normalizedResidue = normalizedResidueCode(residue)
             guard let majorityResidue = model.renderedAlignment.majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
-            guard normalizedResidue != majorityResidue else { return nil }
+            guard normalizedResidue != UInt16(majorityResidue) else { return nil }
             return ResiduePalette.backgroundColor(for: normalizedResidue)
         case .reference:
             return ReferenceDifferencePalette.backgroundColor(for: residue, referenceResidue: referenceResidue)
@@ -482,7 +505,7 @@ private struct RootView: View {
     private var alignmentViewport: AlignmentTextViewport {
         AlignmentTextViewport(
             nameAttributedText: model.renderedAlignment.nameAttributedText,
-            sequenceAttributedText: model.renderedAlignment.sequenceAttributedText,
+            sequenceText: model.renderedAlignment.sequenceText,
             namesChecksum: model.renderedAlignment.namesChecksum,
             sequenceChecksum: model.renderedAlignment.sequenceChecksum,
             alignmentLength: displayAlignment.length,
@@ -495,6 +518,7 @@ private struct RootView: View {
             contentVersion: model.contentVersion,
             defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
             displayedRowNames: displayRows.map(\.name),
+            displayedRowIDs: displayRows.map(\.id),
             displayedRowSequences: displayRows.map(\.sequence),
             highlightedNameRowIndex: highlightedNameRowIndex,
             nameSearchRequestID: nameSearchRequestID,
@@ -512,11 +536,11 @@ private struct RootView: View {
             selectedSequenceCount: $selectedSequenceCount,
             selectedStartPosition: $selectedStartPosition,
             selectedEndPosition: $selectedEndPosition,
-            currentSequenceRowIndex: $currentSequenceRowIndex,
+            currentSequenceRowIndex: currentSequenceRowIndexBinding,
             onAddSequence: addSequence,
             onAddFASTAFromClipboard: addFASTAFromClipboard,
-            onRenameSequence: renameDisplayedSequence,
-            onDeleteSequence: deleteDisplayedSequence,
+            onRenameSequence: renameSequence,
+            onDeleteSequence: deleteSequence,
             onSetReference: setReference,
             onNameFindTextChanged: updateSequenceNameSearchText,
             onNameFindSubmit: searchSequenceName,
@@ -600,11 +624,23 @@ private struct RootView: View {
         }
         .onDisappear {
             cancelMAFFTAlignment()
+            flushPendingDocumentSerialization()
         }
-        .onChange(of: document.rawText) { _, _ in parseAndRender() }
-        .onChange(of: model.alignment.rows.count) { _, _ in
+        .onChange(of: document.rawText) { _, newText in
+            if editorGeneratedDocumentText == newText {
+                editorGeneratedDocumentText = nil
+            } else {
+                cancelPendingDocumentSerialization()
+                parseAndRender()
+            }
+        }
+        .onChange(of: model.alignmentVersion) { _, _ in
             validateDisplayOrderMode()
             validateCurrentSequenceRow()
+            if selectedReferenceRowID != nil, !model.containsRow(id: selectedReferenceRowID) {
+                selectedReferenceRowID = nil
+                validateReferenceBackgroundMode()
+            }
             if showsSequenceNameFindBar {
                 updateSequenceNameSearchHighlight(scrollToMatch: false)
             }
@@ -655,6 +691,9 @@ private struct RootView: View {
         if mode == .edit, viewerMode != .edit, showEditModeAutosaveWarning {
             guard confirmEnteringEditMode() else { return }
         }
+        if viewerMode == .edit, mode != .edit {
+            flushPendingDocumentSerialization()
+        }
         viewerMode = mode
     }
 
@@ -667,9 +706,9 @@ private struct RootView: View {
         backgroundMode = mode
     }
 
-    private func setReference(_ selectedName: String?) {
-        selectedReferenceName = selectedName
-        if selectedName != nil {
+    private func setReference(_ rowID: AlignmentRowID?) {
+        selectedReferenceRowID = rowID
+        if selectedReferenceRowID != nil {
             showsReferencePanel = true
         }
         validateReferenceBackgroundMode()
@@ -694,8 +733,8 @@ private struct RootView: View {
     }
 
     private func parseAndRender() {
-        if selectedReferenceName != nil, !model.containsRow(named: selectedReferenceName) {
-            selectedReferenceName = nil
+        if selectedReferenceRowID != nil, !model.containsRow(id: selectedReferenceRowID) {
+            selectedReferenceRowID = nil
         }
         validateReferenceBackgroundMode()
         model.parseAndRender(
@@ -749,9 +788,9 @@ private struct RootView: View {
     }
 
     private func validateCurrentSequenceRow() {
-        guard let currentSequenceRowIndex else { return }
-        guard displayRows.indices.contains(currentSequenceRowIndex) else {
-            self.currentSequenceRowIndex = nil
+        guard let currentSequenceRowID else { return }
+        guard model.containsRow(id: currentSequenceRowID) else {
+            self.currentSequenceRowID = nil
             return
         }
     }
@@ -762,11 +801,60 @@ private struct RootView: View {
         }
     }
 
-    private func applyEditedSequenceText(_ editedText: String) {
+    private func applyEditedSequenceText(_ change: AlignmentTextChange) {
         guard viewerMode == .edit else { return }
-        guard let rebuilt = rebuildAlignment(fromEditedSequenceText: editedText) else { return }
+        guard let edit = AlignmentTextEditor.apply(
+            text: change.text,
+            editedRanges: change.editedRanges,
+            alignmentLength: change.alignmentLength,
+            to: model.alignment
+        ) else { return }
+        // NSTextView owns character-level undo. The model follows immediately;
+        // document serialization is coalesced separately for autosave.
+        model.applyEditorAlignment(
+            edit.alignment,
+            changedColumns: edit.changedColumns,
+            fontSize: alignmentFontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            referenceName: selectedReferenceName
+        )
+        scheduleDocumentSerialization(for: edit.alignment)
+    }
+
+    private func scheduleDocumentSerialization(for alignment: AlignmentData) {
+        documentSerializationTask?.cancel()
+        documentSerializationGeneration += 1
+        let generation = documentSerializationGeneration
+        pendingDocumentAlignment = alignment
+        document.stageForSerialization(alignment)
+        documentSerializationTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, generation == documentSerializationGeneration else { return }
+            commitDocumentSerialization(alignment)
+        }
+    }
+
+    private func flushPendingDocumentSerialization() {
+        guard let pendingDocumentAlignment else { return }
+        cancelPendingDocumentSerialization()
+        commitDocumentSerialization(pendingDocumentAlignment)
+    }
+
+    private func cancelPendingDocumentSerialization() {
+        documentSerializationGeneration += 1
+        documentSerializationTask?.cancel()
+        documentSerializationTask = nil
+        pendingDocumentAlignment = nil
+    }
+
+    private func commitDocumentSerialization(_ alignment: AlignmentData) {
+        documentSerializationTask = nil
+        pendingDocumentAlignment = nil
+        let rebuilt = rebuildAlignment(fromRows: alignment.rows)
         guard document.rawText != rebuilt else { return }
-        applyDocumentRawText(rebuilt, undoActionName: String(localized: "Edit"))
+        editorGeneratedDocumentText = rebuilt
+        document.rawText = rebuilt
     }
 
     private func addSequence() {
@@ -782,7 +870,7 @@ private struct RootView: View {
         var rows = model.alignment.rows
         let newLength = max(model.alignment.length, 1)
         rows.append(AlignmentRow(name: name, sequence: String(repeating: "-", count: newLength)))
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.addSequenceTitle)
+        applyDocumentRows(rows, undoActionName: AppStrings.addSequenceTitle)
     }
 
     private func addFASTAFromClipboard() {
@@ -801,15 +889,15 @@ private struct RootView: View {
         }
 
         let rows = rowsByAppendingUniqueRows(parsed.rows)
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.addFASTAFromClipboard)
+        applyDocumentRows(rows, undoActionName: AppStrings.addFASTAFromClipboard)
     }
 
-    private func renameDisplayedSequence(at displayedRowIndex: Int) {
+    private func renameSequence(id rowID: AlignmentRowID) {
         guard canUseNamedSequenceEditing else { return }
-        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+        guard let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == rowID }) else { return }
 
         var rows = model.alignment.rows
-        let oldName = rows[displayedRowIndex].name
+        let oldName = rows[rowIndex].name
         var existingNames = Set(rows.map(\.name))
         existingNames.remove(oldName)
 
@@ -821,36 +909,37 @@ private struct RootView: View {
         ) else { return }
         guard newName != oldName else { return }
 
-        rows[displayedRowIndex] = AlignmentRow(name: newName, sequence: rows[displayedRowIndex].sequence)
-        if selectedReferenceName == oldName {
-            selectedReferenceName = newName
-        }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.renameSequenceTitle)
+        rows[rowIndex] = AlignmentRow(
+            id: rows[rowIndex].id,
+            name: newName,
+            sequence: rows[rowIndex].sequence
+        )
+        applyDocumentRows(rows, undoActionName: AppStrings.renameSequenceTitle)
     }
 
-    private func deleteDisplayedSequence(at displayedRowIndex: Int) {
+    private func deleteSequence(id rowID: AlignmentRowID) {
         guard canUseNamedSequenceEditing else { return }
         guard model.alignment.rows.count > 1 else { return }
-        guard model.alignment.rows.indices.contains(displayedRowIndex) else { return }
+        guard let rowIndex = model.alignment.rows.firstIndex(where: { $0.id == rowID }) else { return }
 
-        let rowToDelete = model.alignment.rows[displayedRowIndex]
+        let rowToDelete = model.alignment.rows[rowIndex]
         var rows = model.alignment.rows
-        rows.remove(at: displayedRowIndex)
+        rows.remove(at: rowIndex)
 
-        if selectedReferenceName == rowToDelete.name {
-            selectedReferenceName = nil
+        if selectedReferenceRowID == rowToDelete.id {
+            selectedReferenceRowID = nil
         }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.deleteSequence)
+        applyDocumentRows(rows, undoActionName: AppStrings.deleteSequence)
     }
 
     private func renameCurrentSequence() {
-        guard let currentSequenceRowIndex else { return }
-        renameDisplayedSequence(at: currentSequenceRowIndex)
+        guard let currentSequenceRowID else { return }
+        renameSequence(id: currentSequenceRowID)
     }
 
     private func deleteCurrentSequence() {
-        guard let currentSequenceRowIndex else { return }
-        deleteDisplayedSequence(at: currentSequenceRowIndex)
+        guard let currentSequenceRowID else { return }
+        deleteSequence(id: currentSequenceRowID)
     }
 
     private func removeAllGapColumns() {
@@ -859,13 +948,13 @@ private struct RootView: View {
             from: model.alignment.rows,
             length: model.alignment.length
         ) else { return }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.removeAllGapColumns)
+        applyDocumentRows(rows, undoActionName: AppStrings.removeAllGapColumns)
     }
 
     private func trimTrailingGaps() {
         guard viewerMode == .edit else { return }
         guard let rows = AlignmentColumnEditor.trimmingTrailingGaps(from: model.alignment.rows) else { return }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.trimTrailingGaps)
+        applyDocumentRows(rows, undoActionName: AppStrings.trimTrailingGaps)
     }
 
     private func sortSequences(_ mode: AlignmentDisplayOrderMode) {
@@ -883,7 +972,7 @@ private struct RootView: View {
         }
 
         guard !sameRowOrder(rows, model.alignment.rows) else { return }
-        applyDocumentRawText(rebuildAlignment(fromRows: rows), undoActionName: AppStrings.sortSequences)
+        applyDocumentRows(rows, undoActionName: AppStrings.sortSequences)
     }
 
     private func copyConsensus() {
@@ -931,7 +1020,7 @@ private struct RootView: View {
             NSSound.beep()
             return
         }
-        setReference(currentSequenceRow.name)
+        setReference(currentSequenceRow.id)
     }
 
     private func clearReference() {
@@ -1019,12 +1108,13 @@ private struct RootView: View {
 
     private func startMAFFTAlignment() {
         guard canAlignWithMAFFT else { return }
-        let rawText = document.rawText
+        let rows = model.alignment.rows
         isRunningMAFFTAlignment = true
         mafftAlignmentTask = Task { @MainActor in
             do {
-                let aligned = try await MAFFTAligner.alignAuto(rawText: rawText)
+                let alignedRows = try await MAFFTAligner.alignAuto(rows: rows)
                 guard !Task.isCancelled else { return }
+                let aligned = AlignmentSerializer.serialize(rows: alignedRows, preferredFormat: .fasta)
                 finishMAFFTAlignment()
                 newDocument {
                     ApuSeqDocument(rawText: aligned)
@@ -1052,10 +1142,7 @@ private struct RootView: View {
                 )
                 guard !Task.isCancelled else { return }
                 finishMAFFTAlignment()
-                applyDocumentRawText(
-                    rebuildAlignment(fromRows: realignedRows),
-                    undoActionName: AppStrings.alignSelectedColumnsWithMAFFTAuto
-                )
+                applyDocumentRows(realignedRows, undoActionName: AppStrings.alignSelectedColumnsWithMAFFTAuto)
             } catch is CancellationError {
                 finishMAFFTAlignment()
             } catch {
@@ -1068,16 +1155,17 @@ private struct RootView: View {
 
     private func startAminoAcidGuidedNucleotideAlignment(frameOffset: Int, codonTable: TranslationCodonTable) {
         guard canAlignAminoAcidGuidedNucleotide else { return }
-        let rawText = document.rawText
+        let rows = model.alignment.rows
         isRunningMAFFTAlignment = true
         mafftAlignmentTask = Task { @MainActor in
             do {
-                let aligned = try await AminoAcidGuidedNucleotideAligner.align(
-                    rawText: rawText,
+                let alignedRows = try await AminoAcidGuidedNucleotideAligner.align(
+                    rows: rows,
                     frameOffset: frameOffset,
                     codonTable: codonTable
                 )
                 guard !Task.isCancelled else { return }
+                let aligned = AlignmentSerializer.serialize(rows: alignedRows, preferredFormat: .fasta)
                 finishMAFFTAlignment()
                 newDocument {
                     ApuSeqDocument(rawText: aligned)
@@ -1114,10 +1202,22 @@ private struct RootView: View {
         return lower..<upper
     }
 
-    private func applyDocumentRawText(_ newText: String, undoActionName: String) {
+    private func applyDocumentRows(_ rows: [AlignmentRow], undoActionName: String) {
+        let alignment = AlignmentParser.normalize(rows: rows, format: preferredFormatForNamedSequenceEditing)
+        let newText = rebuildAlignment(fromRows: alignment.rows)
+        cancelPendingDocumentSerialization()
         let currentText = document.rawText
         guard currentText != newText else { return }
         registerRawTextUndo(from: newText, to: currentText, actionName: undoActionName)
+        model.applyAlignment(
+            alignment,
+            fontSize: alignmentFontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: effectiveDisplayOrderMode,
+            referenceName: selectedReferenceName
+        )
+        editorGeneratedDocumentText = newText
         document.rawText = newText
     }
 
@@ -1208,7 +1308,7 @@ private struct RootView: View {
 
         for row in rowsToAppend {
             let name = uniqueSequenceName(row.name, existingNames: &existingNames)
-            rows.append(AlignmentRow(name: name, sequence: row.sequence))
+            rows.append(AlignmentRow(id: row.id, name: name, sequence: row.sequence))
         }
         return rows
     }
@@ -1227,20 +1327,6 @@ private struct RootView: View {
         }
         existingNames.insert(candidate)
         return candidate
-    }
-
-    private func rebuildAlignment(fromEditedSequenceText editedText: String) -> String? {
-        var sequenceLines = editedText
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .map(String.init)
-        if sequenceLines.last == "" {
-            sequenceLines.removeLast()
-        }
-        guard sequenceLines.count == displayRows.count else { return nil }
-        let rows = zip(displayRows, sequenceLines).map { row, sequence in
-            AlignmentRow(name: row.name, sequence: sequence)
-        }
-        return rebuildAlignment(fromRows: rows)
     }
 
     private func rebuildAlignment(fromRows rows: [AlignmentRow]) -> String {

@@ -60,7 +60,7 @@ enum MAFFTAligner {
         try Task.checkCancellation()
 
         let temporaryRows = rows.enumerated().map { index, row in
-            AlignmentRow(name: temporaryName(for: index), sequence: row.sequence)
+            AlignmentRow(id: row.id, name: temporaryName(for: index), sequence: row.sequence)
         }
         let fasta = AlignmentSerializer.serialize(rows: temporaryRows, preferredFormat: .fasta)
         let mafftURL = try bundledMAFFTScriptURL()
@@ -89,7 +89,7 @@ enum MAFFTAligner {
             guard let sequence = sequencesByName[name] else {
                 throw MAFFTAlignmentError.emptyOutput
             }
-            return AlignmentRow(name: rows[index].name, sequence: sequence)
+            return AlignmentRow(id: rows[index].id, name: rows[index].name, sequence: sequence)
         }
     }
 
@@ -225,6 +225,7 @@ enum AlignmentRangeRealigner {
 
         let fragments = rows.enumerated().map { index, row in
             RegionFragment(
+                rowID: row.id,
                 rowIndex: index,
                 name: row.name,
                 prefix: substring(row.sequence, start: 0, end: columnRange.lowerBound),
@@ -235,14 +236,14 @@ enum AlignmentRangeRealigner {
         let nonEmptyFragments = fragments.compactMap { fragment -> AlignmentRow? in
             let sequence = degapped(fragment.selected)
             guard !sequence.isEmpty else { return nil }
-            return AlignmentRow(name: temporaryName(for: fragment.rowIndex), sequence: sequence)
+            return AlignmentRow(id: fragment.rowID, name: temporaryName(for: fragment.rowIndex), sequence: sequence)
         }
         guard nonEmptyFragments.count >= 2 else {
             throw AlignmentRangeRealignmentError.insufficientNonEmptyRows
         }
 
         let alignedRows = try await aligner(nonEmptyFragments)
-        let alignedByName = Dictionary(uniqueKeysWithValues: alignedRows.map { ($0.name, $0.sequence) })
+        let alignedByID = Dictionary(uniqueKeysWithValues: alignedRows.map { ($0.id, $0.sequence) })
         let alignedLength = alignedRows.map { ($0.sequence as NSString).length }.max() ?? 0
 
         return try fragments.map { fragment in
@@ -250,12 +251,13 @@ enum AlignmentRangeRealigner {
             if degapped(fragment.selected).isEmpty {
                 selectedSequence = String(repeating: "-", count: alignedLength)
             } else {
-                guard let aligned = alignedByName[temporaryName(for: fragment.rowIndex)] else {
+                guard let aligned = alignedByID[fragment.rowID] else {
                     throw AlignmentRangeRealignmentError.missingAlignedRow
                 }
                 selectedSequence = aligned
             }
             return AlignmentRow(
+                id: fragment.rowID,
                 name: fragment.name,
                 sequence: fragment.prefix + selectedSequence + fragment.suffix
             )
@@ -263,6 +265,7 @@ enum AlignmentRangeRealigner {
     }
 
     private struct RegionFragment {
+        let rowID: AlignmentRowID
         let rowIndex: Int
         let name: String
         let prefix: String

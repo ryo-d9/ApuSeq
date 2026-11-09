@@ -6,12 +6,12 @@ import Observation
 final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
-    var displayedRows: [AlignmentRow] = []
+    var displayedRowIndices: [Int] = []
     var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
 
-    private var alignmentVersion = 0
+    private(set) var alignmentVersion = 0
     private var parseTask: Task<Void, Never>?
     private var renderTask: Task<Void, Never>?
     private var cachedRenderVersion = -1
@@ -19,12 +19,14 @@ final class AlignmentViewModel {
     private var cachedRenderIdentityMode = false
     private var cachedRenderMajorityMode = false
     private var cachedRenderOrderMode: AlignmentDisplayOrderMode = .original
+    private var cachedRenderIncludesSequenceText = false
     private var cachedAlignment: RenderedAlignment?
-    private var cachedDisplayedRows: [AlignmentRow] = []
+    private var cachedDisplayedRowIndices: [Int] = []
     private var cachedConsensusKey: ConsensusKey?
     private var cachedConsensus: String = ""
     private var cachedAuxiliaryKey: AuxiliaryKey?
     private var cachedAuxiliaryContent: AuxiliaryPanelContent = .empty
+    private var pendingEditorChangedColumns: Range<Int>?
 
     func parseAndRender(
         rawText: String,
@@ -39,8 +41,9 @@ final class AlignmentViewModel {
 
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alignment = .empty
+            alignmentVersion += 1
             renderedAlignment = .empty
-            displayedRows = []
+            displayedRowIndices = []
             renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
@@ -72,8 +75,9 @@ final class AlignmentViewModel {
             } catch {
                 await MainActor.run {
                     alignment = .empty
+                    alignmentVersion += 1
                     renderedAlignment = .empty
-                    displayedRows = []
+                    displayedRowIndices = []
                     renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
@@ -88,16 +92,19 @@ final class AlignmentViewModel {
         needsIdentityByColumn: Bool,
         needsMajorityResidueByColumn: Bool,
         displayOrderMode: AlignmentDisplayOrderMode,
-        referenceName: String?
+        referenceName: String?,
+        preservesTextStorage: Bool = false
     ) {
         renderTask?.cancel()
+        let includesSequenceText = !preservesTextStorage
 
         let cacheKeyMatches =
             cachedRenderVersion == alignmentVersion &&
             abs(cachedRenderFontSize - fontSize) < 0.001 &&
             cachedRenderIdentityMode == needsIdentityByColumn &&
             cachedRenderMajorityMode == needsMajorityResidueByColumn &&
-            cachedRenderOrderMode == displayOrderMode
+            cachedRenderOrderMode == displayOrderMode &&
+            cachedRenderIncludesSequenceText == includesSequenceText
 
         if !cacheKeyMatches {
             cachedRenderVersion = alignmentVersion
@@ -105,12 +112,18 @@ final class AlignmentViewModel {
             cachedRenderIdentityMode = needsIdentityByColumn
             cachedRenderMajorityMode = needsMajorityResidueByColumn
             cachedRenderOrderMode = displayOrderMode
+            cachedRenderIncludesSequenceText = includesSequenceText
             cachedAlignment = nil
-            cachedDisplayedRows = []
+            cachedDisplayedRowIndices = []
         }
 
         if let cachedAlignment {
-            apply(cachedAlignment, displayedRows: cachedDisplayedRows, displayOrderMode: displayOrderMode)
+            apply(
+                cachedAlignment,
+                displayedRowIndices: cachedDisplayedRowIndices,
+                displayOrderMode: displayOrderMode,
+                preservesTextStorage: preservesTextStorage
+            )
             return
         }
 
@@ -121,60 +134,169 @@ final class AlignmentViewModel {
         let currentVersion = alignmentVersion
 
         renderTask = Task(priority: .userInitiated) {
-            let renderResult: (RenderedAlignment, [AlignmentRow]) = await runOnBackground {
-                let orderedRows: [AlignmentRow]
+            let renderResult: (RenderedAlignment, [Int]) = await runOnBackground {
+                let orderedIndices: [Int]
                 switch displayOrderMode {
                 case .original:
-                    orderedRows = baseRows
+                    orderedIndices = Array(baseRows.indices)
                 case .name:
-                    orderedRows = AlignmentRowOrdering.nameOrderedRows(baseRows)
+                    orderedIndices = AlignmentRowOrdering.orderedIndicesByName(baseRows)
                 case .upgma:
-                    orderedRows = AlignmentRowOrdering.upgmaOrderedRows(baseRows)
+                    orderedIndices = AlignmentRowOrdering.upgmaOrderedIndices(baseRows)
                 }
-                let displayAlignment = AlignmentData(
+                let sourceAlignment = AlignmentData(
                     format: format,
-                    rows: orderedRows,
+                    rows: baseRows,
                     length: length,
                     sequenceKind: sequenceKind
                 )
                 let rendered = AlignmentRenderer.render(
-                    displayAlignment,
+                    sourceAlignment,
+                    rowIndices: orderedIndices,
                     needsIdentityByColumn: needsIdentityByColumn,
                     needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                    includesSequenceText: includesSequenceText,
                     fontSize: fontSize
                 )
-                return (rendered, orderedRows)
+                return (rendered, orderedIndices)
             }
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard currentVersion == alignmentVersion else { return }
                 cachedAlignment = renderResult.0
-                cachedDisplayedRows = renderResult.1
-                apply(renderResult.0, displayedRows: renderResult.1, displayOrderMode: displayOrderMode)
+                cachedDisplayedRowIndices = renderResult.1
+                apply(
+                    renderResult.0,
+                    displayedRowIndices: renderResult.1,
+                    displayOrderMode: displayOrderMode,
+                    preservesTextStorage: preservesTextStorage
+                )
             }
         }
     }
 
-    func row(named name: String?) -> AlignmentRow? {
-        guard let name else { return nil }
-        return alignment.rows.first(where: { $0.name == name })
+    func applyEditorAlignment(
+        _ editedAlignment: AlignmentData,
+        changedColumns: Range<Int>,
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        referenceName: String?
+    ) {
+        parseTask?.cancel()
+        renderTask?.cancel()
+        let accumulatedChangedColumns: Range<Int>
+        if let pendingEditorChangedColumns {
+            if alignment.length == editedAlignment.length {
+                accumulatedChangedColumns = min(pendingEditorChangedColumns.lowerBound, changedColumns.lowerBound)..<max(
+                    pendingEditorChangedColumns.upperBound,
+                    changedColumns.upperBound
+                )
+            } else {
+                accumulatedChangedColumns = 0..<editedAlignment.length
+            }
+        } else {
+            accumulatedChangedColumns = changedColumns
+        }
+        let previousIdentityByColumn = renderedAlignment.identityByColumn
+        let previousMajorityResidueByColumn = renderedAlignment.majorityResidueByColumn
+        alignment = editedAlignment
+        alignmentVersion += 1
+        parseErrorMessage = nil
+        clearCache()
+        pendingEditorChangedColumns = accumulatedChangedColumns
+        renderEditorAlignment(
+            fontSize: fontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            previousIdentityByColumn: previousIdentityByColumn,
+            previousMajorityResidueByColumn: previousMajorityResidueByColumn,
+            changedColumns: accumulatedChangedColumns
+        )
+    }
+
+    func applyAlignment(
+        _ newAlignment: AlignmentData,
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
+        referenceName: String?
+    ) {
+        parseTask?.cancel()
+        renderTask?.cancel()
+        alignment = newAlignment
+        alignmentVersion += 1
+        parseErrorMessage = nil
+        clearCache()
+        rerender(
+            fontSize: fontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: displayOrderMode,
+            referenceName: referenceName
+        )
+    }
+
+    private func renderEditorAlignment(
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        previousIdentityByColumn: [Float],
+        previousMajorityResidueByColumn: [UInt8],
+        changedColumns: Range<Int>
+    ) {
+        let sourceAlignment = alignment
+        let currentVersion = alignmentVersion
+        renderTask = Task(priority: .userInitiated) {
+            let rendered = await runOnBackground {
+                AlignmentRenderer.render(
+                    sourceAlignment,
+                    needsIdentityByColumn: needsIdentityByColumn,
+                    needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+                    includesSequenceText: false,
+                    previousIdentityByColumn: previousIdentityByColumn,
+                    previousMajorityResidueByColumn: previousMajorityResidueByColumn,
+                    changedColumns: changedColumns,
+                    fontSize: fontSize
+                )
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard currentVersion == alignmentVersion else { return }
+                cachedAlignment = rendered
+                cachedDisplayedRowIndices = Array(sourceAlignment.rows.indices)
+                apply(
+                    rendered,
+                    displayedRowIndices: cachedDisplayedRowIndices,
+                    displayOrderMode: .original,
+                    preservesTextStorage: true
+                )
+                pendingEditorChangedColumns = nil
+            }
+        }
+    }
+
+    func row(id: AlignmentRowID?) -> AlignmentRow? {
+        guard let id else { return nil }
+        return alignment.rows.first(where: { $0.id == id })
     }
 
     func auxiliaryPanelContent(
-        referenceName: String?,
+        referenceID: AlignmentRowID?,
         showsReferencePanel: Bool,
         showsConsensusPanel: Bool,
         showsConservationPanel: Bool
     ) -> AuxiliaryPanelContent {
         let key = AuxiliaryKey(
             alignmentVersion: alignmentVersion,
-            referenceName: referenceName ?? "",
+            referenceID: referenceID,
             showsReferencePanel: showsReferencePanel,
             showsConsensusPanel: showsConsensusPanel,
             showsConservationPanel: showsConservationPanel,
             identityCount: renderedAlignment.identityByColumn.count,
             identityChecksum: renderedAlignment.identityByColumn.reduce(into: 1469598103934665603) { partialResult, value in
-                partialResult = (partialResult ^ UInt64(bitPattern: Int64(value.bitPattern))) &* 1099511628211
+                partialResult = (partialResult ^ UInt64(value.bitPattern)) &* 1099511628211
             }
         )
         if key == cachedAuxiliaryKey {
@@ -182,11 +304,12 @@ final class AlignmentViewModel {
         }
 
         let rows = alignment.rows
-        let referenceText = showsReferencePanel ? (row(named: referenceName)?.sequence ?? "") : nil
+        let referenceRow = row(id: referenceID)
+        let referenceText = showsReferencePanel ? (referenceRow?.sequence ?? "") : nil
         let consensus = showsConsensusPanel ? cachedConsensusSequence(rows: rows) : nil
         let conservation = showsConservationPanel ? renderedAlignment.identityByColumn : nil
         let referenceLabel = showsReferencePanel
-            ? String(format: String(localized: "Ref: %@"), referenceName ?? "")
+            ? String(format: String(localized: "Ref: %@"), referenceRow?.name ?? "")
             : nil
         let built = AuxiliaryPanelBuilder.build(
             referenceLabel: referenceLabel,
@@ -199,9 +322,9 @@ final class AlignmentViewModel {
         return built
     }
 
-    func containsRow(named name: String?) -> Bool {
-        guard let name else { return false }
-        return alignment.rows.contains(where: { $0.name == name })
+    func containsRow(id: AlignmentRowID?) -> Bool {
+        guard let id else { return false }
+        return alignment.rows.contains(where: { $0.id == id })
     }
 
     func consensusSequence() -> String {
@@ -210,27 +333,36 @@ final class AlignmentViewModel {
 
     private func apply(
         _ rendered: RenderedAlignment,
-        displayedRows: [AlignmentRow],
-        displayOrderMode: AlignmentDisplayOrderMode
+        displayedRowIndices: [Int],
+        displayOrderMode: AlignmentDisplayOrderMode,
+        preservesTextStorage: Bool = false
     ) {
+        let textChanged = renderedAlignment.namesChecksum != rendered.namesChecksum ||
+            renderedAlignment.sequenceChecksum != rendered.sequenceChecksum ||
+            renderedAlignment.nameAttributedText.length != rendered.nameAttributedText.length ||
+            renderedAlignment.sequenceText.map { ($0 as NSString).length } != rendered.sequenceText.map { ($0 as NSString).length }
         renderedAlignment = rendered
-        self.displayedRows = displayedRows
+        self.displayedRowIndices = displayedRowIndices
         renderedDisplayOrderMode = displayOrderMode
-        contentVersion += 1
+        if textChanged && !preservesTextStorage {
+            contentVersion += 1
+        }
     }
 
     private func clearCache() {
         cachedAlignment = nil
-        cachedDisplayedRows = []
+        cachedDisplayedRowIndices = []
         cachedRenderVersion = -1
         cachedRenderFontSize = -1.0
         cachedRenderIdentityMode = false
         cachedRenderMajorityMode = false
         cachedRenderOrderMode = .original
+        cachedRenderIncludesSequenceText = false
         cachedConsensusKey = nil
         cachedConsensus = ""
         cachedAuxiliaryKey = nil
         cachedAuxiliaryContent = .empty
+        pendingEditorChangedColumns = nil
     }
 
     private func cachedConsensusSequence(rows: [AlignmentRow]) -> String {
@@ -262,7 +394,7 @@ final class AlignmentViewModel {
 
     private struct AuxiliaryKey: Equatable {
         let alignmentVersion: Int
-        let referenceName: String
+        let referenceID: AlignmentRowID?
         let showsReferencePanel: Bool
         let showsConsensusPanel: Bool
         let showsConservationPanel: Bool
@@ -311,7 +443,7 @@ private enum AuxiliaryPanelBuilder {
         referenceLabel: String?,
         referenceSequence: String?,
         consensusSequence: String?,
-        conservation: [Double]?
+        conservation: [Float]?
     ) -> AuxiliaryPanelContent {
         var left: [String] = []
         var right: [String] = []

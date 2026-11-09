@@ -1,13 +1,19 @@
 import AppKit
 
 final class AlignmentViewportSequenceTextView: NSTextView {
-    private struct ColumnEditState {
-        let attributedText: NSAttributedString
+    private struct SelectionState {
         let selectedRanges: [NSValue]
         let columnSelectionRanges: [NSRange]
         let columnSelectionAnchor: Int?
         let columnSelectionWidth: Int
         let alignmentLength: Int
+    }
+
+    private struct TextPatch {
+        let oldRange: NSRange
+        let newRange: NSRange
+        let oldText: String
+        let newText: String
     }
 
     var onAddVerticalCursor: ((Int) -> Bool)?
@@ -17,24 +23,43 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     var columnSelectionAnchor: Int?
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
+    private var pendingEditedRanges: [NSRange] = []
 
     var alignmentLength = 0
-    private var identityByColumn: [Double] = []
-    private var majorityResidueByColumn: [UInt16] = []
+    private var identityByColumn: [Float] = []
+    private var majorityResidueByColumn: [UInt8] = []
     private var backgroundMode: AlignmentBackgroundMode = .residue
     private var referenceSequenceForBackground: String?
     private var referenceTextForBackground: NSString?
     private var identityColorThreshold = 0.5
 
-    func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
+    func replaceAlignmentText(_ text: String) {
         guard let textStorage else { return }
+        let font = font ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textStorage.beginEditing()
+        textStorage.replaceCharacters(
+            in: NSRange(location: 0, length: textStorage.length),
+            with: text
+        )
+        textStorage.setAttributes(
+            [
+                .font: font,
+                .foregroundColor: NSColor.labelColor
+            ],
+            range: NSRange(location: 0, length: textStorage.length)
+        )
+        textStorage.endEditing()
+    }
+
+    func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
+        guard textStorage != nil else { return }
         guard !ranges.isEmpty, alignmentLength > 0 else { return }
         guard AlignmentSequenceInput.isValidEditingReplacement(replacement) else {
             NSSound.beep()
             return
         }
 
-        let previousState = captureColumnEditState()
+        let previousSelection = captureSelectionState()
         let lines = sequenceLines()
         guard !lines.isEmpty else { return }
         let edits = normalizedEdits(from: ranges, rowCount: lines.count)
@@ -51,8 +76,10 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         }
         guard let edited = AlignmentColumnEditor.replacingRowsOnly(in: lines, edits: rowEdits) else { return }
 
+        let patches = textPatches(from: lines, to: edited.sequences)
+        guard !patches.isEmpty else { return }
+        apply(patches, direction: .forward)
         alignmentLength = edited.length
-        textStorage.setAttributedString(attributedSequenceText(from: edited.sequences))
         let newSelections = edits.map { edit in
             let location = (edit.row * (edited.length + 1)) + min(edit.column + replacementLength, edited.length)
             return NSRange(location: location, length: 0)
@@ -63,14 +90,18 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             stillSelecting: false
         )
         columnSelectionRanges = newSelections.count > 1 ? newSelections : []
-        registerColumnUndo(toRestore: previousState, actionName: String(localized: "Edit"))
+        let nextSelection = captureSelectionState()
+        registerPatchUndo(
+            patches,
+            restoreSelection: previousSelection,
+            inverseSelection: nextSelection,
+            actionName: String(localized: "Edit")
+        )
         didChangeText()
     }
 
-    private func captureColumnEditState() -> ColumnEditState {
-        let textSnapshot = textStorage?.copy() as? NSAttributedString ?? NSAttributedString(string: string)
-        return ColumnEditState(
-            attributedText: textSnapshot,
+    private func captureSelectionState() -> SelectionState {
+        SelectionState(
             selectedRanges: selectedRanges,
             columnSelectionRanges: columnSelectionRanges,
             columnSelectionAnchor: columnSelectionAnchor,
@@ -79,24 +110,134 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         )
     }
 
-    private func applyColumnEditState(_ state: ColumnEditState) {
-        textStorage?.setAttributedString(state.attributedText)
+    private func applySelectionState(_ state: SelectionState) {
         alignmentLength = state.alignmentLength
         setSelectedRanges(state.selectedRanges, affinity: .downstream, stillSelecting: false)
         columnSelectionRanges = state.columnSelectionRanges
         columnSelectionAnchor = state.columnSelectionAnchor
         columnSelectionWidth = state.columnSelectionWidth
-        didChangeText()
     }
 
-    private func registerColumnUndo(toRestore restoreState: ColumnEditState, actionName: String) {
+    private enum PatchDirection {
+        case forward
+        case reverse
+    }
+
+    private func apply(_ patches: [TextPatch], direction: PatchDirection) {
+        guard let textStorage else { return }
+        textStorage.beginEditing()
+        for patch in patches.reversed() {
+            switch direction {
+            case .forward:
+                textStorage.replaceCharacters(in: patch.oldRange, with: patch.newText)
+            case .reverse:
+                textStorage.replaceCharacters(in: patch.newRange, with: patch.oldText)
+            }
+        }
+        textStorage.endEditing()
+        switch direction {
+        case .forward:
+            pendingEditedRanges = patches.map(\.newRange)
+        case .reverse:
+            pendingEditedRanges = patches.map(\.oldRange)
+        }
+    }
+
+    func consumeEditedRanges() -> [NSRange] {
+        defer { pendingEditedRanges = [] }
+        return pendingEditedRanges
+    }
+
+    private func registerPatchUndo(
+        _ patches: [TextPatch],
+        restoreSelection: SelectionState,
+        inverseSelection: SelectionState,
+        actionName: String
+    ) {
         guard allowsUndo, let undoManager else { return }
         undoManager.registerUndo(withTarget: self) { target in
-            let redoState = target.captureColumnEditState()
-            target.applyColumnEditState(restoreState)
-            target.registerColumnUndo(toRestore: redoState, actionName: actionName)
+            target.apply(patches, direction: .reverse)
+            target.applySelectionState(restoreSelection)
+            target.registerPatchRedo(
+                patches,
+                restoreSelection: inverseSelection,
+                inverseSelection: restoreSelection,
+                actionName: actionName
+            )
+            target.didChangeText()
         }
         undoManager.setActionName(actionName)
+    }
+
+    private func registerPatchRedo(
+        _ patches: [TextPatch],
+        restoreSelection: SelectionState,
+        inverseSelection: SelectionState,
+        actionName: String
+    ) {
+        guard allowsUndo, let undoManager else { return }
+        undoManager.registerUndo(withTarget: self) { target in
+            target.apply(patches, direction: .forward)
+            target.applySelectionState(restoreSelection)
+            target.registerPatchUndo(
+                patches,
+                restoreSelection: inverseSelection,
+                inverseSelection: restoreSelection,
+                actionName: actionName
+            )
+            target.didChangeText()
+        }
+        undoManager.setActionName(actionName)
+    }
+
+    private func textPatches(from oldLines: [String], to newLines: [String]) -> [TextPatch] {
+        guard oldLines.count == newLines.count else { return [] }
+        var patches: [TextPatch] = []
+        var oldLineStart = 0
+        var newLineStart = 0
+
+        for (oldLine, newLine) in zip(oldLines, newLines) {
+            let oldText = oldLine as NSString
+            let newText = newLine as NSString
+            let commonPrefix = commonPrefixLength(oldText, newText)
+            let commonSuffix = commonSuffixLength(oldText, newText, excludingPrefix: commonPrefix)
+            let oldLength = oldText.length - commonPrefix - commonSuffix
+            let newLength = newText.length - commonPrefix - commonSuffix
+
+            if oldLength > 0 || newLength > 0 {
+                patches.append(
+                    TextPatch(
+                        oldRange: NSRange(location: oldLineStart + commonPrefix, length: oldLength),
+                        newRange: NSRange(location: newLineStart + commonPrefix, length: newLength),
+                        oldText: oldText.substring(with: NSRange(location: commonPrefix, length: oldLength)),
+                        newText: newText.substring(with: NSRange(location: commonPrefix, length: newLength))
+                    )
+                )
+            }
+
+            oldLineStart += oldText.length + 1
+            newLineStart += newText.length + 1
+        }
+        return patches
+    }
+
+    private func commonPrefixLength(_ first: NSString, _ second: NSString) -> Int {
+        let maximum = min(first.length, second.length)
+        var length = 0
+        while length < maximum, first.character(at: length) == second.character(at: length) {
+            length += 1
+        }
+        return length
+    }
+
+    private func commonSuffixLength(_ first: NSString, _ second: NSString, excludingPrefix prefix: Int) -> Int {
+        let maximum = min(first.length, second.length) - prefix
+        var length = 0
+        while length < maximum,
+              first.character(at: first.length - length - 1) == second.character(at: second.length - length - 1) {
+            length += 1
+        }
+        return length
     }
 
     private func normalizedEdits(from ranges: [NSRange], rowCount: Int) -> [AlignmentColumnEditor.RowEdit] {
@@ -124,16 +265,6 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     private func currentSequenceLineLength() -> Int {
         sequenceLines().map { ($0 as NSString).length }.max() ?? 0
-    }
-
-    private func attributedSequenceText(from lines: [String]) -> NSAttributedString {
-        NSAttributedString(
-            string: lines.joined(separator: "\n") + "\n",
-            attributes: [
-                .font: font ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
-                .foregroundColor: NSColor.labelColor
-            ]
-        )
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
@@ -169,7 +300,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     @objc func insertGapColumn(_ sender: Any?) {
         guard isEditable else { return }
-        guard let textStorage else { return }
+        guard textStorage != nil else { return }
         let lines = sequenceLines()
         guard !lines.isEmpty, alignmentLength > 0 else {
             NSSound.beep()
@@ -185,7 +316,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             return
         }
 
-        let previousState = captureColumnEditState()
+        let previousSelection = captureSelectionState()
         let rows = lines.enumerated().map { index, sequence in
             AlignmentRow(name: "Row \(index + 1)", sequence: sequence)
         }
@@ -194,13 +325,22 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             return
         }
 
+        let editedSequences = editedRows.map(\.sequence)
+        let patches = textPatches(from: lines, to: editedSequences)
+        guard !patches.isEmpty else { return }
+        apply(patches, direction: .forward)
         alignmentLength += 1
-        textStorage.setAttributedString(attributedSequenceText(from: editedRows.map(\.sequence)))
         let nextLocation = row * (alignmentLength + 1) + min(column + 1, alignmentLength)
         setSelectedRange(NSRange(location: nextLocation, length: 0))
         columnSelectionRanges = []
         columnSelectionAnchor = nil
-        registerColumnUndo(toRestore: previousState, actionName: AppStrings.insertGapColumn)
+        let nextSelection = captureSelectionState()
+        registerPatchUndo(
+            patches,
+            restoreSelection: previousSelection,
+            inverseSelection: nextSelection,
+            actionName: AppStrings.insertGapColumn
+        )
         didChangeText()
     }
 
@@ -271,8 +411,8 @@ final class AlignmentViewportSequenceTextView: NSTextView {
 
     func updateAlignmentDisplay(
         alignmentLength: Int,
-        identityByColumn: [Double],
-        majorityResidueByColumn: [UInt16],
+        identityByColumn: [Float],
+        majorityResidueByColumn: [UInt8],
         backgroundMode: AlignmentBackgroundMode,
         referenceSequenceForBackground: String?,
         identityColorThreshold: Double
@@ -369,7 +509,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         case .minority:
             let residue = normalizedResidueCode(text.character(at: textIndex))
             guard let majorityResidue = majorityResidueByColumn[safe: column], majorityResidue != 0 else { return nil }
-            guard residue != majorityResidue else { return nil }
+            guard residue != UInt16(majorityResidue) else { return nil }
             return ResiduePalette.backgroundColor(for: residue)
         case .reference:
             guard let referenceTextForBackground, column < referenceTextForBackground.length else { return nil }
