@@ -666,23 +666,23 @@ private struct RootView: View {
                 description: Text(parseErrorMessage)
             )
         } else {
-            VStack(spacing: 0) {
-                alignmentViewport
-                Divider()
-                FooterBar(
-                    sequenceCount: displayAlignment.rows.count,
-                    residueCount: displayAlignment.length,
-                    selectedResidueCount: selectedResidueCount,
-                    selectedSequenceCount: selectedSequenceCount,
-                    selectedStartPosition: selectedStartPosition,
-                    selectedEndPosition: selectedEndPosition,
-                    backgroundMode: backgroundModeBinding,
-                    availableBackgroundModes: availableBackgroundModes,
-                    displayOrderMode: footerDisplayOrderMode,
-                    canChangeDisplayOrder: viewerMode == .view,
-                    canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
-                )
-            }
+            alignmentViewport
+                .safeAreaBar(edge: .bottom, spacing: 0) {
+                    FooterBar(
+                        sequenceCount: displayAlignment.rows.count,
+                        residueCount: displayAlignment.length,
+                        selectedResidueCount: selectedResidueCount,
+                        selectedSequenceCount: selectedSequenceCount,
+                        selectedStartPosition: selectedStartPosition,
+                        selectedEndPosition: selectedEndPosition,
+                        backgroundMode: backgroundModeBinding,
+                        availableBackgroundModes: availableBackgroundModes,
+                        displayOrderMode: footerDisplayOrderMode,
+                        canChangeDisplayOrder: viewerMode == .view,
+                        canDisplayUPGMAOrder: AlignmentRowOrdering.canOrderWithUPGMA(rowCount: model.alignment.rows.count)
+                    )
+                    .frame(maxWidth: .infinity)
+                }
         }
     }
 
