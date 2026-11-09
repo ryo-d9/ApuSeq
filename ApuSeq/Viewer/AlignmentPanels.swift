@@ -28,7 +28,7 @@ struct FooterBar: View {
             if let selectedStartPosition, let selectedEndPosition, selectedResidueCount > 0 {
                 statusItem(
                     label: String(localized: "Positions"),
-                    value: "\(selectedStartPosition)-\(selectedEndPosition)",
+                    value: "\(selectedStartPosition)–\(selectedEndPosition) (\(selectedEndPosition - selectedStartPosition + 1))",
                     identifier: "alignment-column-selection"
                 )
             }
