@@ -24,7 +24,7 @@ final class AlignmentViewportNameColumnView: NSView {
     var onAddFASTAFromClipboard: (() -> Void)?
     var onRenameSequence: ((Int) -> Void)?
     var onDeleteSequence: ((Int) -> Void)?
-    var onSetReference: ((String?) -> Void)?
+    var onSetReference: ((Int?) -> Void)?
     var onScrollWheel: ((NSEvent) -> Void)?
 
     private let textInset = NSSize(width: 12, height: 12)
@@ -130,7 +130,7 @@ final class AlignmentViewportNameColumnView: NSView {
 
         let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
         setItem.target = self
-        setItem.representedObject = rowNames[row]
+        setItem.representedObject = row
         menu.addItem(setItem)
 
         let clearItem = NSMenuItem(title: AppStrings.clearReference, action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
@@ -190,7 +190,7 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     @objc private func setReferenceFromMenu(_ sender: NSMenuItem) {
-        onSetReference?(sender.representedObject as? String)
+        onSetReference?(sender.representedObject as? Int)
     }
 
     @objc private func clearReferenceFromMenu(_ sender: NSMenuItem) {

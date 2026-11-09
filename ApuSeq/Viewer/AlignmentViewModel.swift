@@ -11,7 +11,7 @@ final class AlignmentViewModel {
     var parseErrorMessage: String?
     var contentVersion = 0
 
-    private var alignmentVersion = 0
+    private(set) var alignmentVersion = 0
     private var parseTask: Task<Void, Never>?
     private var renderTask: Task<Void, Never>?
     private var cachedRenderVersion = -1
@@ -41,6 +41,7 @@ final class AlignmentViewModel {
 
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alignment = .empty
+            alignmentVersion += 1
             renderedAlignment = .empty
             displayedRowIndices = []
             renderedDisplayOrderMode = .original
@@ -74,6 +75,7 @@ final class AlignmentViewModel {
             } catch {
                 await MainActor.run {
                     alignment = .empty
+                    alignmentVersion += 1
                     renderedAlignment = .empty
                     displayedRowIndices = []
                     renderedDisplayOrderMode = .original
@@ -213,6 +215,29 @@ final class AlignmentViewModel {
         )
     }
 
+    func applyAlignment(
+        _ newAlignment: AlignmentData,
+        fontSize: Double,
+        needsIdentityByColumn: Bool,
+        needsMajorityResidueByColumn: Bool,
+        displayOrderMode: AlignmentDisplayOrderMode,
+        referenceName: String?
+    ) {
+        parseTask?.cancel()
+        renderTask?.cancel()
+        alignment = newAlignment
+        alignmentVersion += 1
+        parseErrorMessage = nil
+        clearCache()
+        rerender(
+            fontSize: fontSize,
+            needsIdentityByColumn: needsIdentityByColumn,
+            needsMajorityResidueByColumn: needsMajorityResidueByColumn,
+            displayOrderMode: displayOrderMode,
+            referenceName: referenceName
+        )
+    }
+
     private func renderEditorAlignment(
         fontSize: Double,
         needsIdentityByColumn: Bool,
@@ -252,20 +277,20 @@ final class AlignmentViewModel {
         }
     }
 
-    func row(named name: String?) -> AlignmentRow? {
-        guard let name else { return nil }
-        return alignment.rows.first(where: { $0.name == name })
+    func row(id: AlignmentRowID?) -> AlignmentRow? {
+        guard let id else { return nil }
+        return alignment.rows.first(where: { $0.id == id })
     }
 
     func auxiliaryPanelContent(
-        referenceName: String?,
+        referenceID: AlignmentRowID?,
         showsReferencePanel: Bool,
         showsConsensusPanel: Bool,
         showsConservationPanel: Bool
     ) -> AuxiliaryPanelContent {
         let key = AuxiliaryKey(
             alignmentVersion: alignmentVersion,
-            referenceName: referenceName ?? "",
+            referenceID: referenceID,
             showsReferencePanel: showsReferencePanel,
             showsConsensusPanel: showsConsensusPanel,
             showsConservationPanel: showsConservationPanel,
@@ -279,11 +304,12 @@ final class AlignmentViewModel {
         }
 
         let rows = alignment.rows
-        let referenceText = showsReferencePanel ? (row(named: referenceName)?.sequence ?? "") : nil
+        let referenceRow = row(id: referenceID)
+        let referenceText = showsReferencePanel ? (referenceRow?.sequence ?? "") : nil
         let consensus = showsConsensusPanel ? cachedConsensusSequence(rows: rows) : nil
         let conservation = showsConservationPanel ? renderedAlignment.identityByColumn : nil
         let referenceLabel = showsReferencePanel
-            ? String(format: String(localized: "Ref: %@"), referenceName ?? "")
+            ? String(format: String(localized: "Ref: %@"), referenceRow?.name ?? "")
             : nil
         let built = AuxiliaryPanelBuilder.build(
             referenceLabel: referenceLabel,
@@ -296,9 +322,9 @@ final class AlignmentViewModel {
         return built
     }
 
-    func containsRow(named name: String?) -> Bool {
-        guard let name else { return false }
-        return alignment.rows.contains(where: { $0.name == name })
+    func containsRow(id: AlignmentRowID?) -> Bool {
+        guard let id else { return false }
+        return alignment.rows.contains(where: { $0.id == id })
     }
 
     func consensusSequence() -> String {
@@ -368,7 +394,7 @@ final class AlignmentViewModel {
 
     private struct AuxiliaryKey: Equatable {
         let alignmentVersion: Int
-        let referenceName: String
+        let referenceID: AlignmentRowID?
         let showsReferencePanel: Bool
         let showsConsensusPanel: Bool
         let showsConservationPanel: Bool

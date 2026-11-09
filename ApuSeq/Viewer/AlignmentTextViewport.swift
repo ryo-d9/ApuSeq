@@ -44,7 +44,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let onAddFASTAFromClipboard: () -> Void
     let onRenameSequence: (Int) -> Void
     let onDeleteSequence: (Int) -> Void
-    let onSetReference: (String?) -> Void
+    let onSetReference: (Int?) -> Void
     let onNameFindTextChanged: (String) -> Void
     let onNameFindSubmit: (Int) -> Void
     let onNameFindClose: () -> Void

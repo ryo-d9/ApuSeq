@@ -229,7 +229,7 @@ enum AminoAcidGuidedNucleotideAligner {
             throw AminoAcidGuidedNucleotideAlignmentError.emptyTranslation(sequenceName: row.name)
         }
         let aminoAcidRows = zip(rows, translations).map { row, translation in
-            AlignmentRow(name: row.name, sequence: mafftCompatibleAminoAcidSequence(translation.aminoAcids))
+            AlignmentRow(id: row.id, name: row.name, sequence: mafftCompatibleAminoAcidSequence(translation.aminoAcids))
         }
         let alignedAminoAcidRows = try await MAFFTAligner.alignAuto(rows: aminoAcidRows)
         guard alignedAminoAcidRows.count == translations.count else {
@@ -241,7 +241,7 @@ enum AminoAcidGuidedNucleotideAligner {
                 codons: translations[index].codons,
                 sequenceName: alignedRow.name
             )
-            return AlignmentRow(name: rows[index].name, sequence: codonSequence)
+            return AlignmentRow(id: rows[index].id, name: rows[index].name, sequence: codonSequence)
         }
     }
 

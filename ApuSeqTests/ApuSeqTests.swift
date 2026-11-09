@@ -102,6 +102,24 @@ struct ApuSeqTests {
         #expect(alignment.rows.map { $0.sequence } == ["ACGT", "A-GT"])
     }
 
+    @Test func parsesCLUSTALRowsWithDuplicateNamesAsDistinctRows() throws {
+        let text = """
+        CLUSTAL W
+
+        Same    ACGT
+        Same    A-GT
+
+        Same    TT
+        Same    T-
+        """
+
+        let alignment = try AlignmentParser.parse(text)
+
+        #expect(alignment.rows.map(\.name) == ["Same", "Same"])
+        #expect(alignment.rows.map(\.sequence) == ["ACGTTT", "A-GTT-"])
+        #expect(alignment.rows[0].id != alignment.rows[1].id)
+    }
+
     @Test func parsesCLUSTALIgnoringHashComments() throws {
         let text = """
         CLUSTAL W
@@ -648,14 +666,14 @@ struct ApuSeqTests {
         let realignedRows = try await AlignmentRangeRealigner.realignSelectedColumns(
             rows: rows,
             columnRange: 3..<6
-        ) { rows in
-            #expect(rows == [
+        ) { fragments in
+            #expect(fragments == [
                 AlignmentRow(name: "ApuSeq_Row_0", sequence: "CC"),
                 AlignmentRow(name: "ApuSeq_Row_2", sequence: "TTT")
             ])
             return [
-                AlignmentRow(name: "ApuSeq_Row_0", sequence: "C-C-"),
-                AlignmentRow(name: "ApuSeq_Row_2", sequence: "TT-T")
+                AlignmentRow(id: fragments[0].id, name: "ApuSeq_Row_0", sequence: "C-C-"),
+                AlignmentRow(id: fragments[1].id, name: "ApuSeq_Row_2", sequence: "TT-T")
             ]
         }
 
@@ -664,6 +682,26 @@ struct ApuSeqTests {
             AlignmentRow(name: "B", sequence: "AAA----GG"),
             AlignmentRow(name: "C", sequence: "AAATT-TGG")
         ])
+        #expect(realignedRows.map(\.id) == rows.map(\.id))
+    }
+
+    @Test func rowIdentityIsUniqueForDuplicateNamesAndSurvivesEditing() throws {
+        let rows = [
+            AlignmentRow(name: "Duplicate", sequence: "ACGT"),
+            AlignmentRow(name: "Duplicate", sequence: "A-GT")
+        ]
+        #expect(rows[0].id != rows[1].id)
+
+        let alignment = AlignmentParser.normalize(rows: rows, format: .fasta)
+        #expect(alignment.rows.map(\.id) == rows.map(\.id))
+
+        let edited = try #require(AlignmentTextEditor.apply(
+            text: "TCGT\nA-GT\n",
+            editedRanges: [NSRange(location: 0, length: 1)],
+            alignmentLength: 4,
+            to: alignment
+        ))
+        #expect(edited.alignment.rows.map(\.id) == rows.map(\.id))
     }
 
     @Test func selectedColumnRealignmentRejectsInsufficientNonEmptyRows() async throws {

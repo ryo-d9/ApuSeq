@@ -9,9 +9,46 @@ nonisolated struct AlignmentData: Sendable {
     nonisolated static let empty = AlignmentData(format: .plainText, rows: [], length: 0, sequenceKind: .nucleotide)
 }
 
-nonisolated struct AlignmentRow: Equatable, Sendable {
+nonisolated struct AlignmentRowID: Hashable, Sendable {
+    nonisolated let rawValue: UInt64
+
+    nonisolated fileprivate static func make() -> Self {
+        AlignmentRowIDGenerator.shared.makeID()
+    }
+}
+
+nonisolated private final class AlignmentRowIDGenerator: @unchecked Sendable {
+    nonisolated static let shared = AlignmentRowIDGenerator()
+
+    private let lock = NSLock()
+    private var nextRawValue: UInt64 = 0
+
+    nonisolated func makeID() -> AlignmentRowID {
+        lock.lock()
+        defer { lock.unlock() }
+        nextRawValue &+= 1
+        return AlignmentRowID(rawValue: nextRawValue)
+    }
+}
+
+nonisolated struct AlignmentRow: Equatable, Identifiable, Sendable {
+    nonisolated let id: AlignmentRowID
     nonisolated let name: String
     nonisolated let sequence: String
+
+    nonisolated init(
+        id: AlignmentRowID = .make(),
+        name: String,
+        sequence: String
+    ) {
+        self.id = id
+        self.name = name
+        self.sequence = sequence
+    }
+
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.name == rhs.name && lhs.sequence == rhs.sequence
+    }
 }
 
 nonisolated struct AlignmentTextEditResult: Sendable {
@@ -50,6 +87,7 @@ enum AlignmentTextEditor {
         for rowIndex in changedRows {
             let sequenceRange = NSRange(location: rowIndex * stride, length: alignmentLength)
             rows[rowIndex] = AlignmentRow(
+                id: rows[rowIndex].id,
                 name: rows[rowIndex].name,
                 sequence: text.substring(with: sequenceRange)
             )
@@ -171,12 +209,19 @@ enum AlignmentParser {
 
     nonisolated private static func parseCLUSTAL(_ text: String) throws -> AlignmentData {
         let lines = text.components(separatedBy: .newlines)
-        var order: [String] = []
-        var sequencesByName: [String: String] = [:]
+        var names: [String] = []
+        var sequences: [String] = []
+        var blockRowIndex = 0
+        var hasSequenceRow = false
 
         for rawLine in lines {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !line.isEmpty else { continue }
+            guard !line.isEmpty else {
+                if hasSequenceRow {
+                    blockRowIndex = 0
+                }
+                continue
+            }
             if isCLUSTALHeader(line) {
                 continue
             }
@@ -193,14 +238,21 @@ enum AlignmentParser {
             let chunk = sanitizedSequenceText(from: String(columns[1]))
             guard isValidCLUSTALSequenceChunk(chunk) else { continue }
 
-            if sequencesByName[name] == nil {
-                order.append(name)
-                sequencesByName[name] = ""
+            if blockRowIndex == names.count, names.count > 1, name == names[0] {
+                blockRowIndex = 0
             }
-            sequencesByName[name, default: ""] += chunk
+            if blockRowIndex < names.count {
+                guard names[blockRowIndex] == name else { continue }
+                sequences[blockRowIndex] += chunk
+            } else {
+                names.append(name)
+                sequences.append(chunk)
+            }
+            blockRowIndex += 1
+            hasSequenceRow = true
         }
 
-        let rows = order.map { AlignmentRow(name: $0, sequence: sequencesByName[$0, default: ""]) }
+        let rows = zip(names, sequences).map { AlignmentRow(name: $0, sequence: $1) }
         guard !rows.isEmpty else { throw AlignmentParseError.unsupportedFormat }
         return normalize(rows: rows, format: .clustal)
     }
@@ -314,7 +366,7 @@ enum AlignmentParser {
             let cleanName = row.name.isEmpty ? "Sequence \(index + 1)" : row.name
             let paddingCount = maxLength - (row.sequence as NSString).length
             let padding = String(repeating: "-", count: max(paddingCount, 0))
-            return AlignmentRow(name: cleanName, sequence: row.sequence + padding)
+            return AlignmentRow(id: row.id, name: cleanName, sequence: row.sequence + padding)
         }
         return AlignmentData(
             format: format,
@@ -499,7 +551,7 @@ enum AlignmentColumnEditor {
             if trimmedSequence != row.sequence {
                 didTrim = true
             }
-            return AlignmentRow(name: row.name, sequence: trimmedSequence)
+            return AlignmentRow(id: row.id, name: row.name, sequence: trimmedSequence)
         }
         return didTrim ? trimmedRows : nil
     }
@@ -545,7 +597,7 @@ enum AlignmentColumnEditor {
                 sequence += String(repeating: "-", count: paddingCount)
             }
             insertCharacters("-", in: &sequence, column: column)
-            return AlignmentRow(name: row.name, sequence: sequence)
+            return AlignmentRow(id: row.id, name: row.name, sequence: sequence)
         }
     }
 
@@ -554,6 +606,7 @@ enum AlignmentColumnEditor {
         let keptColumnCount = keepColumns.filter(\.self).count
         return rows.map { row in
             AlignmentRow(
+                id: row.id,
                 name: row.name,
                 sequence: sequence(row.sequence, keepingColumns: keepColumns, keptColumnCount: keptColumnCount)
             )

@@ -104,7 +104,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         onAddFASTAFromClipboard: @escaping () -> Void,
         onRenameSequence: @escaping (Int) -> Void,
         onDeleteSequence: @escaping (Int) -> Void,
-        onSetReference: @escaping (String?) -> Void
+        onSetReference: @escaping (Int?) -> Void
     ) {
         if nameColumnView.rowNames != names {
             nameColumnView.rowNames = names
