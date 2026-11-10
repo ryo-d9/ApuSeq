@@ -460,6 +460,55 @@ struct ApuSeqTests {
         #expect(result.changedColumns == 1..<2)
     }
 
+    @Test func incrementalTextEditPreservesUnchangedRowsAndRowIdentity() throws {
+        let rows = [
+            AlignmentRow(name: "Duplicate", sequence: "ACGT"),
+            AlignmentRow(name: "Duplicate", sequence: "A-GT"),
+            AlignmentRow(name: "C", sequence: "AC-T")
+        ]
+        let alignment = AlignmentParser.normalize(rows: rows, format: .fasta)
+
+        let result = try #require(
+            AlignmentTextEditor.apply(
+                changedRows: [
+                    AlignmentTextRowChange(rowIndex: 1, sequence: "AAGT")
+                ],
+                editedRanges: [NSRange(location: 6, length: 1)],
+                alignmentLength: 4,
+                to: alignment
+            )
+        )
+
+        #expect(result.alignment.rows.map(\.sequence) == ["ACGT", "AAGT", "AC-T"])
+        #expect(result.alignment.rows.map(\.id) == alignment.rows.map(\.id))
+        #expect(result.changedColumns == 1..<2)
+    }
+
+    @Test func incrementalTextEditPadsUnchangedRowsWhenAlignmentGrows() throws {
+        let alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "A-GT")
+            ],
+            format: .fasta
+        )
+
+        let result = try #require(
+            AlignmentTextEditor.apply(
+                changedRows: [
+                    AlignmentTextRowChange(rowIndex: 0, sequence: "ACGTA")
+                ],
+                editedRanges: [NSRange(location: 4, length: 1)],
+                alignmentLength: 5,
+                to: alignment
+            )
+        )
+
+        #expect(result.alignment.rows.map(\.sequence) == ["ACGTA", "A-GT-"])
+        #expect(result.alignment.rows.map(\.id) == alignment.rows.map(\.id))
+        #expect(result.changedColumns == 4..<5)
+    }
+
     @Test func partialStatisticsMatchFullRecalculation() {
         let rows = [
             AlignmentRow(name: "A", sequence: "ACGT"),

@@ -52,7 +52,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     }
 
     func applyAlignmentReplacement(_ replacement: String, to ranges: [NSRange]) {
-        guard textStorage != nil else { return }
+        guard let textStorage else { return }
         guard !ranges.isEmpty, alignmentLength > 0 else { return }
         guard AlignmentSequenceInput.isValidEditingReplacement(replacement) else {
             NSSound.beep()
@@ -60,28 +60,69 @@ final class AlignmentViewportSequenceTextView: NSTextView {
         }
 
         let previousSelection = captureSelectionState()
-        let lines = sequenceLines()
-        guard !lines.isEmpty else { return }
-        let edits = normalizedEdits(from: ranges, rowCount: lines.count)
+        let oldLength = alignmentLength
+        let oldLineSpan = oldLength + 1
+        guard oldLineSpan > 1, textStorage.length.isMultiple(of: oldLineSpan) else { return }
+        let rowCount = textStorage.length / oldLineSpan
+        guard rowCount > 0 else { return }
+        let edits = normalizedEdits(from: ranges, rowCount: rowCount)
         guard !edits.isEmpty else { return }
 
         let replacementLength = (replacement as NSString).length
-        let rowEdits = edits.map {
-            AlignmentColumnEditor.RowEdit(
-                row: $0.row,
-                column: $0.column,
-                length: $0.length,
-                replacement: replacement
-            )
+        let sourceText = textStorage.string as NSString
+        var editedSequences: [Int: String] = [:]
+        let editsByRow = Dictionary(grouping: edits, by: \.row)
+        for (row, rowEdits) in editsByRow {
+            let sequenceRange = NSRange(location: row * oldLineSpan, length: oldLength)
+            let sequence = NSMutableString(string: sourceText.substring(with: sequenceRange))
+            for edit in rowEdits.sorted(by: { $0.column > $1.column }) {
+                sequence.replaceCharacters(
+                    in: NSRange(location: edit.column, length: edit.length),
+                    with: replacement
+                )
+            }
+            editedSequences[row] = sequence as String
         }
-        guard let edited = AlignmentColumnEditor.replacingRowsOnly(in: lines, edits: rowEdits) else { return }
 
-        let patches = textPatches(from: lines, to: edited.sequences)
+        let newLength = max(oldLength, editedSequences.values.map { ($0 as NSString).length }.max() ?? oldLength)
+        let newLineSpan = newLength + 1
+        var patches: [TextPatch] = []
+        for row in 0..<rowCount {
+            let oldLineStart = row * oldLineSpan
+            let newLineStart = row * newLineSpan
+            if let editedSequence = editedSequences[row] {
+                let oldSequence = sourceText.substring(
+                    with: NSRange(location: oldLineStart, length: oldLength)
+                )
+                let newSequence = editedSequence.padding(
+                    toLength: newLength,
+                    withPad: "-",
+                    startingAt: 0
+                )
+                if let patch = textPatch(
+                    from: oldSequence,
+                    to: newSequence,
+                    oldLineStart: oldLineStart,
+                    newLineStart: newLineStart
+                ) {
+                    patches.append(patch)
+                }
+            } else if newLength > oldLength {
+                patches.append(
+                    TextPatch(
+                        oldRange: NSRange(location: oldLineStart + oldLength, length: 0),
+                        newRange: NSRange(location: newLineStart + oldLength, length: newLength - oldLength),
+                        oldText: "",
+                        newText: String(repeating: "-", count: newLength - oldLength)
+                    )
+                )
+            }
+        }
         guard !patches.isEmpty else { return }
         apply(patches, direction: .forward)
-        alignmentLength = edited.length
+        alignmentLength = newLength
         let newSelections = edits.map { edit in
-            let location = (edit.row * (edited.length + 1)) + min(edit.column + replacementLength, edited.length)
+            let location = (edit.row * newLineSpan) + min(edit.column + replacementLength, newLength)
             return NSRange(location: location, length: 0)
         }
         setSelectedRanges(
@@ -146,6 +187,27 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     func consumeEditedRanges() -> [NSRange] {
         defer { pendingEditedRanges = [] }
         return pendingEditedRanges
+    }
+
+    func editedRowChanges(for editedRanges: [NSRange]) -> [AlignmentTextRowChange] {
+        guard let textStorage, alignmentLength >= 0 else { return [] }
+        let lineSpan = alignmentLength + 1
+        guard lineSpan > 0, textStorage.length.isMultiple(of: lineSpan) else { return [] }
+        let rowCount = textStorage.length / lineSpan
+        let rowIndices = Set(editedRanges.compactMap { range -> Int? in
+            guard range.location != NSNotFound, range.location >= 0 else { return nil }
+            let row = min(range.location / lineSpan, max(rowCount - 1, 0))
+            return rowCount > 0 ? row : nil
+        })
+        let text = textStorage.string as NSString
+        return rowIndices.sorted().map { row in
+            AlignmentTextRowChange(
+                rowIndex: row,
+                sequence: text.substring(
+                    with: NSRange(location: row * lineSpan, length: alignmentLength)
+                )
+            )
+        }
     }
 
     private func registerPatchUndo(
@@ -219,6 +281,27 @@ final class AlignmentViewportSequenceTextView: NSTextView {
             newLineStart += newText.length + 1
         }
         return patches
+    }
+
+    private func textPatch(
+        from oldLine: String,
+        to newLine: String,
+        oldLineStart: Int,
+        newLineStart: Int
+    ) -> TextPatch? {
+        let oldText = oldLine as NSString
+        let newText = newLine as NSString
+        let commonPrefix = commonPrefixLength(oldText, newText)
+        let commonSuffix = commonSuffixLength(oldText, newText, excludingPrefix: commonPrefix)
+        let oldLength = oldText.length - commonPrefix - commonSuffix
+        let newLength = newText.length - commonPrefix - commonSuffix
+        guard oldLength > 0 || newLength > 0 else { return nil }
+        return TextPatch(
+            oldRange: NSRange(location: oldLineStart + commonPrefix, length: oldLength),
+            newRange: NSRange(location: newLineStart + commonPrefix, length: newLength),
+            oldText: oldText.substring(with: NSRange(location: commonPrefix, length: oldLength)),
+            newText: newText.substring(with: NSRange(location: commonPrefix, length: newLength))
+        )
     }
 
     private func commonPrefixLength(_ first: NSString, _ second: NSString) -> Int {

@@ -58,6 +58,54 @@ nonisolated struct AlignmentTextEditResult: Sendable {
 
 enum AlignmentTextEditor {
     nonisolated static func apply(
+        changedRows: [AlignmentTextRowChange],
+        editedRanges: [NSRange],
+        alignmentLength: Int,
+        to alignment: AlignmentData
+    ) -> AlignmentTextEditResult? {
+        guard alignmentLength >= 0, !changedRows.isEmpty else { return nil }
+        var rows = alignment.rows
+        var changedRowIndices = Set<Int>()
+
+        for change in changedRows {
+            guard rows.indices.contains(change.rowIndex) else { return nil }
+            guard (change.sequence as NSString).length == alignmentLength else { return nil }
+            let row = rows[change.rowIndex]
+            rows[change.rowIndex] = AlignmentRow(
+                id: row.id,
+                name: row.name,
+                sequence: change.sequence
+            )
+            changedRowIndices.insert(change.rowIndex)
+        }
+
+        if alignment.length != alignmentLength {
+            for index in rows.indices where !changedRowIndices.contains(index) {
+                let row = rows[index]
+                let sequence = row.sequence.padding(
+                    toLength: alignmentLength,
+                    withPad: "-",
+                    startingAt: 0
+                )
+                rows[index] = AlignmentRow(id: row.id, name: row.name, sequence: sequence)
+            }
+        }
+
+        let changedColumns = changedColumnRange(
+            editedRanges: editedRanges,
+            oldLength: alignment.length,
+            newLength: alignmentLength
+        )
+        let editedAlignment = AlignmentData(
+            format: alignment.format,
+            rows: rows,
+            length: alignmentLength,
+            sequenceKind: AlignmentParser.inferSequenceKind(from: rows)
+        )
+        return AlignmentTextEditResult(alignment: editedAlignment, changedColumns: changedColumns)
+    }
+
+    nonisolated static func apply(
         text: String,
         editedRanges: [NSRange],
         alignmentLength: Int,

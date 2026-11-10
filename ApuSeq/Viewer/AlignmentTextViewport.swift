@@ -2,9 +2,14 @@ import AppKit
 import SwiftUI
 
 struct AlignmentTextChange {
-    let text: String
+    let changedRows: [AlignmentTextRowChange]
     let editedRanges: [NSRange]
     let alignmentLength: Int
+}
+
+struct AlignmentTextRowChange: Sendable {
+    let rowIndex: Int
+    let sequence: String
 }
 
 struct AlignmentTextViewport: NSViewRepresentable {
@@ -349,9 +354,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
             guard textView.isEditable else { return }
             guard !isProgrammaticTextUpdate else { return }
             let editedRanges = sequenceView.consumeEditedRanges()
+            let changedRows = sequenceView.editedRowChanges(for: editedRanges)
+            guard !changedRows.isEmpty else { return }
             onSequenceEdited?(
                 AlignmentTextChange(
-                    text: textView.string,
+                    changedRows: changedRows,
                     editedRanges: editedRanges,
                     alignmentLength: sequenceView.alignmentLength
                 )

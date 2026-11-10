@@ -804,7 +804,7 @@ private struct RootView: View {
     private func applyEditedSequenceText(_ change: AlignmentTextChange) {
         guard viewerMode == .edit else { return }
         guard let edit = AlignmentTextEditor.apply(
-            text: change.text,
+            changedRows: change.changedRows,
             editedRanges: change.editedRanges,
             alignmentLength: change.alignmentLength,
             to: model.alignment
