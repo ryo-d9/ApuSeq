@@ -526,6 +526,39 @@ struct ApuSeqTests {
         #expect(result.changedColumns == 4..<5)
     }
 
+    @Test func selectionSummaryCountsResiduesWithoutCountingLineBreaks() {
+        let summary = AlignmentTextViewport.Coordinator.selectionSummary(
+            for: [NSRange(location: 1, length: 10)],
+            alignmentLength: 4,
+            textLength: 15,
+            currentRowIndex: 1
+        )
+
+        #expect(summary.residueCount == 8)
+        #expect(summary.sequenceCount == 3)
+        #expect(summary.startPosition == 1)
+        #expect(summary.endPosition == 4)
+        #expect(summary.currentRowIndex == 1)
+    }
+
+    @Test func selectionSummaryMergesOverlappingRanges() {
+        let summary = AlignmentTextViewport.Coordinator.selectionSummary(
+            for: [
+                NSRange(location: 0, length: 3),
+                NSRange(location: 2, length: 2),
+                NSRange(location: 5, length: 4)
+            ],
+            alignmentLength: 4,
+            textLength: 10,
+            currentRowIndex: 0
+        )
+
+        #expect(summary.residueCount == 8)
+        #expect(summary.sequenceCount == 2)
+        #expect(summary.startPosition == 1)
+        #expect(summary.endPosition == 4)
+    }
+
     @Test func partialStatisticsMatchFullRecalculation() {
         let rows = [
             AlignmentRow(name: "A", sequence: "ACGT"),

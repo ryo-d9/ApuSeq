@@ -257,7 +257,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         var onSequenceEdited: ((AlignmentTextChange) -> Void)?
         var isProgrammaticTextUpdate = false
 
-        private struct SelectionSummary: Equatable {
+        struct SelectionSummary: Equatable {
             let residueCount: Int
             let sequenceCount: Int
             let startPosition: Int?
@@ -501,38 +501,85 @@ struct AlignmentTextViewport: NSViewRepresentable {
             } else {
                 currentRowIndex = nil
             }
-            var count = 0
-            var selectedRows = Set<Int>()
-            var minPosition: Int?
-            var maxPosition: Int?
+            scheduleSelectionSummaryUpdate(
+                Self.selectionSummary(
+                    for: textView.selectedRanges.map(\.rangeValue),
+                    alignmentLength: alignmentLength,
+                    textLength: textLength,
+                    currentRowIndex: currentRowIndex
+                )
+            )
+        }
 
-            for rangeValue in textView.selectedRanges {
-                let range = rangeValue.rangeValue
-                guard range.length > 0 else { continue }
-                let upperBound = NSMaxRange(range)
-                var location = range.location
-                while location < upperBound {
-                    let row = location / lineSpan
-                    let column = location % lineSpan
-                    if column < alignmentLength {
-                        count += 1
-                        selectedRows.insert(row)
-                        let position = column + 1
-                        minPosition = minPosition.map { min($0, position) } ?? position
-                        maxPosition = maxPosition.map { max($0, position) } ?? position
+        static func selectionSummary(
+            for ranges: [NSRange],
+            alignmentLength: Int,
+            textLength: Int,
+            currentRowIndex: Int?
+        ) -> SelectionSummary {
+            guard alignmentLength > 0, textLength > 0 else {
+                return SelectionSummary(
+                    residueCount: 0,
+                    sequenceCount: 0,
+                    startPosition: nil,
+                    endPosition: nil,
+                    currentRowIndex: currentRowIndex
+                )
+            }
+
+            let lineSpan = alignmentLength + 1
+            var intervalsByRow: [Int: [Range<Int>]] = [:]
+            for range in ranges where range.length > 0 && range.location != NSNotFound {
+                let start = min(max(range.location, 0), textLength)
+                let availableLength = textLength - start
+                let end = start + min(max(range.length, 0), availableLength)
+                guard start < end else { continue }
+
+                let firstRow = start / lineSpan
+                let lastRow = (end - 1) / lineSpan
+                for row in firstRow...lastRow {
+                    let rowStart = row * lineSpan
+                    let lowerBound = max(start - rowStart, 0)
+                    let upperBound = min(end - rowStart, alignmentLength)
+                    if lowerBound < upperBound {
+                        intervalsByRow[row, default: []].append(lowerBound..<upperBound)
                     }
-                    location += 1
                 }
             }
 
-            scheduleSelectionSummaryUpdate(
-                SelectionSummary(
-                    residueCount: count,
-                    sequenceCount: selectedRows.count,
-                    startPosition: minPosition,
-                    endPosition: maxPosition,
-                    currentRowIndex: currentRowIndex
-                )
+            var residueCount = 0
+            var sequenceCount = 0
+            var startPosition: Int?
+            var endPosition: Int?
+            for intervals in intervalsByRow.values {
+                let sortedIntervals = intervals.sorted {
+                    $0.lowerBound == $1.lowerBound
+                        ? $0.upperBound < $1.upperBound
+                        : $0.lowerBound < $1.lowerBound
+                }
+                guard var merged = sortedIntervals.first else { continue }
+                sequenceCount += 1
+                for interval in sortedIntervals.dropFirst() {
+                    if interval.lowerBound <= merged.upperBound {
+                        merged = merged.lowerBound..<max(merged.upperBound, interval.upperBound)
+                    } else {
+                        residueCount += merged.count
+                        startPosition = min(startPosition ?? Int.max, merged.lowerBound + 1)
+                        endPosition = max(endPosition ?? 0, merged.upperBound)
+                        merged = interval
+                    }
+                }
+                residueCount += merged.count
+                startPosition = min(startPosition ?? Int.max, merged.lowerBound + 1)
+                endPosition = max(endPosition ?? 0, merged.upperBound)
+            }
+
+            return SelectionSummary(
+                residueCount: residueCount,
+                sequenceCount: sequenceCount,
+                startPosition: startPosition,
+                endPosition: endPosition,
+                currentRowIndex: currentRowIndex
             )
         }
 
