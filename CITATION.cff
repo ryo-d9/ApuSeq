@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use ApuSeq in your research, please cite it using the metadata below."
+title: "ApuSeq"
+type: software
+authors:
+  - family-names: "Suda"
+    given-names: "Ryo A"
+    orcid: "https://orcid.org/0009-0005-2878-5879"
+repository-code: "https://github.com/ryo-d9/ApuSeq"
+license: "MIT"
