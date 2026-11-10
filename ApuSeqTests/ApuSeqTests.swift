@@ -845,7 +845,14 @@ struct ApuSeqTests {
         )
         try await waitUntil { viewModel.contentVersion > 0 }
 
-        #expect(viewModel.displayedRowIndices.map { viewModel.alignment.rows[$0].name } == ["sample 1", "sample 2", "sample 10"])
+        #expect(viewModel.displayedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
+        #expect(
+            viewModel.displayedRows.map(\.id) == [
+                viewModel.alignment.rows[2].id,
+                viewModel.alignment.rows[1].id,
+                viewModel.alignment.rows[0].id
+            ]
+        )
         #expect(viewModel.alignment.rows.map { $0.name } == ["sample 10", "sample 2", "sample 1"])
         #expect(viewModel.renderedDisplayOrderMode == .name)
     }

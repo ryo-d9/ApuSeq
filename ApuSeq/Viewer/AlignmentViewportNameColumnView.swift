@@ -1,11 +1,9 @@
 import AppKit
 
 final class AlignmentViewportNameColumnView: NSView {
-    var rowNames: [String] = [] {
+    var rows: [AlignmentRow] = [] {
         didSet { needsDisplay = true }
     }
-    var rowSequences: [String] = []
-    var rowIDs: [AlignmentRowID] = []
     var highlightedRowIndex: Int? {
         didSet { needsDisplay = true }
     }
@@ -48,7 +46,7 @@ final class AlignmentViewportNameColumnView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         NSColor.textBackgroundColor.setFill()
         dirtyRect.fill()
-        guard !rowNames.isEmpty else { return }
+        guard !rows.isEmpty else { return }
         guard let visibleRows = visibleRowRange(in: dirtyRect) else { return }
 
         let paragraphStyle = NSMutableParagraphStyle()
@@ -77,7 +75,7 @@ final class AlignmentViewportNameColumnView: NSView {
                 NSRect(x: 0, y: y, width: bounds.width, height: lineHeight).fill()
             }
             let attributes = row == currentRowIndex ? currentRowAttributes : regularAttributes
-            (rowNames[row] as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
+            (rows[row].name as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
         }
     }
 
@@ -99,7 +97,7 @@ final class AlignmentViewportNameColumnView: NSView {
             let element = NSAccessibilityElement()
             element.setAccessibilityParent(self)
             element.setAccessibilityRole(.staticText)
-            element.setAccessibilityLabel(AppStrings.accessibilitySequenceName(rowIndex: row + 1, name: rowNames[row]))
+            element.setAccessibilityLabel(AppStrings.accessibilitySequenceName(rowIndex: row + 1, name: rows[row].name))
             element.setAccessibilityFrameInParentSpace(rowRect(row))
             return element
         }
@@ -115,7 +113,7 @@ final class AlignmentViewportNameColumnView: NSView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let row = rowIndex(at: convert(event.locationInWindow, from: nil))
-        guard row >= 0, row < rowNames.count, row < rowIDs.count else {
+        guard row >= 0, row < rows.count else {
             guard isEditMode && canEditSequenceNames else { return super.menu(for: event) }
             let menu = NSMenu(title: AppStrings.sequenceMenu)
             let addItem = NSMenuItem(title: AppStrings.addSequence, action: #selector(addSequenceFromMenu(_:)), keyEquivalent: "")
@@ -130,17 +128,17 @@ final class AlignmentViewportNameColumnView: NSView {
         let menu = NSMenu(title: AppStrings.referenceMenu)
         let copyItem = NSMenuItem(title: AppStrings.copySequence, action: #selector(copySequenceFromMenu(_:)), keyEquivalent: "")
         copyItem.target = self
-        copyItem.representedObject = rowIDs[row]
+        copyItem.representedObject = rows[row].id
         menu.addItem(copyItem)
         let copyFASTAItem = NSMenuItem(title: AppStrings.copyAsFASTA, action: #selector(copyFASTAFromMenu(_:)), keyEquivalent: "")
         copyFASTAItem.target = self
-        copyFASTAItem.representedObject = rowIDs[row]
+        copyFASTAItem.representedObject = rows[row].id
         menu.addItem(copyFASTAItem)
         menu.addItem(.separator())
 
         let setItem = NSMenuItem(title: AppStrings.setAsReference, action: #selector(setReferenceFromMenu(_:)), keyEquivalent: "")
         setItem.target = self
-        setItem.representedObject = rowIDs[row]
+        setItem.representedObject = rows[row].id
         menu.addItem(setItem)
 
         let clearItem = NSMenuItem(title: AppStrings.clearReference, action: #selector(clearReferenceFromMenu(_:)), keyEquivalent: "")
@@ -159,13 +157,13 @@ final class AlignmentViewportNameColumnView: NSView {
 
             let renameItem = NSMenuItem(title: AppStrings.renameSequence, action: #selector(renameSequenceFromMenu(_:)), keyEquivalent: "")
             renameItem.target = self
-            renameItem.representedObject = rowIDs[row]
+            renameItem.representedObject = rows[row].id
             menu.addItem(renameItem)
 
-            if rowNames.count > 1 {
+            if rows.count > 1 {
                 let deleteItem = NSMenuItem(title: AppStrings.deleteSequence, action: #selector(deleteSequenceFromMenu(_:)), keyEquivalent: "")
                 deleteItem.target = self
-                deleteItem.representedObject = rowIDs[row]
+                deleteItem.representedObject = rows[row].id
                 menu.addItem(deleteItem)
             }
         }
@@ -179,10 +177,10 @@ final class AlignmentViewportNameColumnView: NSView {
     }
 
     private func visibleRowRange(in rect: NSRect) -> ClosedRange<Int>? {
-        guard !rowNames.isEmpty else { return nil }
+        guard !rows.isEmpty else { return nil }
         let lineHeight = max(self.lineHeight, 1)
         let firstRow = max(Int(floor((rect.minY + verticalOffset - textInset.height) / lineHeight)), 0)
-        let lastRow = min(Int(ceil((rect.maxY + verticalOffset - textInset.height) / lineHeight)), rowNames.count - 1)
+        let lastRow = min(Int(ceil((rect.maxY + verticalOffset - textInset.height) / lineHeight)), rows.count - 1)
         guard firstRow <= lastRow else { return nil }
         return firstRow...lastRow
     }
@@ -209,20 +207,17 @@ final class AlignmentViewportNameColumnView: NSView {
 
     @objc private func copySequenceFromMenu(_ sender: NSMenuItem) {
         guard let rowID = sender.representedObject as? AlignmentRowID,
-              let row = rowIDs.firstIndex(of: rowID),
-              row < rowSequences.count else { return }
+              let row = rows.first(where: { $0.id == rowID }) else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(rowSequences[row], forType: .string)
+        pasteboard.setString(row.sequence, forType: .string)
     }
 
     @objc private func copyFASTAFromMenu(_ sender: NSMenuItem) {
         guard let rowID = sender.representedObject as? AlignmentRowID,
-              let row = rowIDs.firstIndex(of: rowID),
-              row < rowNames.count,
-              row < rowSequences.count else { return }
+              let row = rows.first(where: { $0.id == rowID }) else { return }
         let fasta = AlignmentSerializer.serialize(
-            rows: [AlignmentRow(name: rowNames[row], sequence: rowSequences[row])],
+            rows: [row],
             preferredFormat: .fasta
         )
         let pasteboard = NSPasteboard.general

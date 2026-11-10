@@ -19,7 +19,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     var onAddVerticalCursor: ((Int) -> Bool)?
     var onAddSequence: (() -> Void)?
     var canAddSequenceFromMenu = true
-    var rowNames: [String] = []
+    var rows: [AlignmentRow] = []
     var columnSelectionAnchor: Int?
     var columnSelectionWidth: Int = 1
     var columnSelectionRanges: [NSRange] = []
@@ -476,7 +476,7 @@ final class AlignmentViewportSequenceTextView: NSTextView {
     @objc func copySelectionAsFASTA(_ sender: Any?) {
         guard let fasta = AlignmentSelectionExporter.selectedFASTAString(
             text: string,
-            rowNames: rowNames,
+            rowNames: rows.map(\.name),
             alignmentLength: alignmentLength,
             selectedRanges: selectedRanges.map(\.rangeValue)
         ), !fasta.isEmpty else {

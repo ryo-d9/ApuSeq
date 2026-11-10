@@ -26,9 +26,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let fontSize: Double
     let contentVersion: Int
     let defaultNameColumnWidth: CGFloat
-    let displayedRowNames: [String]
-    let displayedRowIDs: [AlignmentRowID]
-    let displayedRowSequences: [String]
+    let displayedRows: [AlignmentRow]
+    let displayedRowsVersion: Int
     let highlightedNameRowIndex: Int?
     let nameSearchRequestID: Int
     let isNameFindBarPresented: Bool
@@ -59,8 +58,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         let nameColumnView = AlignmentViewportNameColumnView()
         nameColumnView.setAccessibilityIdentifier("alignment-name-column")
         nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        nameColumnView.rowNames = displayedRowNames
-        nameColumnView.rowIDs = displayedRowIDs
+        nameColumnView.rows = displayedRows
         nameColumnView.highlightedRowIndex = highlightedNameRowIndex
         nameColumnView.currentRowIndex = currentSequenceRowIndex
         nameColumnView.isEditMode = isEditMode
@@ -74,7 +72,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
         sequenceTextView.setAccessibilityIdentifier("alignment-sequence-text")
         configureMainTextView(sequenceTextView, fontSize: fontSize)
-        sequenceTextView.rowNames = displayedRowNames
+        sequenceTextView.rows = displayedRows
         sequenceTextView.delegate = context.coordinator
         sequenceTextView.onAddVerticalCursor = { [weak coordinator = context.coordinator, weak sequenceTextView] direction in
             guard let coordinator, let sequenceTextView else { return false }
@@ -101,9 +99,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.onNameFindSubmit = onNameFindSubmit
         containerView.onNameFindClose = onNameFindClose
         containerView.updateNameRows(
-            displayedRowNames,
-            rowIDs: displayedRowIDs,
-            sequences: displayedRowSequences,
+            displayedRows,
+            version: displayedRowsVersion,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,
             onAddSequence: onAddSequence,
@@ -132,9 +129,8 @@ struct AlignmentTextViewport: NSViewRepresentable {
         containerView.updateNameColumnWidth(defaultNameColumnWidth)
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(
-            displayedRowNames,
-            rowIDs: displayedRowIDs,
-            sequences: displayedRowSequences,
+            displayedRows,
+            version: displayedRowsVersion,
             isEditMode: isEditMode,
             canEditSequenceNames: canEditSequenceNames,
             onAddSequence: onAddSequence,
@@ -168,7 +164,6 @@ struct AlignmentTextViewport: NSViewRepresentable {
             fontSize: fontSize
         )
         context.coordinator.onSequenceEdited = onSequenceEdited
-        containerView.sequenceTextView.rowNames = displayedRowNames
         context.coordinator.isProgrammaticTextUpdate = true
 
         if let sequenceText {
@@ -194,7 +189,6 @@ struct AlignmentTextViewport: NSViewRepresentable {
                     alignmentLength: previousAlignmentLength
                 )
                 let columnSelectionWidth = containerView.sequenceTextView.columnSelectionWidth
-                containerView.nameColumnView.rowNames = displayedRowNames
                 containerView.sequenceTextView.replaceAlignmentText(sequenceText)
                 containerView.sequenceTextView.alignmentLength = alignmentLength
                 context.coordinator.restoreSelection(

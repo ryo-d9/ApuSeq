@@ -6,7 +6,8 @@ import Observation
 final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
-    var displayedRowIndices: [Int] = []
+    private(set) var displayedRows: [AlignmentRow] = []
+    private(set) var displayedRowsVersion = 0
     var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
@@ -44,7 +45,8 @@ final class AlignmentViewModel {
             alignment = .empty
             alignmentVersion += 1
             renderedAlignment = .empty
-            displayedRowIndices = []
+            displayedRows = []
+            displayedRowsVersion &+= 1
             renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
@@ -78,7 +80,8 @@ final class AlignmentViewModel {
                     alignment = .empty
                     alignmentVersion += 1
                     renderedAlignment = .empty
-                    displayedRowIndices = []
+                    displayedRows = []
+                    displayedRowsVersion &+= 1
                     renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
@@ -341,7 +344,12 @@ final class AlignmentViewModel {
             renderedAlignment.sequenceText.map { ($0 as NSString).length } != rendered.sequenceText.map { ($0 as NSString).length }
         renderedAlignment = rendered
         columnStatisticsVersion &+= 1
-        self.displayedRowIndices = displayedRowIndices
+        if displayedRowIndices.elementsEqual(alignment.rows.indices) {
+            displayedRows = alignment.rows
+        } else {
+            displayedRows = displayedRowIndices.compactMap { alignment.rows[safe: $0] }
+        }
+        displayedRowsVersion &+= 1
         renderedDisplayOrderMode = displayOrderMode
         if textChanged && !preservesTextStorage {
             contentVersion += 1
