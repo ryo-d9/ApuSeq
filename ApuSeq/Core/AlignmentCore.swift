@@ -211,6 +211,7 @@ enum AlignmentSequenceInput {
 
 enum AlignmentParser {
     nonisolated static func parse(_ text: String) throws -> AlignmentData {
+        try Task.checkCancellation()
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return .empty }
 
@@ -236,6 +237,7 @@ enum AlignmentParser {
         }
 
         for rawLine in lines {
+            try Task.checkCancellation()
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
             guard !isFASTACommentLine(line) else { continue }
@@ -263,6 +265,7 @@ enum AlignmentParser {
         var hasSequenceRow = false
 
         for rawLine in lines {
+            try Task.checkCancellation()
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else {
                 if hasSequenceRow {
@@ -392,15 +395,16 @@ enum AlignmentParser {
     }
 
     nonisolated private static func parsePlainText(_ text: String) throws -> AlignmentData {
-        let lines = text
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        let rows = lines.enumerated().map { index, line in
-            AlignmentRow(
-                name: "Sequence \(index + 1)",
-                sequence: sanitizedSequenceText(from: line)
+        var rows: [AlignmentRow] = []
+        for line in text.components(separatedBy: .newlines) {
+            try Task.checkCancellation()
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            rows.append(
+                AlignmentRow(
+                    name: "Sequence \(rows.count + 1)",
+                    sequence: sanitizedSequenceText(from: trimmed)
+                )
             )
         }
 

@@ -213,6 +213,23 @@ struct ApuSeqTests {
         #expect(alignment.rows.map { $0.sequence } == ["ACGT", "A-GT"])
     }
 
+    @Test func parserStopsWhenItsTaskIsCancelled() async {
+        let lineCount = 20_000
+        let rawText = Array(repeating: "ACGTACGTACGT", count: lineCount).joined(separator: "\n")
+        let task = Task.detached {
+            try AlignmentParser.parse(rawText)
+        }
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            Issue.record("Expected parsing to stop after cancellation")
+        } catch is CancellationError {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test func reverseComplementPreservesNamesAndHandlesAmbiguousBases() throws {
         let text = """
         >Mixed
