@@ -912,6 +912,51 @@ struct ApuSeqTests {
         #expect(viewModel.contentVersion == textContentVersion)
     }
 
+    @Test @MainActor func auxiliaryPanelCacheTracksColumnStatisticsVersion() async throws {
+        let viewModel = AlignmentViewModel()
+        let alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "AC-T")
+            ],
+            format: .fasta
+        )
+        viewModel.applyAlignment(
+            alignment,
+            fontSize: 12,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.count == 4 }
+
+        let populated = viewModel.auxiliaryPanelContent(
+            referenceID: nil,
+            showsReferencePanel: false,
+            showsConsensusPanel: false,
+            showsConservationPanel: true
+        )
+        #expect(!populated.rightText.isEmpty)
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.isEmpty }
+
+        let cleared = viewModel.auxiliaryPanelContent(
+            referenceID: nil,
+            showsReferencePanel: false,
+            showsConsensusPanel: false,
+            showsConservationPanel: true
+        )
+        #expect(cleared.rightText.isEmpty)
+    }
+
     @Test @MainActor func editorAlignmentUpdatePreservesExistingTextStorageVersion() async throws {
         let viewModel = AlignmentViewModel()
         viewModel.alignment = AlignmentParser.normalize(

@@ -27,6 +27,7 @@ final class AlignmentViewModel {
     private var cachedAuxiliaryKey: AuxiliaryKey?
     private var cachedAuxiliaryContent: AuxiliaryPanelContent = .empty
     private var pendingEditorChangedColumns: Range<Int>?
+    @ObservationIgnored private var columnStatisticsVersion = 0
 
     func parseAndRender(
         rawText: String,
@@ -294,10 +295,7 @@ final class AlignmentViewModel {
             showsReferencePanel: showsReferencePanel,
             showsConsensusPanel: showsConsensusPanel,
             showsConservationPanel: showsConservationPanel,
-            identityCount: renderedAlignment.identityByColumn.count,
-            identityChecksum: renderedAlignment.identityByColumn.reduce(into: 1469598103934665603) { partialResult, value in
-                partialResult = (partialResult ^ UInt64(value.bitPattern)) &* 1099511628211
-            }
+            columnStatisticsVersion: columnStatisticsVersion
         )
         if key == cachedAuxiliaryKey {
             return cachedAuxiliaryContent
@@ -342,6 +340,7 @@ final class AlignmentViewModel {
             renderedAlignment.nameAttributedText.length != rendered.nameAttributedText.length ||
             renderedAlignment.sequenceText.map { ($0 as NSString).length } != rendered.sequenceText.map { ($0 as NSString).length }
         renderedAlignment = rendered
+        columnStatisticsVersion &+= 1
         self.displayedRowIndices = displayedRowIndices
         renderedDisplayOrderMode = displayOrderMode
         if textChanged && !preservesTextStorage {
@@ -408,8 +407,7 @@ final class AlignmentViewModel {
         let showsReferencePanel: Bool
         let showsConsensusPanel: Bool
         let showsConservationPanel: Bool
-        let identityCount: Int
-        let identityChecksum: UInt64
+        let columnStatisticsVersion: Int
     }
 }
 
