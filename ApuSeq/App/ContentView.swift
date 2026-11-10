@@ -137,10 +137,7 @@ private struct RootView: View {
     }
 
     private var displayRows: [AlignmentRow] {
-        guard !model.displayedRowIndices.isEmpty else { return model.alignment.rows }
-        return model.displayedRowIndices.compactMap { index in
-            model.alignment.rows[safe: index]
-        }
+        model.displayedRows.isEmpty ? model.alignment.rows : model.displayedRows
     }
 
     private var currentSequenceRow: AlignmentRow? {
@@ -517,9 +514,8 @@ private struct RootView: View {
             fontSize: alignmentFontSize,
             contentVersion: model.contentVersion,
             defaultNameColumnWidth: model.renderedAlignment.nameColumnWidth,
-            displayedRowNames: displayRows.map(\.name),
-            displayedRowIDs: displayRows.map(\.id),
-            displayedRowSequences: displayRows.map(\.sequence),
+            displayedRows: displayRows,
+            displayedRowsVersion: model.displayedRowsVersion,
             highlightedNameRowIndex: highlightedNameRowIndex,
             nameSearchRequestID: nameSearchRequestID,
             isNameFindBarPresented: showsSequenceNameFindBar,
@@ -804,7 +800,7 @@ private struct RootView: View {
     private func applyEditedSequenceText(_ change: AlignmentTextChange) {
         guard viewerMode == .edit else { return }
         guard let edit = AlignmentTextEditor.apply(
-            text: change.text,
+            changedRows: change.changedRows,
             editedRanges: change.editedRanges,
             alignmentLength: change.alignmentLength,
             to: model.alignment

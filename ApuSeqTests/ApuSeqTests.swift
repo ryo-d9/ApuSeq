@@ -213,6 +213,23 @@ struct ApuSeqTests {
         #expect(alignment.rows.map { $0.sequence } == ["ACGT", "A-GT"])
     }
 
+    @Test func parserStopsWhenItsTaskIsCancelled() async {
+        let lineCount = 20_000
+        let rawText = Array(repeating: "ACGTACGTACGT", count: lineCount).joined(separator: "\n")
+        let task = Task.detached {
+            try AlignmentParser.parse(rawText)
+        }
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            Issue.record("Expected parsing to stop after cancellation")
+        } catch is CancellationError {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test func reverseComplementPreservesNamesAndHandlesAmbiguousBases() throws {
         let text = """
         >Mixed
@@ -458,6 +475,88 @@ struct ApuSeqTests {
             AlignmentRow(name: "C", sequence: "AC-T")
         ])
         #expect(result.changedColumns == 1..<2)
+    }
+
+    @Test func incrementalTextEditPreservesUnchangedRowsAndRowIdentity() throws {
+        let rows = [
+            AlignmentRow(name: "Duplicate", sequence: "ACGT"),
+            AlignmentRow(name: "Duplicate", sequence: "A-GT"),
+            AlignmentRow(name: "C", sequence: "AC-T")
+        ]
+        let alignment = AlignmentParser.normalize(rows: rows, format: .fasta)
+
+        let result = try #require(
+            AlignmentTextEditor.apply(
+                changedRows: [
+                    AlignmentTextRowChange(rowIndex: 1, sequence: "AAGT")
+                ],
+                editedRanges: [NSRange(location: 6, length: 1)],
+                alignmentLength: 4,
+                to: alignment
+            )
+        )
+
+        #expect(result.alignment.rows.map(\.sequence) == ["ACGT", "AAGT", "AC-T"])
+        #expect(result.alignment.rows.map(\.id) == alignment.rows.map(\.id))
+        #expect(result.changedColumns == 1..<2)
+    }
+
+    @Test func incrementalTextEditPadsUnchangedRowsWhenAlignmentGrows() throws {
+        let alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "A-GT")
+            ],
+            format: .fasta
+        )
+
+        let result = try #require(
+            AlignmentTextEditor.apply(
+                changedRows: [
+                    AlignmentTextRowChange(rowIndex: 0, sequence: "ACGTA")
+                ],
+                editedRanges: [NSRange(location: 4, length: 1)],
+                alignmentLength: 5,
+                to: alignment
+            )
+        )
+
+        #expect(result.alignment.rows.map(\.sequence) == ["ACGTA", "A-GT-"])
+        #expect(result.alignment.rows.map(\.id) == alignment.rows.map(\.id))
+        #expect(result.changedColumns == 4..<5)
+    }
+
+    @Test func selectionSummaryCountsResiduesWithoutCountingLineBreaks() {
+        let summary = AlignmentTextViewport.Coordinator.selectionSummary(
+            for: [NSRange(location: 1, length: 10)],
+            alignmentLength: 4,
+            textLength: 15,
+            currentRowIndex: 1
+        )
+
+        #expect(summary.residueCount == 8)
+        #expect(summary.sequenceCount == 3)
+        #expect(summary.startPosition == 1)
+        #expect(summary.endPosition == 4)
+        #expect(summary.currentRowIndex == 1)
+    }
+
+    @Test func selectionSummaryMergesOverlappingRanges() {
+        let summary = AlignmentTextViewport.Coordinator.selectionSummary(
+            for: [
+                NSRange(location: 0, length: 3),
+                NSRange(location: 2, length: 2),
+                NSRange(location: 5, length: 4)
+            ],
+            alignmentLength: 4,
+            textLength: 10,
+            currentRowIndex: 0
+        )
+
+        #expect(summary.residueCount == 8)
+        #expect(summary.sequenceCount == 2)
+        #expect(summary.startPosition == 1)
+        #expect(summary.endPosition == 4)
     }
 
     @Test func partialStatisticsMatchFullRecalculation() {
@@ -746,7 +845,14 @@ struct ApuSeqTests {
         )
         try await waitUntil { viewModel.contentVersion > 0 }
 
-        #expect(viewModel.displayedRowIndices.map { viewModel.alignment.rows[$0].name } == ["sample 1", "sample 2", "sample 10"])
+        #expect(viewModel.displayedRows.map(\.name) == ["sample 1", "sample 2", "sample 10"])
+        #expect(
+            viewModel.displayedRows.map(\.id) == [
+                viewModel.alignment.rows[2].id,
+                viewModel.alignment.rows[1].id,
+                viewModel.alignment.rows[0].id
+            ]
+        )
         #expect(viewModel.alignment.rows.map { $0.name } == ["sample 10", "sample 2", "sample 1"])
         #expect(viewModel.renderedDisplayOrderMode == .name)
     }
@@ -811,6 +917,51 @@ struct ApuSeqTests {
         try await waitUntil { viewModel.renderedAlignment.identityByColumn.count == 4 }
 
         #expect(viewModel.contentVersion == textContentVersion)
+    }
+
+    @Test @MainActor func auxiliaryPanelCacheTracksColumnStatisticsVersion() async throws {
+        let viewModel = AlignmentViewModel()
+        let alignment = AlignmentParser.normalize(
+            rows: [
+                AlignmentRow(name: "A", sequence: "ACGT"),
+                AlignmentRow(name: "B", sequence: "AC-T")
+            ],
+            format: .fasta
+        )
+        viewModel.applyAlignment(
+            alignment,
+            fontSize: 12,
+            needsIdentityByColumn: true,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.count == 4 }
+
+        let populated = viewModel.auxiliaryPanelContent(
+            referenceID: nil,
+            showsReferencePanel: false,
+            showsConsensusPanel: false,
+            showsConservationPanel: true
+        )
+        #expect(!populated.rightText.isEmpty)
+
+        viewModel.rerender(
+            fontSize: 12,
+            needsIdentityByColumn: false,
+            needsMajorityResidueByColumn: false,
+            displayOrderMode: .original,
+            referenceName: nil
+        )
+        try await waitUntil { viewModel.renderedAlignment.identityByColumn.isEmpty }
+
+        let cleared = viewModel.auxiliaryPanelContent(
+            referenceID: nil,
+            showsReferencePanel: false,
+            showsConsensusPanel: false,
+            showsConservationPanel: true
+        )
+        #expect(cleared.rightText.isEmpty)
     }
 
     @Test @MainActor func editorAlignmentUpdatePreservesExistingTextStorageVersion() async throws {

@@ -47,7 +47,7 @@ enum AlignmentRenderer {
         changedColumns: Range<Int>? = nil,
         fontSize: Double
     ) -> RenderedAlignment {
-        guard !alignment.rows.isEmpty else { return .empty }
+        guard !alignment.rows.isEmpty, !Task.isCancelled else { return .empty }
 
         let resolvedRowIndices = rowIndices ?? Array(alignment.rows.indices)
         let rows = resolvedRowIndices.map { alignment.rows[$0] }
@@ -81,6 +81,7 @@ enum AlignmentRenderer {
         var sequenceHasher = Hasher()
 
         for row in rows {
+            guard !Task.isCancelled else { return .empty }
             let paddedName = row.name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
             let nameLine = paddedName + "\n"
             let sequenceLine = row.sequence + "\n"
@@ -132,6 +133,7 @@ enum AlignmentStatistics {
         touched.reserveCapacity(16)
 
         for column in columns {
+            if Task.isCancelled { return identity }
             var totalCount = 0
             var mostCommonCount = 0
 
@@ -178,6 +180,7 @@ enum AlignmentStatistics {
         touched.reserveCapacity(24)
 
         for column in 0..<length {
+            if Task.isCancelled { return result }
             var bestBucket = -1
             var bestCount = 0
 
@@ -230,6 +233,7 @@ enum AlignmentStatistics {
         touched.reserveCapacity(16)
 
         for column in columns {
+            if Task.isCancelled { return majority }
             var bestBucket = 0
             var bestCount = 0
 

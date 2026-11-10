@@ -58,6 +58,54 @@ nonisolated struct AlignmentTextEditResult: Sendable {
 
 enum AlignmentTextEditor {
     nonisolated static func apply(
+        changedRows: [AlignmentTextRowChange],
+        editedRanges: [NSRange],
+        alignmentLength: Int,
+        to alignment: AlignmentData
+    ) -> AlignmentTextEditResult? {
+        guard alignmentLength >= 0, !changedRows.isEmpty else { return nil }
+        var rows = alignment.rows
+        var changedRowIndices = Set<Int>()
+
+        for change in changedRows {
+            guard rows.indices.contains(change.rowIndex) else { return nil }
+            guard (change.sequence as NSString).length == alignmentLength else { return nil }
+            let row = rows[change.rowIndex]
+            rows[change.rowIndex] = AlignmentRow(
+                id: row.id,
+                name: row.name,
+                sequence: change.sequence
+            )
+            changedRowIndices.insert(change.rowIndex)
+        }
+
+        if alignment.length != alignmentLength {
+            for index in rows.indices where !changedRowIndices.contains(index) {
+                let row = rows[index]
+                let sequence = row.sequence.padding(
+                    toLength: alignmentLength,
+                    withPad: "-",
+                    startingAt: 0
+                )
+                rows[index] = AlignmentRow(id: row.id, name: row.name, sequence: sequence)
+            }
+        }
+
+        let changedColumns = changedColumnRange(
+            editedRanges: editedRanges,
+            oldLength: alignment.length,
+            newLength: alignmentLength
+        )
+        let editedAlignment = AlignmentData(
+            format: alignment.format,
+            rows: rows,
+            length: alignmentLength,
+            sequenceKind: AlignmentParser.inferSequenceKind(from: rows)
+        )
+        return AlignmentTextEditResult(alignment: editedAlignment, changedColumns: changedColumns)
+    }
+
+    nonisolated static func apply(
         text: String,
         editedRanges: [NSRange],
         alignmentLength: Int,
@@ -163,6 +211,7 @@ enum AlignmentSequenceInput {
 
 enum AlignmentParser {
     nonisolated static func parse(_ text: String) throws -> AlignmentData {
+        try Task.checkCancellation()
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return .empty }
 
@@ -188,6 +237,7 @@ enum AlignmentParser {
         }
 
         for rawLine in lines {
+            try Task.checkCancellation()
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
             guard !isFASTACommentLine(line) else { continue }
@@ -215,6 +265,7 @@ enum AlignmentParser {
         var hasSequenceRow = false
 
         for rawLine in lines {
+            try Task.checkCancellation()
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else {
                 if hasSequenceRow {
@@ -344,15 +395,16 @@ enum AlignmentParser {
     }
 
     nonisolated private static func parsePlainText(_ text: String) throws -> AlignmentData {
-        let lines = text
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        let rows = lines.enumerated().map { index, line in
-            AlignmentRow(
-                name: "Sequence \(index + 1)",
-                sequence: sanitizedSequenceText(from: line)
+        var rows: [AlignmentRow] = []
+        for line in text.components(separatedBy: .newlines) {
+            try Task.checkCancellation()
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            rows.append(
+                AlignmentRow(
+                    name: "Sequence \(rows.count + 1)",
+                    sequence: sanitizedSequenceText(from: trimmed)
+                )
             )
         }
 

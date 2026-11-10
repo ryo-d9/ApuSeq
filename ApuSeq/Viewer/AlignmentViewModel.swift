@@ -6,7 +6,8 @@ import Observation
 final class AlignmentViewModel {
     var alignment: AlignmentData = .empty
     var renderedAlignment: RenderedAlignment = .empty
-    var displayedRowIndices: [Int] = []
+    private(set) var displayedRows: [AlignmentRow] = []
+    private(set) var displayedRowsVersion = 0
     var renderedDisplayOrderMode: AlignmentDisplayOrderMode = .original
     var parseErrorMessage: String?
     var contentVersion = 0
@@ -27,6 +28,7 @@ final class AlignmentViewModel {
     private var cachedAuxiliaryKey: AuxiliaryKey?
     private var cachedAuxiliaryContent: AuxiliaryPanelContent = .empty
     private var pendingEditorChangedColumns: Range<Int>?
+    @ObservationIgnored private var columnStatisticsVersion = 0
 
     func parseAndRender(
         rawText: String,
@@ -43,7 +45,8 @@ final class AlignmentViewModel {
             alignment = .empty
             alignmentVersion += 1
             renderedAlignment = .empty
-            displayedRowIndices = []
+            displayedRows = []
+            displayedRowsVersion &+= 1
             renderedDisplayOrderMode = .original
             parseErrorMessage = nil
             contentVersion += 1
@@ -77,7 +80,8 @@ final class AlignmentViewModel {
                     alignment = .empty
                     alignmentVersion += 1
                     renderedAlignment = .empty
-                    displayedRowIndices = []
+                    displayedRows = []
+                    displayedRowsVersion &+= 1
                     renderedDisplayOrderMode = .original
                     parseErrorMessage = error.localizedDescription
                     clearCache()
@@ -294,10 +298,7 @@ final class AlignmentViewModel {
             showsReferencePanel: showsReferencePanel,
             showsConsensusPanel: showsConsensusPanel,
             showsConservationPanel: showsConservationPanel,
-            identityCount: renderedAlignment.identityByColumn.count,
-            identityChecksum: renderedAlignment.identityByColumn.reduce(into: 1469598103934665603) { partialResult, value in
-                partialResult = (partialResult ^ UInt64(value.bitPattern)) &* 1099511628211
-            }
+            columnStatisticsVersion: columnStatisticsVersion
         )
         if key == cachedAuxiliaryKey {
             return cachedAuxiliaryContent
@@ -342,7 +343,13 @@ final class AlignmentViewModel {
             renderedAlignment.nameAttributedText.length != rendered.nameAttributedText.length ||
             renderedAlignment.sequenceText.map { ($0 as NSString).length } != rendered.sequenceText.map { ($0 as NSString).length }
         renderedAlignment = rendered
-        self.displayedRowIndices = displayedRowIndices
+        columnStatisticsVersion &+= 1
+        if displayedRowIndices.elementsEqual(alignment.rows.indices) {
+            displayedRows = alignment.rows
+        } else {
+            displayedRows = displayedRowIndices.compactMap { alignment.rows[safe: $0] }
+        }
+        displayedRowsVersion &+= 1
         renderedDisplayOrderMode = displayOrderMode
         if textChanged && !preservesTextStorage {
             contentVersion += 1
@@ -377,15 +384,25 @@ final class AlignmentViewModel {
     }
 
     private func runOnBackground<T: Sendable>(_ work: @Sendable @escaping () -> T) async -> T {
-        await Task.detached(priority: .userInitiated) {
+        let task = Task.detached(priority: .userInitiated) {
             work()
-        }.value
+        }
+        return await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private func runOnBackgroundThrowing<T: Sendable>(_ work: @Sendable @escaping () throws -> T) async throws -> T {
-        try await Task.detached(priority: .userInitiated) {
+        let task = Task.detached(priority: .userInitiated) {
             try work()
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private struct ConsensusKey: Equatable {
@@ -398,8 +415,7 @@ final class AlignmentViewModel {
         let showsReferencePanel: Bool
         let showsConsensusPanel: Bool
         let showsConservationPanel: Bool
-        let identityCount: Int
-        let identityChecksum: UInt64
+        let columnStatisticsVersion: Int
     }
 }
 

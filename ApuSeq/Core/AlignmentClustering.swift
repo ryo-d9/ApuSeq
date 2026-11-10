@@ -43,6 +43,7 @@ enum AlignmentClusterer {
         var activeCount = count
 
         for row in 0..<count {
+            if Task.isCancelled { return Array(rows.indices) }
             for column in (row + 1)..<count {
                 let distance = sequenceDistance(sequences[row], sequences[column])
                 distances[(row * count) + column] = distance
@@ -51,6 +52,7 @@ enum AlignmentClusterer {
         }
 
         while activeCount > 1 {
+            if Task.isCancelled { return Array(rows.indices) }
             var bestLeft = -1
             var bestRight = -1
             var bestDistance = Double.greatestFiniteMagnitude
@@ -98,6 +100,7 @@ enum AlignmentClusterer {
         var comparable = 0
         var mismatches = 0
         for index in 0..<length {
+            if index.isMultiple(of: 1_024), Task.isCancelled { return 1 }
             let left = normalizedResidueCode(first.character(at: index))
             let right = normalizedResidueCode(second.character(at: index))
             guard ResiduePalette.isDefined(left), ResiduePalette.isDefined(right) else { continue }

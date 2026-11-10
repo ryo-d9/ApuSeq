@@ -28,6 +28,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     private var rulerHeightConstraint: NSLayoutConstraint?
     private var leftAuxHeightConstraint: NSLayoutConstraint?
     private var rightAuxHeightConstraint: NSLayoutConstraint?
+    private var displayedRowsVersion = -1
     private var desiredNameWidth: CGFloat = 180
     private var hasAppliedInitialNameWidth = false
     private var pendingInitialNameWidth: CGFloat?
@@ -96,9 +97,8 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 
     func updateNameRows(
-        _ names: [String],
-        rowIDs: [AlignmentRowID],
-        sequences: [String],
+        _ rows: [AlignmentRow],
+        version: Int,
         isEditMode: Bool,
         canEditSequenceNames: Bool,
         onAddSequence: @escaping () -> Void,
@@ -107,12 +107,11 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         onDeleteSequence: @escaping (AlignmentRowID) -> Void,
         onSetReference: @escaping (AlignmentRowID?) -> Void
     ) {
-        if nameColumnView.rowNames != names {
-            nameColumnView.rowNames = names
+        if displayedRowsVersion != version {
+            displayedRowsVersion = version
+            nameColumnView.rows = rows
+            sequenceTextView.rows = rows
         }
-        nameColumnView.rowSequences = sequences
-        nameColumnView.rowIDs = rowIDs
-        sequenceTextView.rowNames = names
         nameColumnView.isEditMode = isEditMode
         nameColumnView.canEditSequenceNames = canEditSequenceNames
         nameColumnView.onAddSequence = onAddSequence
@@ -199,7 +198,7 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
     }
 
     func scrollNameRowToVisible(_ row: Int) {
-        guard row >= 0, row < nameColumnView.rowNames.count else { return }
+        guard row >= 0, row < nameColumnView.rows.count else { return }
         let lineHeight = alignmentLineHeight(for: nameColumnView.font)
         let targetY = max(CGFloat(row) * lineHeight + sequenceTextView.textContainerInset.height - (sequenceScrollView.contentView.bounds.height / 2), 0)
         var origin = sequenceScrollView.contentView.bounds.origin
