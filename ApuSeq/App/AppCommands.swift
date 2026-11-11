@@ -205,15 +205,17 @@ struct FASTAImportCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .importExport) {
-            Button(AppStrings.addFASTAFiles) {
-                actions?.addFASTA()
-            }
-            .disabled(actions?.canAddFASTA != true)
+            Menu(AppStrings.addFASTA) {
+                Button(AppStrings.addFASTAFiles) {
+                    actions?.addFASTA()
+                }
+                .disabled(actions?.canAddFASTA != true)
 
-            Button(AppStrings.addReverseComplementedFASTAFiles) {
-                actions?.addReverseComplementedFASTA()
+                Button(AppStrings.addReverseComplementedFASTAFiles) {
+                    actions?.addReverseComplementedFASTA()
+                }
+                .disabled(actions?.canAddReverseComplementedFASTA != true)
             }
-            .disabled(actions?.canAddReverseComplementedFASTA != true)
         }
     }
 }
