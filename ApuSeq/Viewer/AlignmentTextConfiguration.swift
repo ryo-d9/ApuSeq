@@ -60,8 +60,12 @@ func configureNameTextView(_ textView: NSTextView, fontSize: Double) {
 
 func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
     textView.isEditable = false
-    textView.isSelectable = false
+    textView.isSelectable = true
+    textView.allowsUndo = false
     textView.isRichText = false
+    textView.usesFindBar = false
+    textView.usesFindPanel = false
+    textView.isIncrementalSearchingEnabled = false
     textView.usesRuler = false
     textView.usesInspectorBar = false
     textView.usesFontPanel = false

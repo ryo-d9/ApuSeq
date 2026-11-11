@@ -511,6 +511,19 @@ struct ApuSeqTests {
         #expect(TextDecoding.decode(shiftJISData) == "配列")
     }
 
+    @Test @MainActor func auxiliaryTextViewIsSelectableButNotEditable() {
+        let textView = NSTextView()
+
+        configureAuxiliaryTextView(textView, fontSize: 12)
+
+        #expect(textView.isSelectable)
+        #expect(!textView.isEditable)
+        #expect(!textView.allowsUndo)
+        #expect(!textView.usesFindBar)
+        #expect(!textView.usesFindPanel)
+        #expect(!textView.isIncrementalSearchingEnabled)
+    }
+
     @Test func consensusIgnoresGapsAndFallsBackToGapForEmptyColumns() {
         let rows = [
             AlignmentRow(name: "A", sequence: "A-C"),
