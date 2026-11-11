@@ -263,6 +263,120 @@ struct ApuSeqTests {
         }
     }
 
+    @Test func parsesUnpaddedFASTARowsForSequenceTransformations() throws {
+        let rows = try AlignmentParser.parseFASTARows(">Long\nACGT\n>Short\nAC\n")
+
+        #expect(rows.map(\.sequence) == ["ACGT", "AC"])
+    }
+
+    @Test func importsMultipleFASTAFilesInSelectionOrder() throws {
+        let rows = try FASTAImporter.rows(
+            from: [">First\nACGT\n", ">Second\nTGCA\n"],
+            mode: .unchanged,
+            existingSequenceKind: .nucleotide
+        )
+
+        #expect(rows.map(\.name) == ["First", "Second"])
+        #expect(rows.map(\.sequence) == ["ACGT", "TGCA"])
+    }
+
+    @Test func reverseComplementImportDoesNotReverseParserPadding() throws {
+        let rows = try FASTAImporter.rows(
+            from: [">Long\nACGT\n>Short\nAC\n"],
+            mode: .reverseComplemented,
+            existingSequenceKind: .nucleotide
+        )
+
+        #expect(rows.map(\.sequence) == ["ACGT", "GT"])
+    }
+
+    @Test func reverseComplementImportRejectsAminoAcidSequences() {
+        do {
+            _ = try FASTAImporter.rows(
+                from: [">Protein\nMPEPTIDE\n"],
+                mode: .reverseComplemented,
+                existingSequenceKind: nil
+            )
+            Issue.record("Expected reverse-complement import to reject amino-acid sequences")
+        } catch FASTAImportError.reverseComplementRequiresNucleotides {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test func importRejectsMixedSequenceKindsAcrossFiles() {
+        do {
+            _ = try FASTAImporter.rows(
+                from: [">DNA\nACGT\n", ">Protein\nMPEPTIDE\n"],
+                mode: .unchanged,
+                existingSequenceKind: nil
+            )
+            Issue.record("Expected import to reject mixed sequence kinds")
+        } catch FASTAImportError.incompatibleSequenceKind {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test func assemblesReadPairWithoutInternalGaps() throws {
+        let rows = [
+            AlignmentRow(name: "Forward", sequence: "AAAACCCCGGGG"),
+            AlignmentRow(name: "Reverse", sequence: "GGGGTTTT")
+        ]
+
+        let assembled = try ReadPairAssembler.assemble(
+            rows: rows,
+            parameters: ReadPairAssemblyParameters(minimumOverlapLength: 4, minimumIdentity: 1)
+        )
+
+        #expect(assembled.map(\.name) == ["Forward", "Reverse"])
+        #expect(assembled.map(\.sequence) == ["AAAACCCCGGGG----", "--------GGGGTTTT"])
+    }
+
+    @Test func assemblesSecondReadToTheLeftWhilePreservingRowOrder() throws {
+        let rows = [
+            AlignmentRow(name: "Forward", sequence: "GGGGTTTT"),
+            AlignmentRow(name: "Reverse", sequence: "AAAAGGGG")
+        ]
+
+        let assembled = try ReadPairAssembler.assemble(
+            rows: rows,
+            parameters: ReadPairAssemblyParameters(minimumOverlapLength: 4, minimumIdentity: 1)
+        )
+
+        #expect(assembled.map(\.name) == ["Forward", "Reverse"])
+        #expect(assembled.map(\.sequence) == ["----GGGGTTTT", "AAAAGGGG----"])
+    }
+
+    @Test func readPairAssemblyRemovesExistingGapsBeforeOverlapSearch() throws {
+        let rows = [
+            AlignmentRow(name: "Forward", sequence: "AAAACCCC-GGGG----"),
+            AlignmentRow(name: "Reverse", sequence: "--------GGGG.TTTT")
+        ]
+
+        let assembled = try ReadPairAssembler.assemble(
+            rows: rows,
+            parameters: ReadPairAssemblyParameters(minimumOverlapLength: 4, minimumIdentity: 1)
+        )
+
+        #expect(assembled.map(\.sequence) == ["AAAACCCCGGGG----", "--------GGGGTTTT"])
+    }
+
+    @Test func readPairAssemblyRejectsInsufficientOverlap() {
+        let rows = [
+            AlignmentRow(name: "First", sequence: "AAAAAAAAAA"),
+            AlignmentRow(name: "Second", sequence: "CCCCCCCCCC")
+        ]
+
+        do {
+            _ = try ReadPairAssembler.assemble(rows: rows)
+            Issue.record("Expected assembly to reject unrelated reads")
+        } catch ReadPairAssemblyError.noSufficientOverlap {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test func translatesNucleotideFASTAWithFramesAndCodonTables() throws {
         let text = """
         >Coding

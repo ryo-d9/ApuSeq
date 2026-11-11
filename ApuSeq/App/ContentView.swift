@@ -7,6 +7,7 @@
 
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     let document: ApuSeqDocument
@@ -27,6 +28,8 @@ private struct CommandFocusedValuesModifier: ViewModifier {
     let inspectorToggleActions: InspectorToggleActions
     let alignmentDisplayActions: AlignmentDisplayActions
     let mafftAlignmentActions: MAFFTAlignmentActions
+    let fastaImportActions: FASTAImportActions
+    let readPairAssemblyActions: ReadPairAssemblyActions
     let alignmentPrintActions: AlignmentPrintActions
 
     func body(content: Content) -> some View {
@@ -39,6 +42,8 @@ private struct CommandFocusedValuesModifier: ViewModifier {
             .focusedSceneValue(\.inspectorToggleActions, inspectorToggleActions)
             .focusedSceneValue(\.alignmentDisplayActions, alignmentDisplayActions)
             .focusedSceneValue(\.mafftAlignmentActions, mafftAlignmentActions)
+            .focusedSceneValue(\.fastaImportActions, fastaImportActions)
+            .focusedSceneValue(\.readPairAssemblyActions, readPairAssemblyActions)
             .focusedSceneValue(\.alignmentPrintActions, alignmentPrintActions)
     }
 }
@@ -94,6 +99,10 @@ private struct RootView: View {
     @State private var pendingDocumentAlignment: AlignmentData?
     @State private var documentSerializationTask: Task<Void, Never>?
     @State private var documentSerializationGeneration = 0
+    @State private var showsFASTAImporter = false
+    @State private var fastaImportMode: FASTAImportMode = .unchanged
+    @State private var isImportingFASTA = false
+    @State private var readPairAssemblyTask: Task<Void, Never>?
 
     @SceneStorage("showReferencePanel") private var showsReferencePanel = false
     @SceneStorage("showConsensusPanel") private var showsConsensusPanel = false
@@ -354,6 +363,24 @@ private struct RootView: View {
         )
     }
 
+    private var fastaImportActions: FASTAImportActions {
+        FASTAImportActions(
+            canAddFASTA: canAddSequence && !isImportingFASTA,
+            addFASTA: { presentFASTAImporter(mode: .unchanged) },
+            canAddReverseComplementedFASTA: canAddSequence &&
+                !isImportingFASTA &&
+                (isEmptyDocument || model.alignment.sequenceKind == .nucleotide),
+            addReverseComplementedFASTA: { presentFASTAImporter(mode: .reverseComplemented) }
+        )
+    }
+
+    private var readPairAssemblyActions: ReadPairAssemblyActions {
+        ReadPairAssemblyActions(
+            canAssemble: canAssembleReadPair,
+            assemble: startReadPairAssembly
+        )
+    }
+
     private var commandFocusedValues: CommandFocusedValuesModifier {
         CommandFocusedValuesModifier(
             sequenceTransformContext: sequenceTransformContext,
@@ -364,6 +391,8 @@ private struct RootView: View {
             inspectorToggleActions: inspectorToggleActions,
             alignmentDisplayActions: alignmentDisplayActions,
             mafftAlignmentActions: mafftAlignmentActions,
+            fastaImportActions: fastaImportActions,
+            readPairAssemblyActions: readPairAssemblyActions,
             alignmentPrintActions: alignmentPrintActions
         )
     }
@@ -400,6 +429,16 @@ private struct RootView: View {
         model.alignment.format == .fasta &&
         model.alignment.sequenceKind == .nucleotide &&
         model.alignment.rows.count >= 2
+    }
+
+    private var canAssembleReadPair: Bool {
+        readPairAssemblyTask == nil &&
+        model.parseErrorMessage == nil &&
+        model.alignment.sequenceKind == .nucleotide &&
+        model.alignment.rows.count == 2 &&
+        model.alignment.rows.allSatisfy {
+            $0.sequence.contains { $0 != "-" && $0 != "." && !$0.isWhitespace }
+        }
     }
 
     private var viewerModeBinding: Binding<ViewerMode> {
@@ -615,11 +654,18 @@ private struct RootView: View {
         } message: {
             Text(operationErrorMessage)
         }
+        .fileImporter(
+            isPresented: $showsFASTAImporter,
+            allowedContentTypes: [.fasta],
+            allowsMultipleSelection: true,
+            onCompletion: handleFASTAImport
+        )
         .onAppear {
             parseAndRender()
         }
         .onDisappear {
             cancelMAFFTAlignment()
+            readPairAssemblyTask?.cancel()
             flushPendingDocumentSerialization()
         }
         .onChange(of: document.rawText) { _, newText in
@@ -1188,6 +1234,87 @@ private struct RootView: View {
     private func showOperationError(_ message: String) {
         operationErrorMessage = message
         showsOperationError = true
+    }
+
+    private func presentFASTAImporter(mode: FASTAImportMode) {
+        guard canAddSequence, !isImportingFASTA else { return }
+        fastaImportMode = mode
+        showsFASTAImporter = true
+    }
+
+    private func handleFASTAImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            showOperationError(error.localizedDescription)
+        case .success(let urls):
+            importFASTA(from: urls, mode: fastaImportMode)
+        }
+    }
+
+    private func importFASTA(from urls: [URL], mode: FASTAImportMode) {
+        guard !urls.isEmpty, canAddSequence, !isImportingFASTA else { return }
+        let existingKind: SequenceKind? = isEmptyDocument ? nil : model.alignment.sequenceKind
+        isImportingFASTA = true
+
+        Task { @MainActor in
+            do {
+                let importedRows = try await Task.detached(priority: .userInitiated) {
+                    var contents: [String] = []
+                    contents.reserveCapacity(urls.count)
+                    for url in urls {
+                        try Task.checkCancellation()
+                        let didStartAccess = url.startAccessingSecurityScopedResource()
+                        defer {
+                            if didStartAccess {
+                                url.stopAccessingSecurityScopedResource()
+                            }
+                        }
+                        let data = try Data(contentsOf: url)
+                        guard let text = TextDecoding.decode(data) else {
+                            throw CocoaError(.fileReadInapplicableStringEncoding)
+                        }
+                        contents.append(text)
+                    }
+                    return try FASTAImporter.rows(
+                        from: contents,
+                        mode: mode,
+                        existingSequenceKind: existingKind
+                    )
+                }.value
+                let rows = rowsByAppendingUniqueRows(importedRows)
+                let actionName = mode == .reverseComplemented
+                    ? AppStrings.addReverseComplementedFASTAFilesAction
+                    : AppStrings.addFASTAFilesAction
+                applyDocumentRows(rows, undoActionName: actionName)
+            } catch is CancellationError {
+            } catch {
+                showOperationError(error.localizedDescription)
+            }
+            isImportingFASTA = false
+        }
+    }
+
+    private func startReadPairAssembly() {
+        guard canAssembleReadPair else { return }
+        let rows = model.alignment.rows
+        readPairAssemblyTask = Task { @MainActor in
+            do {
+                let assembledRows = try await Task.detached(priority: .userInitiated) {
+                    try ReadPairAssembler.assemble(rows: rows)
+                }.value
+                guard !Task.isCancelled else { return }
+                let text = AlignmentSerializer.serialize(rows: assembledRows, preferredFormat: .fasta)
+                readPairAssemblyTask = nil
+                newDocument {
+                    ApuSeqDocument(rawText: text)
+                }
+            } catch is CancellationError {
+                readPairAssemblyTask = nil
+            } catch {
+                readPairAssemblyTask = nil
+                showOperationError(error.localizedDescription)
+            }
+        }
     }
 
     private var selectedColumnRange: Range<Int>? {

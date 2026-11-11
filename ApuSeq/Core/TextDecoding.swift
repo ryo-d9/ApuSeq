@@ -1,6 +1,6 @@
 import Foundation
 
-enum TextDecoding {
+nonisolated enum TextDecoding {
     private static let fallbackEncodings: [String.Encoding] = [
         .shiftJIS,
         .isoLatin1,

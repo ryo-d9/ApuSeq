@@ -1,6 +1,6 @@
 import Foundation
 
-enum AlignmentReverseComplementError: LocalizedError {
+nonisolated enum AlignmentReverseComplementError: LocalizedError {
     case unsupportedSequenceKind
 
     var errorDescription: String? {
@@ -11,7 +11,7 @@ enum AlignmentReverseComplementError: LocalizedError {
     }
 }
 
-enum AlignmentReverseComplementer {
+nonisolated enum AlignmentReverseComplementer {
     static func reverseComplementFASTA(rawText: String) throws -> String {
         let alignment = try AlignmentParser.parse(rawText)
         guard alignment.sequenceKind == .nucleotide else {
@@ -27,7 +27,7 @@ enum AlignmentReverseComplementer {
         return lines.joined(separator: "\n")
     }
 
-    private static func reverseComplement(_ sequence: String) -> String {
+    static func reverseComplement(_ sequence: String) -> String {
         var output = String()
         output.reserveCapacity(sequence.count)
         for scalar in sequence.unicodeScalars.reversed() {

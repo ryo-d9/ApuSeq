@@ -216,7 +216,7 @@ enum AlignmentParser {
         guard !normalized.isEmpty else { return .empty }
 
         if firstContentLine(in: normalized)?.hasPrefix(">") == true {
-            return try parseFASTA(normalized)
+            return normalize(rows: try parseFASTARows(normalized), format: .fasta)
         }
         if isCLUSTALHeader(normalized) {
             return try parseCLUSTAL(normalized)
@@ -224,7 +224,11 @@ enum AlignmentParser {
         return try parsePlainText(normalized)
     }
 
-    nonisolated private static func parseFASTA(_ text: String) throws -> AlignmentData {
+    nonisolated static func parseFASTARows(_ text: String) throws -> [AlignmentRow] {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard firstContentLine(in: normalized)?.hasPrefix(">") == true else {
+            throw AlignmentParseError.unsupportedFormat
+        }
         let lines = text.components(separatedBy: .newlines)
         var rows: [AlignmentRow] = []
         var currentName: String?
@@ -254,7 +258,7 @@ enum AlignmentParser {
 
         commitCurrent()
         guard !rows.isEmpty else { throw AlignmentParseError.unsupportedFormat }
-        return normalize(rows: rows, format: .fasta)
+        return rows
     }
 
     nonisolated private static func parseCLUSTAL(_ text: String) throws -> AlignmentData {

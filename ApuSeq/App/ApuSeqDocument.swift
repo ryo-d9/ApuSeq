@@ -110,7 +110,7 @@ final class ApuSeqDocument: ReferenceFileDocument, @unchecked Sendable {
     }
 }
 
-private extension UTType {
+extension UTType {
     static let fasta = UTType("org.fasta") ?? UTType(importedAs: "org.fasta")
     static let clustal = UTType("org.clustal") ?? UTType(importedAs: "org.clustal")
 }

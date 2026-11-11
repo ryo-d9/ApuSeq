@@ -87,6 +87,18 @@ struct MAFFTAlignmentActions {
     let isRunning: Bool
 }
 
+struct FASTAImportActions {
+    let canAddFASTA: Bool
+    let addFASTA: () -> Void
+    let canAddReverseComplementedFASTA: Bool
+    let addReverseComplementedFASTA: () -> Void
+}
+
+struct ReadPairAssemblyActions {
+    let canAssemble: Bool
+    let assemble: () -> Void
+}
+
 private struct SequenceTransformContextKey: FocusedValueKey {
     typealias Value = SequenceTransformContext
 }
@@ -121,6 +133,14 @@ private struct AlignmentDisplayActionsKey: FocusedValueKey {
 
 private struct MAFFTAlignmentActionsKey: FocusedValueKey {
     typealias Value = MAFFTAlignmentActions
+}
+
+private struct FASTAImportActionsKey: FocusedValueKey {
+    typealias Value = FASTAImportActions
+}
+
+private struct ReadPairAssemblyActionsKey: FocusedValueKey {
+    typealias Value = ReadPairAssemblyActions
 }
 
 extension FocusedValues {
@@ -167,6 +187,34 @@ extension FocusedValues {
     var mafftAlignmentActions: MAFFTAlignmentActions? {
         get { self[MAFFTAlignmentActionsKey.self] }
         set { self[MAFFTAlignmentActionsKey.self] = newValue }
+    }
+
+    var fastaImportActions: FASTAImportActions? {
+        get { self[FASTAImportActionsKey.self] }
+        set { self[FASTAImportActionsKey.self] = newValue }
+    }
+
+    var readPairAssemblyActions: ReadPairAssemblyActions? {
+        get { self[ReadPairAssemblyActionsKey.self] }
+        set { self[ReadPairAssemblyActionsKey.self] = newValue }
+    }
+}
+
+struct FASTAImportCommands: Commands {
+    @FocusedValue(\.fastaImportActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .importExport) {
+            Button(AppStrings.addFASTAFiles) {
+                actions?.addFASTA()
+            }
+            .disabled(actions?.canAddFASTA != true)
+
+            Button(AppStrings.addReverseComplementedFASTAFiles) {
+                actions?.addReverseComplementedFASTA()
+            }
+            .disabled(actions?.canAddReverseComplementedFASTA != true)
+        }
     }
 }
 
@@ -374,6 +422,7 @@ struct AlignmentCommands: Commands {
     @FocusedValue(\.sequenceNameActions) private var sequenceNameActions
     @FocusedValue(\.mafftAlignmentActions) private var mafftActions
     @FocusedValue(\.sequenceTransformContext) private var context
+    @FocusedValue(\.readPairAssemblyActions) private var readPairAssemblyActions
     @Environment(\.newDocument) private var newDocument
     @AppStorage("translationCodonTable") private var translationCodonTable = TranslationCodonTable.standard.rawValue
 
@@ -412,6 +461,11 @@ struct AlignmentCommands: Commands {
                 Button(AppStrings.alignWithMAFFT) {}
                     .disabled(true)
             }
+
+            Button(AppStrings.assembleReadPair) {
+                readPairAssemblyActions?.assemble()
+            }
+            .disabled(readPairAssemblyActions?.canAssemble != true)
 
             Button(AppStrings.removeAllGapColumns) {
                 editActions?.removeAllGapColumns()
