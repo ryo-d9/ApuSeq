@@ -518,9 +518,75 @@ struct ApuSeqTests {
             AlignmentRow(name: "C", sequence: "A--")
         ]
 
-        let consensus = AlignmentStatistics.consensusSequence(rows: rows, length: 3)
+        let consensus = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: 3,
+            sequenceKind: .nucleotide
+        )
 
         #expect(consensus == "ATC")
+    }
+
+    @Test func nucleotideConsensusPrefersKnownBaseWhenTiedWithN() {
+        let rows = [
+            AlignmentRow(name: "Unknown", sequence: "NNNN"),
+            AlignmentRow(name: "Known", sequence: "ACGT")
+        ]
+
+        let consensus = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: 4,
+            sequenceKind: .nucleotide
+        )
+
+        #expect(consensus == "ACGT")
+    }
+
+    @Test func nucleotideConsensusUsesNWhenNHasStrictMajority() {
+        let rows = [
+            AlignmentRow(name: "Unknown 1", sequence: "N"),
+            AlignmentRow(name: "Unknown 2", sequence: "N"),
+            AlignmentRow(name: "Known", sequence: "A")
+        ]
+
+        let consensus = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: 1,
+            sequenceKind: .nucleotide
+        )
+
+        #expect(consensus == "N")
+    }
+
+    @Test func nucleotideConsensusUsesNForTiedKnownBases() {
+        let rows = [
+            AlignmentRow(name: "A", sequence: "A"),
+            AlignmentRow(name: "C", sequence: "C"),
+            AlignmentRow(name: "Unknown", sequence: "N")
+        ]
+
+        let consensus = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: 1,
+            sequenceKind: .nucleotide
+        )
+
+        #expect(consensus == "N")
+    }
+
+    @Test func aminoAcidConsensusTreatsNAsARegularResidue() {
+        let rows = [
+            AlignmentRow(name: "Asparagine", sequence: "N"),
+            AlignmentRow(name: "Alanine", sequence: "A")
+        ]
+
+        let consensus = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: 1,
+            sequenceKind: .aminoAcid
+        )
+
+        #expect(consensus == "N")
     }
 
     @Test func rendererComputesIdentityAndMajorityResiduesWhenRequested() throws {

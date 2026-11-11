@@ -359,7 +359,11 @@ final class AlignmentPrintView: NSView {
         referenceLabel = options.referenceSequence == nil ? nil : String(format: String(localized: "Ref: %@"), options.referenceName ?? "")
         referenceSequence = options.referenceSequence
         consensusSequence = options.includesConsensus
-            ? AlignmentStatistics.consensusSequence(rows: alignment.rows, length: alignment.length)
+            ? AlignmentStatistics.consensusSequence(
+                rows: alignment.rows,
+                length: alignment.length,
+                sequenceKind: alignment.sequenceKind
+            )
             : ""
         identityByColumn = options.includesIdentity
             ? AlignmentStatistics.columnIdentity(rows: alignment.rows)

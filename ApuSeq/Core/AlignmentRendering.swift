@@ -168,7 +168,7 @@ enum AlignmentStatistics {
         return identity
     }
 
-    static func consensusSequence(rows: [AlignmentRow], length: Int) -> String {
+    static func consensusSequence(rows: [AlignmentRow], length: Int, sequenceKind: SequenceKind) -> String {
         guard !rows.isEmpty, length > 0 else { return String(repeating: "-", count: max(length, 0)) }
 
         let sequences = rows.map { $0.sequence as NSString }
@@ -200,7 +200,10 @@ enum AlignmentStatistics {
                 }
             }
 
-            if bestBucket >= 0, let scalar = UnicodeScalar(bestBucket) {
+            let consensusBucket = sequenceKind == .nucleotide
+                ? nucleotideConsensusBucket(counts: counts, touched: touched)
+                : bestBucket
+            if consensusBucket >= 0, let scalar = UnicodeScalar(consensusBucket) {
                 result.append(Character(scalar))
             } else {
                 result.append("-")
@@ -213,6 +216,29 @@ enum AlignmentStatistics {
         }
 
         return result
+    }
+
+    private static func nucleotideConsensusBucket(counts: [Int], touched: [Int]) -> Int {
+        let unknownBucket = 78 // N
+        let unknownCount = counts[unknownBucket]
+        var bestBucket = -1
+        var bestCount = 0
+        var hasConcreteTie = false
+
+        for bucket in touched where bucket != unknownBucket {
+            let count = counts[bucket]
+            if count > bestCount {
+                bestBucket = bucket
+                bestCount = count
+                hasConcreteTie = false
+            } else if count == bestCount {
+                hasConcreteTie = true
+            }
+        }
+
+        guard bestBucket >= 0 else { return unknownCount > 0 ? unknownBucket : -1 }
+        if hasConcreteTie || unknownCount > bestCount { return unknownBucket }
+        return bestBucket
     }
 
     nonisolated static func majorityResidues(rows: [AlignmentRow]) -> [UInt8] {

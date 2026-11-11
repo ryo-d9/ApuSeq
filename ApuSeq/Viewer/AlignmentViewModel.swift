@@ -377,7 +377,11 @@ final class AlignmentViewModel {
         if key == cachedConsensusKey {
             return cachedConsensus
         }
-        let sequence = AlignmentStatistics.consensusSequence(rows: rows, length: alignment.length)
+        let sequence = AlignmentStatistics.consensusSequence(
+            rows: rows,
+            length: alignment.length,
+            sequenceKind: alignment.sequenceKind
+        )
         cachedConsensusKey = key
         cachedConsensus = sequence
         return sequence
