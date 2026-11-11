@@ -200,26 +200,6 @@ extension FocusedValues {
     }
 }
 
-struct FASTAImportCommands: Commands {
-    @FocusedValue(\.fastaImportActions) private var actions
-
-    var body: some Commands {
-        CommandGroup(after: .importExport) {
-            Menu(AppStrings.addFASTA) {
-                Button(AppStrings.addFASTAFiles) {
-                    actions?.addFASTA()
-                }
-                .disabled(actions?.canAddFASTA != true)
-
-                Button(AppStrings.addReverseComplementedFASTAFiles) {
-                    actions?.addReverseComplementedFASTA()
-                }
-                .disabled(actions?.canAddReverseComplementedFASTA != true)
-            }
-        }
-    }
-}
-
 struct ColumnSelectionCommands: Commands {
     @FocusedValue(\.alignmentCopyActions) private var actions
 
@@ -279,6 +259,7 @@ struct SequenceNameCommands: Commands {
 
 struct AlignmentEditCommands: Commands {
     @FocusedValue(\.alignmentEditActions) private var actions
+    @FocusedValue(\.fastaImportActions) private var fastaImportActions
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
@@ -288,11 +269,23 @@ struct AlignmentEditCommands: Commands {
             .keyboardShortcut("n", modifiers: [.command, .shift])
             .disabled(actions?.canAddSequence != true)
 
-            Button(AppStrings.addFASTAFromClipboard) {
-                actions?.addFASTAFromClipboard()
+            Menu(AppStrings.addFASTA) {
+                Button(AppStrings.fromClipboard) {
+                    actions?.addFASTAFromClipboard()
+                }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+                .disabled(actions?.canAddSequence != true)
+
+                Button(AppStrings.addFASTAFiles) {
+                    fastaImportActions?.addFASTA()
+                }
+                .disabled(fastaImportActions?.canAddFASTA != true)
+
+                Button(AppStrings.addReverseComplementedFASTAFiles) {
+                    fastaImportActions?.addReverseComplementedFASTA()
+                }
+                .disabled(fastaImportActions?.canAddReverseComplementedFASTA != true)
             }
-            .keyboardShortcut("v", modifiers: [.command, .shift])
-            .disabled(actions?.canAddSequence != true)
 
             Button(AppStrings.insertGapColumn) {
                 _ = NSApp.sendAction(NSSelectorFromString("insertGapColumn:"), to: nil, from: nil)

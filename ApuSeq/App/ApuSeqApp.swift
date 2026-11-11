@@ -15,7 +15,6 @@ struct ApuSeqApp: App {
         }
         .commands {
             TextEditingCommands()
-            FASTAImportCommands()
             AlignmentCommands()
             ViewerModeCommands()
             ViewPanelCommands()
