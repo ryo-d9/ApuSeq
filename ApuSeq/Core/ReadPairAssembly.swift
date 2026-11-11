@@ -37,8 +37,9 @@ nonisolated enum ReadPairAssembler {
         let matchCount: Int
         let mismatchCount: Int
 
+        var informativeLength: Int { matchCount + mismatchCount }
         var score: Int { matchCount - mismatchCount }
-        var identity: Double { Double(matchCount) / Double(overlapLength) }
+        var identity: Double { Double(matchCount) / Double(informativeLength) }
     }
 
     nonisolated static func assemble(
@@ -72,17 +73,26 @@ nonisolated enum ReadPairAssembler {
             guard overlapLength >= minimumOverlap else { continue }
 
             var matches = 0
+            var mismatches = 0
             for firstIndex in overlapStart..<overlapEnd {
-                if first[firstIndex] == second[firstIndex - secondOffset] {
+                let firstBase = first[firstIndex]
+                let secondBase = second[firstIndex - secondOffset]
+                guard isUnambiguousBase(firstBase), isUnambiguousBase(secondBase) else {
+                    continue
+                }
+                if firstBase == secondBase {
                     matches += 1
+                } else {
+                    mismatches += 1
                 }
             }
             let candidate = Candidate(
                 secondOffset: secondOffset,
                 overlapLength: overlapLength,
                 matchCount: matches,
-                mismatchCount: overlapLength - matches
+                mismatchCount: mismatches
             )
+            guard candidate.informativeLength >= minimumOverlap else { continue }
             guard candidate.identity >= parameters.minimumIdentity else { continue }
             if isBetter(candidate, than: bestCandidate) {
                 bestCandidate = candidate
@@ -98,6 +108,10 @@ nonisolated enum ReadPairAssembler {
             second: second,
             secondOffset: bestCandidate.secondOffset
         )
+    }
+
+    nonisolated private static func isUnambiguousBase(_ base: UInt8) -> Bool {
+        base == 65 || base == 67 || base == 71 || base == 84
     }
 
     nonisolated private static func normalizedBases(_ sequence: String) -> [UInt8] {

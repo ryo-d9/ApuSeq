@@ -377,6 +377,38 @@ struct ApuSeqTests {
         }
     }
 
+    @Test func readPairAssemblyTreatsIUPACAmbiguityAsNeutral() throws {
+        let rows = [
+            AlignmentRow(name: "First", sequence: "TTTACGTN"),
+            AlignmentRow(name: "Second", sequence: "ACGTNAAA")
+        ]
+
+        let assembled = try ReadPairAssembler.assemble(
+            rows: rows,
+            parameters: ReadPairAssemblyParameters(minimumOverlapLength: 4, minimumIdentity: 1)
+        )
+
+        #expect(assembled.map(\.sequence) == ["TTTACGTN---", "---ACGTNAAA"])
+    }
+
+    @Test func readPairAssemblyRejectsAmbiguityOnlyOverlap() {
+        let rows = [
+            AlignmentRow(name: "First", sequence: "AAAANNNNNNNNNN"),
+            AlignmentRow(name: "Second", sequence: "NNNNNNNNNNCCCC")
+        ]
+
+        do {
+            _ = try ReadPairAssembler.assemble(
+                rows: rows,
+                parameters: ReadPairAssemblyParameters(minimumOverlapLength: 10, minimumIdentity: 0.7)
+            )
+            Issue.record("Expected ambiguity-only overlap to be rejected")
+        } catch ReadPairAssemblyError.noSufficientOverlap {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test func translatesNucleotideFASTAWithFramesAndCodonTables() throws {
         let text = """
         >Coding
