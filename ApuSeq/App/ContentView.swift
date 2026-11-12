@@ -467,6 +467,7 @@ private struct RootView: View {
             ]
         )
         for range in content.coloredRanges {
+            attributed.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range)
             applyAuxiliaryBackground(to: attributed, in: range, referenceSequence: referenceSequenceForBackground)
         }
         return attributed
