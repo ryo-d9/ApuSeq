@@ -37,8 +37,9 @@
     <section>
       <h2>Adding and renaming sequences</h2>
       <p>In Edit mode, choose Edit &gt; Add Sequence or Control-click the sequence name area and choose Add Sequence. ApuSeq adds a gap-filled row that can be edited directly in the alignment view.</p>
-      <p>Choose Edit &gt; Add FASTA from Clipboard, or press <code>⇧⌘V</code> to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.</p>
-      <p>In a new empty document, Add Sequence or Add FASTA from Clipboard starts a FASTA alignment.</p>
+      <p>Choose Edit &gt; Add FASTA &gt; From Clipboard, or press <code>⇧⌘V</code>, to append FASTA records from the clipboard. Multi-line FASTA sequences are supported.</p>
+      <p>Choose Edit &gt; Add FASTA &gt; From Files to append records from one or more FASTA files. To reverse-complement each nucleotide record before adding it, choose From Reverse-Complemented Files instead. All records are added as one undoable operation, and their sequence type must match the current document.</p>
+      <p>In a new empty document, Add Sequence or any Add FASTA command starts a FASTA alignment.</p>
       <p>To rename a sequence, select it and choose Alignment &gt; Current Sequence &gt; Rename Current Sequence, or Control-click its name and choose Rename Sequence.</p>
     </section>
 
@@ -69,6 +70,12 @@
       <h2>Translation</h2>
       <p>Alignment &gt; Translation creates a new unsaved FASTA document translated from nucleotide sequences in reading frame 1, 2, or 3.</p>
       <p>The genetic code is selected in Settings &gt; General &gt; Translation.</p>
+    </section>
+
+    <section>
+      <h2>Aligning two reads by overlap</h2>
+      <p>Alignment &gt; Align Two Reads by Overlap finds a sufficient shared region between exactly two nucleotide reads and opens their gapless placement in a new unsaved FASTA document.</p>
+      <p>This command removes existing gaps before searching, preserves the sequence names and row order, and doesn’t use MAFFT or introduce internal gaps. If no sufficient overlap is found, the original document remains unchanged. Show the Consensus panel in the result document to inspect or copy its consensus sequence.</p>
     </section>
 
     <section>

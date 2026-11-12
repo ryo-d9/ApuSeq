@@ -15,6 +15,7 @@ ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequ
   - Copy Sequence and Copy as FASTA from the context menu
   - Nucleotide translation with selectable genetic codes
   - Reverse complement generation for nucleotide alignments
+  - Gapless overlap alignment for two nucleotide reads
   - Bundled MAFFT 7.526 alignment (`--auto`)
   - Codon alignment for coding FASTA sequences
   - Quick Look preview extension with lightweight residue coloring
@@ -22,7 +23,8 @@ ApuSeq currently supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain text sequ
   - Display ordering: Original, Name, and UPGMA
 - **Edit mode**
   - Column selection and multi-range editing
-  - Adding, renaming, and deleting sequences, including FASTA import from the clipboard
+  - Adding, renaming, and deleting sequences, including FASTA input from the clipboard or one or more files
+  - Adding FASTA files as reverse complements
   - Insert Gap Column, Remove All-Gap Columns, Trim Trailing Gaps, and Sort Sequences commands, treating `-` and `.` as gaps where applicable
   - MAFFT alignment for selected columns
 
@@ -39,9 +41,10 @@ Changes in edit mode are autosaved. Use File > Revert To to restore an earlier v
 
 - Typing and deletion edit the selected sequence rows. Shorter rows are temporarily padded with trailing `-` characters to preserve alignment length.
 - Insert gap columns with Edit > Insert Gap Column, and remove all-gap columns with Alignment > Remove All-Gap Columns.
-- Import FASTA records from the clipboard with Edit > Add FASTA from Clipboard.
+- Add FASTA records with Edit > Add FASTA > From Clipboard or From Files. Use From Reverse-Complemented Files to reverse-complement nucleotide records while adding them.
 - Sort sequences by name or UPGMA (3–300 sequences).
 - Reverse Complement, Translation, and Align with MAFFT create new FASTA documents.
+- Alignment > Align Two Reads by Overlap positions exactly two nucleotide reads by their shared overlap in a new FASTA document without using MAFFT or introducing internal gaps.
 - Selected columns can be realigned independently using MAFFT.
 - Coding nucleotide FASTA sequences can be translated, aligned as amino acids with MAFFT, and mapped back to nucleotide codons with Alignment > Align with MAFFT > Codon Alignment.
 
