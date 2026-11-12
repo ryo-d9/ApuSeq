@@ -457,7 +457,7 @@ struct AlignmentCommands: Commands {
                     .disabled(true)
             }
 
-            Button(AppStrings.assembleReadPair) {
+            Button(AppStrings.alignTwoReadsByOverlap) {
                 readPairAssemblyActions?.assemble()
             }
             .disabled(readPairAssemblyActions?.canAssemble != true)

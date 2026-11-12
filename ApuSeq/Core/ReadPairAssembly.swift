@@ -21,7 +21,7 @@ nonisolated enum ReadPairAssemblyError: LocalizedError {
         case .requiresTwoSequences:
             return String(localized: "Exactly two nucleotide sequences are required.")
         case .requiresNucleotideSequences:
-            return String(localized: "Read-pair assembly is available only for nucleotide sequences.")
+            return String(localized: "Overlap-based read alignment is available only for nucleotide sequences.")
         case .emptySequence:
             return String(localized: "Both reads must contain nucleotide sequence data.")
         case .noSufficientOverlap:

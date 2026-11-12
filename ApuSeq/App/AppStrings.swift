@@ -54,7 +54,7 @@ enum AppStrings {
     static let showInspector = String(localized: "Show Inspector")
     static let hideInspector = String(localized: "Hide Inspector")
     static let reverseComplement = String(localized: "Reverse Complement")
-    static let assembleReadPair = String(localized: "Assemble Read Pair")
+    static let alignTwoReadsByOverlap = String(localized: "Align Two Reads by Overlap")
     static let website = String(localized: "Website")
     static let cancel = String(localized: "Cancel")
     static let ok = String(localized: "OK")
