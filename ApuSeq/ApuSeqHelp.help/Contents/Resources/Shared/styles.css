@@ -165,13 +165,21 @@ dd + dt {
   line-height: 1.4;
 }
 
+.home > section.overview {
+  text-align: center;
+}
+
+.home > section.overview h2 {
+  font-size: 2.2rem;
+}
+
 .home > section.illustrated {
   display: flex;
   flex-direction: row;
   gap: 2rem;
 }
 
-.home > section.illustrated:nth-of-type(even) {
+.home > section.illustrated:nth-of-type(odd) {
   flex-direction: row-reverse;
 }
 
@@ -222,7 +230,7 @@ dd + dt {
   }
 
   .home > section.illustrated,
-  .home > section.illustrated:nth-of-type(even) {
+  .home > section.illustrated:nth-of-type(odd) {
     flex-direction: column;
   }
 
