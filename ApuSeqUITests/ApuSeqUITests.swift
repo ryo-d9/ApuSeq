@@ -92,7 +92,7 @@ final class ApuSeqUITests: XCTestCase {
         XCTAssertTrue(app.menuItems["Copy Selection as FASTA"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Select"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
+        _ = openAddFASTASubmenu()
         XCTAssertTrue(app.menuItems["Insert Gap Column"].waitForExistence(timeout: 2))
 
         dismissMenu()
@@ -277,8 +277,7 @@ final class ApuSeqUITests: XCTestCase {
 
         XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Add Sequence..."].isEnabled)
-        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].isEnabled)
+        XCTAssertTrue(openAddFASTASubmenu().isEnabled)
 
         dismissMenu()
     }
@@ -309,8 +308,7 @@ final class ApuSeqUITests: XCTestCase {
         openMenu("Edit")
         XCTAssertTrue(app.menuItems["Add Sequence..."].waitForExistence(timeout: 2))
         XCTAssertTrue(app.menuItems["Add Sequence..."].isEnabled)
-        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.menuItems["Add FASTA from Clipboard"].isEnabled)
+        XCTAssertTrue(openAddFASTASubmenu().isEnabled)
 
         dismissMenu()
     }
@@ -523,6 +521,17 @@ final class ApuSeqUITests: XCTestCase {
     @MainActor
     private func menuItemExists(_ titles: String...) -> Bool {
         titles.contains { app.menuItems[$0].waitForExistence(timeout: 1) }
+    }
+
+    @MainActor
+    private func openAddFASTASubmenu() -> XCUIElement {
+        let addFASTAMenu = app.menuItems["Add FASTA"]
+        XCTAssertTrue(addFASTAMenu.waitForExistence(timeout: 2))
+        addFASTAMenu.hover()
+
+        let fromClipboard = app.menuItems["From Clipboard"]
+        XCTAssertTrue(fromClipboard.waitForExistence(timeout: 2))
+        return fromClipboard
     }
 
     @MainActor
