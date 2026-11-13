@@ -5,40 +5,57 @@
   <meta name="AppleTitle" content="ApuSeq Help">
   <meta name="description" content="A short guide to ApuSeq.">
   <title>ApuSeq Help</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../Shared/styles.css">
 </head>
 <body>
-  <main>
-    <img class="help-home-icon" src="../Shared/Images/ApuSeqIcon_1x.png" alt="ApuSeq icon">
-    <h1>ApuSeq Help</h1>
-    <p>Sequence alignment viewer and editor for macOS.</p>
-    <p>It supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain-text alignment files.</p>
+  <main class="home">
+    <header class="home-header">
+      <img src="../Shared/Images/ApuSeqIcon_1x.png" alt="">
+      <h1>ApuSeq Help</h1>
+      <p>Sequence alignment viewer and editor for macOS.</p>
+      <p>It supports FASTA, CLUSTAL, CLUSTAL W, MUSCLE, and plain-text alignment files.</p>
+    </header>
 
-    <section>
-      <h2>View alignments</h2>
-      <p>View mode keeps the file unchanged while you inspect coloring, panels, and display order.</p>
-      <ul>
-        <li><a href="view.html">How to view alignments</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/view_mode@2x.png" srcset="../Shared/Images/Screenshots/view_mode@2x.png 2x" alt="Residue coloring options in View mode">
+      </figure>
+      <div>
+        <h2>Explore alignments at a glance</h2>
+        <p>View mode keeps the file unchanged while you inspect coloring, panels, and display order.</p>
+        <ul>
+          <li><a href="view.html">How to view alignments</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
-      <h2>Edit alignments</h2>
-      <p>Edit mode enables document-changing commands such as trimming gaps and sorting sequences, with undo support.</p>
-      <ul>
-        <li><a href="editing.html">How to edit alignments</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/edit_mode@2x.png" srcset="../Shared/Images/Screenshots/edit_mode@2x.png 2x" alt="Alignment commands available in Edit mode">
+      </figure>
+      <div>
+        <h2>Refine alignments with flexible editing</h2>
+        <p>Edit mode enables document-changing commands such as trimming gaps and sorting sequences, with undo support.</p>
+        <ul>
+          <li><a href="editing.html">How to edit alignments</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
-      <h2>Quick Look previews</h2>
-      <p>Preview supported alignment files in Finder with Quick Look.</p>
-      <ul>
-        <li><a href="quicklook.html">How to use Quick Look previews</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/quick_look@2x.png" srcset="../Shared/Images/Screenshots/quick_look@2x.png 2x" alt="Quick Look preview of a sequence alignment in Finder">
+      </figure>
+      <div>
+        <h2>Preview alignments right in Finder</h2>
+        <p>Preview supported alignment files in Finder with Quick Look.</p>
+        <ul>
+          <li><a href="quicklook.html">How to use Quick Look previews</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
+    <section class="secondary">
       <h2>Open source licenses</h2>
       <p>ApuSeq bundles MAFFT v7.526 as a multiple sequence alignment tool. Choose ApuSeq &gt; About ApuSeq to view notices.</p>
     </section>

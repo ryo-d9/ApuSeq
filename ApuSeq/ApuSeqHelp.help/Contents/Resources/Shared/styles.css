@@ -1,0 +1,232 @@
+@charset "UTF-8";
+
+/*
+  ApuSeq Help Book
+  Layout approach informed by CotEditor's macOS Help Book.
+  https://github.com/coteditor/CotEditor
+*/
+
+:root {
+  color-scheme: light dark;
+  font: 400 17px/1.5 -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size-adjust: from-font;
+  text-autospace: normal;
+  text-spacing-trim: trim-start;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  color: CanvasText;
+  background: Canvas;
+}
+
+main {
+  position: relative;
+  max-inline-size: 820px;
+  margin-block: 2.5rem;
+  margin-inline: auto;
+  padding-inline: 2.75rem;
+}
+
+a {
+  text-decoration-line: none;
+}
+
+a:link,
+a:visited {
+  color: -apple-system-blue;
+}
+
+a:hover {
+  text-decoration-line: underline;
+}
+
+main > h1 {
+  margin-block: 0 1.4rem;
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+main > section {
+  margin-block: 1.5rem;
+  border-block-start: 1px solid -apple-system-separator;
+}
+
+h2 {
+  margin-block: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+h3 {
+  margin-block-start: 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+p:lang(ja) {
+  text-align: justify;
+}
+
+ol,
+ul {
+  padding-inline: 1.5rem;
+}
+
+li p {
+  margin-block: 0.5rem;
+}
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 95%;
+  tab-size: 4;
+}
+
+code {
+  padding-inline: 0.2em;
+  border-radius: 0.25em;
+  background: light-dark(hsl(0, 0%, 94%), hsl(0, 0%, 16%));
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd + dt {
+  margin-block-start: 0.5rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-block-end: 1.25rem;
+  color: -apple-system-secondary-label !important;
+  font-size: 15px;
+}
+
+.back-link::before {
+  content: "‹ ";
+}
+
+.home-header {
+  position: relative;
+  min-block-size: 170px;
+  padding-inline-end: 220px;
+  border-block-end: 1px solid -apple-system-separator;
+  font-weight: 300;
+}
+
+.home-header > img {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 40px;
+  inline-size: 150px;
+  block-size: auto;
+}
+
+.home-header > h1 {
+  margin-block: 0;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.home-header > p {
+  margin-block: 0 0.45rem;
+}
+
+.home-header > p:first-of-type {
+  font-size: 23px;
+  font-weight: 300;
+}
+
+.home > section {
+  margin-block: 0;
+  padding-block: 1.5rem;
+  border-block-start: 0;
+  border-block-end: 1px solid -apple-system-separator;
+}
+
+.home > section h2 {
+  margin-block: 0 1rem;
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.home > section.secondary h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.home > section.illustrated {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+}
+
+.home > section.illustrated:nth-of-type(even) {
+  flex-direction: row-reverse;
+}
+
+.home > section.illustrated > figure {
+  flex: 0 0 360px;
+  margin: 0;
+}
+
+.home > section.illustrated img {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 0.5px solid -apple-system-tertiary-label;
+  border-radius: 0.3rem;
+}
+
+.home > section ul {
+  padding-inline-start: 0;
+  list-style-type: none;
+}
+
+.home > section li a::after {
+  content: " ›";
+}
+
+@media (max-width: 760px) {
+  main {
+    margin-block: 1.75rem;
+    padding-inline: 1.5rem;
+  }
+
+  .home-header {
+    min-block-size: 110px;
+    padding-inline-end: 110px;
+  }
+
+  .home-header > img {
+    inset-inline-end: 0;
+    inline-size: 90px;
+  }
+
+  .home-header > h1 {
+    font-size: 2rem;
+  }
+
+  .home-header > p:first-of-type {
+    font-size: 1.1rem;
+  }
+
+  .home > section.illustrated,
+  .home > section.illustrated:nth-of-type(even) {
+    flex-direction: column;
+  }
+
+  .home > section.illustrated > figure {
+    flex-basis: auto;
+  }
+}

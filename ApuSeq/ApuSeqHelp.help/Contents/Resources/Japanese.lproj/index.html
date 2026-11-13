@@ -5,40 +5,57 @@
   <meta name="AppleTitle" content="ApuSeqヘルプ">
   <meta name="description" content="ApuSeqの簡単な使い方。">
   <title>ApuSeqヘルプ</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../Shared/styles.css">
 </head>
 <body>
-  <main>
-    <img class="help-home-icon" src="../Shared/Images/ApuSeqIcon_1x.png" alt="ApuSeqのアイコン">
-    <h1>ApuSeqヘルプ</h1>
-    <p>macOS向けの配列アラインメント表示・編集アプリです。</p>
-    <p>FASTA、CLUSTAL、CLUSTAL W、MUSCLE、およびプレーンテキストのアラインメントファイルに対応しています。</p>
+  <main class="home">
+    <header class="home-header">
+      <img src="../Shared/Images/ApuSeqIcon_1x.png" alt="">
+      <h1>ApuSeqヘルプ</h1>
+      <p>macOS向けの配列アラインメント表示・編集アプリです。</p>
+      <p>FASTA、CLUSTAL、CLUSTAL W、MUSCLE、およびプレーンテキストのアラインメントファイルに対応しています。</p>
+    </header>
 
-    <section>
-      <h2>アラインメントを表示する</h2>
-      <p>表示モードではファイルを変更せず、色分け、パネル、表示順を確認できます。</p>
-      <ul>
-        <li><a href="view.html">アラインメントの表示方法</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/view_mode@2x.png" srcset="../Shared/Images/Screenshots/view_mode@2x.png 2x" alt="表示モードの残基色分けオプション">
+      </figure>
+      <div>
+        <h2>アラインメントをひと目で把握する</h2>
+        <p>表示モードではファイルを変更せず、色分け、パネル、表示順を確認できます。</p>
+        <ul>
+          <li><a href="view.html">アラインメントの表示方法</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
-      <h2>アラインメントを編集する</h2>
-      <p>編集モードでは、末尾ギャップの削除や配列の並べ替えなど、書類を変更するコマンドを取り消し対応付きで使用できます。</p>
-      <ul>
-        <li><a href="editing.html">アラインメントの編集方法</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/edit_mode@2x.png" srcset="../Shared/Images/Screenshots/edit_mode@2x.png 2x" alt="編集モードで使用できるアラインメントコマンド">
+      </figure>
+      <div>
+        <h2>柔軟な編集でアラインメントを整える</h2>
+        <p>編集モードでは、末尾ギャップの削除や配列の並べ替えなど、書類を変更するコマンドを取り消し対応付きで使用できます。</p>
+        <ul>
+          <li><a href="editing.html">アラインメントの編集方法</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
-      <h2>クイックルックプレビュー</h2>
-      <p>Finderのクイックルックで、対応するアラインメントファイルをプレビューできます。</p>
-      <ul>
-        <li><a href="quicklook.html">クイックルックプレビューの使い方</a></li>
-      </ul>
+    <section class="illustrated">
+      <figure>
+        <img src="../Shared/Images/Screenshots/quick_look@2x.png" srcset="../Shared/Images/Screenshots/quick_look@2x.png 2x" alt="Finderで配列アラインメントを表示したクイックルックプレビュー">
+      </figure>
+      <div>
+        <h2>Finderでアラインメントをすばやく確認する</h2>
+        <p>Finderのクイックルックで、対応するアラインメントファイルをプレビューできます。</p>
+        <ul>
+          <li><a href="quicklook.html">クイックルックプレビューの使い方</a></li>
+        </ul>
+      </div>
     </section>
 
-    <section>
+    <section class="secondary">
       <h2>オープンソースライセンス</h2>
       <p>ApuSeqは複数配列アラインメントツールとしてMAFFT v7.526を同梱しています。通知は、ApuSeq &gt; ApuSeqについてで確認できます。</p>
     </section>
