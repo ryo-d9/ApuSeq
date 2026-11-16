@@ -153,12 +153,21 @@ final class AlignmentViewportContainerView: NSView, NSSplitViewDelegate {
         nameText: NSAttributedString,
         sequenceText: NSAttributedString,
         lineCount: Int,
-        fontSize: Double
+        font: NSFont
     ) {
         auxiliaryNameTextView.textStorage?.setAttributedString(nameText)
         auxiliarySequenceTextView.textStorage?.setAttributedString(sequenceText)
+        auxiliaryNameTextView.textStorage?.addAttribute(
+            .font,
+            value: font,
+            range: NSRange(location: 0, length: auxiliaryNameTextView.textStorage?.length ?? 0)
+        )
+        auxiliarySequenceTextView.textStorage?.addAttribute(
+            .font,
+            value: font,
+            range: NSRange(location: 0, length: auxiliarySequenceTextView.textStorage?.length ?? 0)
+        )
 
-        let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         let lineHeight = alignmentLineHeight(for: font)
         let height = lineCount > 0 ? max(CGFloat(lineCount) * lineHeight + 8, 24) : 0
         let isVisible = lineCount > 0

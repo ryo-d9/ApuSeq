@@ -13,7 +13,7 @@ private func configureAlignmentTextContainer(_ textContainer: NSTextContainer?) 
     textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
 }
 
-func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
+func configureMainTextView(_ textView: NSTextView, fontSize: Double, weight: NSFont.Weight = .regular) {
     textView.isEditable = false
     textView.isSelectable = true
     textView.allowsUndo = true
@@ -24,7 +24,7 @@ func configureMainTextView(_ textView: NSTextView, fontSize: Double) {
     textView.drawsBackground = true
     textView.backgroundColor = NSColor.textBackgroundColor
     textView.textContainerInset = NSSize(width: 12, height: 12)
-    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: weight)
     textView.usesFindBar = true
     textView.isIncrementalSearchingEnabled = true
     textView.isContinuousSpellCheckingEnabled = false
@@ -58,7 +58,7 @@ func configureNameTextView(_ textView: NSTextView, fontSize: Double) {
     configureAlignmentTextContainer(textView.textContainer)
 }
 
-func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
+func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double, weight: NSFont.Weight = .regular) {
     textView.isEditable = false
     textView.isSelectable = true
     textView.allowsUndo = false
@@ -72,7 +72,7 @@ func configureAuxiliaryTextView(_ textView: NSTextView, fontSize: Double) {
     textView.drawsBackground = true
     textView.backgroundColor = NSColor.textBackgroundColor
     textView.textContainerInset = NSSize(width: 12, height: 4)
-    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: weight)
     textView.isHorizontallyResizable = true
     textView.isVerticallyResizable = true
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)

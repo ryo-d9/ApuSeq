@@ -13,6 +13,8 @@ struct AlignmentTextRowChange: Sendable {
 }
 
 struct AlignmentTextViewport: NSViewRepresentable {
+    @Environment(\.colorScheme) private var colorScheme
+
     let nameAttributedText: NSAttributedString
     let sequenceText: String?
     let namesChecksum: UInt64
@@ -55,9 +57,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
     let onNameFindClose: () -> Void
 
     func makeNSView(context: Context) -> AlignmentViewportContainerView {
+        let fontWeight: NSFont.Weight = colorScheme == .dark ? .medium : .regular
+        let displayFont = NSFont.monospacedSystemFont(ofSize: fontSize, weight: fontWeight)
         let nameColumnView = AlignmentViewportNameColumnView()
         nameColumnView.setAccessibilityIdentifier("alignment-name-column")
-        nameColumnView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        nameColumnView.font = displayFont
         nameColumnView.rows = displayedRows
         nameColumnView.highlightedRowIndex = highlightedNameRowIndex
         nameColumnView.currentRowIndex = currentSequenceRowIndex
@@ -71,7 +75,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         let sequenceTextView = AlignmentViewportSequenceTextView(usingTextLayoutManager: true)
         sequenceTextView.setAccessibilityIdentifier("alignment-sequence-text")
-        configureMainTextView(sequenceTextView, fontSize: fontSize)
+        configureMainTextView(sequenceTextView, fontSize: fontSize, weight: fontWeight)
         sequenceTextView.rows = displayedRows
         sequenceTextView.delegate = context.coordinator
         sequenceTextView.onAddVerticalCursor = { [weak coordinator = context.coordinator, weak sequenceTextView] direction in
@@ -83,11 +87,11 @@ struct AlignmentTextViewport: NSViewRepresentable {
 
         let auxiliaryNameTextView = NSTextView(usingTextLayoutManager: true)
         auxiliaryNameTextView.setAccessibilityIdentifier("alignment-auxiliary-name-text")
-        configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize)
+        configureAuxiliaryTextView(auxiliaryNameTextView, fontSize: fontSize, weight: fontWeight)
 
         let auxiliarySequenceTextView = NSTextView(usingTextLayoutManager: true)
         auxiliarySequenceTextView.setAccessibilityIdentifier("alignment-auxiliary-sequence-text")
-        configureAuxiliaryTextView(auxiliarySequenceTextView, fontSize: fontSize)
+        configureAuxiliaryTextView(auxiliarySequenceTextView, fontSize: fontSize, weight: fontWeight)
 
         let containerView = AlignmentViewportContainerView(
             nameColumnView: nameColumnView,
@@ -111,7 +115,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         containerView.updateRuler(
             length: alignmentLength,
-            font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            font: displayFont,
             textInset: sequenceTextView.textContainerInset.width
         )
         containerView.updateNameFindBar(
@@ -126,6 +130,9 @@ struct AlignmentTextViewport: NSViewRepresentable {
     }
 
     func updateNSView(_ containerView: AlignmentViewportContainerView, context: Context) {
+        let usesDarkFont = colorScheme == .dark
+        let fontWeight: NSFont.Weight = usesDarkFont ? .medium : .regular
+        let displayFont = NSFont.monospacedSystemFont(ofSize: fontSize, weight: fontWeight)
         containerView.updateNameColumnWidth(defaultNameColumnWidth)
         containerView.updateEditMode(isEditable: isEditMode)
         containerView.updateNameRows(
@@ -161,7 +168,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
             nameText: auxiliaryNameAttributedText,
             sequenceText: auxiliarySequenceAttributedText,
             lineCount: auxiliaryLineCount,
-            fontSize: fontSize
+            font: displayFont
         )
         context.coordinator.onSequenceEdited = onSequenceEdited
         context.coordinator.isProgrammaticTextUpdate = true
@@ -208,14 +215,17 @@ struct AlignmentTextViewport: NSViewRepresentable {
         }
         context.coordinator.isProgrammaticTextUpdate = false
 
-        if context.coordinator.lastFontSize != fontSize {
-            let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-            containerView.nameColumnView.font = font
-            containerView.sequenceTextView.font = font
-            containerView.auxiliaryNameTextView.font = font
-            containerView.auxiliarySequenceTextView.font = font
-            containerView.updateRuler(length: alignmentLength, font: font, textInset: containerView.sequenceTextView.textContainerInset.width)
+        if context.coordinator.lastFontSize != fontSize || context.coordinator.lastUsesDarkFont != usesDarkFont {
+            containerView.nameColumnView.font = displayFont
+            containerView.sequenceTextView.font = displayFont
+            containerView.auxiliaryNameTextView.font = displayFont
+            containerView.auxiliarySequenceTextView.font = displayFont
+            if let textStorage = containerView.sequenceTextView.textStorage {
+                textStorage.addAttribute(.font, value: displayFont, range: NSRange(location: 0, length: textStorage.length))
+            }
+            containerView.updateRuler(length: alignmentLength, font: displayFont, textInset: containerView.sequenceTextView.textContainerInset.width)
             context.coordinator.lastFontSize = fontSize
+            context.coordinator.lastUsesDarkFont = usesDarkFont
         }
 
         containerView.sequenceTextView.updateAlignmentDisplay(
@@ -228,7 +238,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
         )
         containerView.updateRuler(
             length: alignmentLength,
-            font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            font: displayFont,
             textInset: containerView.sequenceTextView.textContainerInset.width
         )
     }
@@ -246,6 +256,7 @@ struct AlignmentTextViewport: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         var lastContentVersion = -1
         var lastFontSize = -1.0
+        var lastUsesDarkFont: Bool?
         var lastRenderedFingerprint = RenderedFingerprint.empty
         var lastNameSearchRequestID = -1
         var onSequenceEdited: ((AlignmentTextChange) -> Void)?
