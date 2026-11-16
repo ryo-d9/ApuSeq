@@ -323,17 +323,8 @@ enum IdentityPalette {
         if clamped >= 1.0 {
             return NSColor.systemBlue.withAlphaComponent(0.56)
         }
-        let highBand = clampedThreshold + ((1.0 - clampedThreshold) * 0.5)
-        if clamped >= highBand {
-            return NSColor.systemBlue.withAlphaComponent(0.40)
-        }
-        if clamped >= clampedThreshold {
-            return NSColor.systemBlue.withAlphaComponent(0.26)
-        }
-        if clamped >= clampedThreshold * 0.5 {
-            return NSColor.systemBlue.withAlphaComponent(0.14)
-        }
-        return nil
+        guard clamped >= clampedThreshold else { return nil }
+        return NSColor.systemBlue.withAlphaComponent(0.26)
     }
 }
 

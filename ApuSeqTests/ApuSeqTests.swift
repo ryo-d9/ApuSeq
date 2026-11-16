@@ -1288,6 +1288,15 @@ struct ApuSeqTests {
         #expect(snapshotText == rawText)
     }
 
+    @Test func identityPaletteUsesExactThresholdAndUncoloredClasses() throws {
+        let exactColor = try #require(IdentityPalette.backgroundColor(for: 1.0, threshold: 0.5))
+        let thresholdColor = try #require(IdentityPalette.backgroundColor(for: 0.5, threshold: 0.5))
+
+        #expect(exactColor.alphaComponent == 0.56)
+        #expect(thresholdColor.alphaComponent == 0.26)
+        #expect(IdentityPalette.backgroundColor(for: 0.499, threshold: 0.5) == nil)
+    }
+
     @Test func identityBarsUseSharedHeightEncoding() {
         let bars = IdentityBars.barString(from: [0.0, 0.125, 0.5, 1.0])
 
