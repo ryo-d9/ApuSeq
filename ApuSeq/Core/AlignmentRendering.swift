@@ -363,6 +363,37 @@ extension Array {
 }
 
 enum ResiduePalette {
+    private static let backgroundColors: [UInt16: NSColor] = {
+        func adaptiveBackgroundColor(_ color: NSColor) -> NSColor {
+            NSColor(name: nil) { appearance in
+                let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+                return color.withAlphaComponent(isDark ? 0.30 : 0.22)
+            }
+        }
+
+        let green = adaptiveBackgroundColor(.systemGreen)
+        let blue = adaptiveBackgroundColor(.systemBlue)
+        let orange = adaptiveBackgroundColor(.systemOrange)
+        let red = adaptiveBackgroundColor(.systemRed)
+        let purple = adaptiveBackgroundColor(.systemPurple)
+        let pink = adaptiveBackgroundColor(.systemPink)
+        let teal = adaptiveBackgroundColor(.systemTeal)
+        let brown = adaptiveBackgroundColor(.systemBrown)
+        let neutral = adaptiveBackgroundColor(.secondaryLabelColor)
+
+        return [
+            65: green,
+            67: blue,
+            71: orange,
+            84: red, 85: red,
+            82: purple, 75: purple, 72: purple,
+            68: pink, 69: pink,
+            83: teal, 78: teal, 81: teal,
+            70: brown, 87: brown, 89: brown, 76: brown, 73: brown, 86: brown, 77: brown,
+            80: neutral, 88: neutral, 66: neutral, 90: neutral, 74: neutral, 79: neutral
+        ]
+    }()
+
     nonisolated static func isDefined(_ residue: UInt16) -> Bool {
         switch normalizedResidueCode(residue) {
         case 65, 67, 71, 84, 85, 82, 75, 72, 68, 69, 83, 78, 81, 70, 87, 89, 76, 73, 86, 77, 80, 88, 66, 90, 74, 79:
@@ -373,7 +404,7 @@ enum ResiduePalette {
     }
 
     static func backgroundColor(for residue: UInt16) -> NSColor? {
-        color(for: residue)?.withAlphaComponent(0.22)
+        backgroundColors[normalizedResidueCode(residue)]
     }
 
     static func color(for residue: UInt16) -> NSColor? {

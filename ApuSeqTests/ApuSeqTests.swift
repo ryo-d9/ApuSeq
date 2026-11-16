@@ -844,6 +844,24 @@ struct ApuSeqTests {
         #expect(!AlignmentSequenceInput.isValidEditingReplacement("ACGT😀"))
     }
 
+    @Test func residueBackgroundColorAdaptsItsOpacityToAppearance() throws {
+        let color = try #require(ResiduePalette.backgroundColor(for: 65))
+        let lightAppearance = try #require(NSAppearance(named: .aqua))
+        let darkAppearance = try #require(NSAppearance(named: .darkAqua))
+        var lightAlpha: CGFloat = 0
+        var darkAlpha: CGFloat = 0
+
+        lightAppearance.performAsCurrentDrawingAppearance {
+            lightAlpha = color.alphaComponent
+        }
+        darkAppearance.performAsCurrentDrawingAppearance {
+            darkAlpha = color.alphaComponent
+        }
+
+        #expect(abs(lightAlpha - 0.22) < 0.001)
+        #expect(abs(darkAlpha - 0.30) < 0.001)
+    }
+
     @Test func referenceDifferenceColoringNormalizesCaseAndGapCharacters() {
         #expect(ReferenceDifferencePalette.backgroundColor(for: 65, referenceResidue: 65) == nil)
         #expect(ReferenceDifferencePalette.backgroundColor(for: 97, referenceResidue: 65) == nil)
