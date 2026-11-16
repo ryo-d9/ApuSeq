@@ -34,6 +34,7 @@ Background coloring can be changed from the footer or View > Background Color.
 
 - Minority colors: residues differ from the column majority
 - Reference coloring: residues that differ from the selected reference sequence (appears after a reference is selected)
+- Identity coloring: columns are shown at three levels. Change the threshold in Settings > General.
 
 ## Editing Behavior
 
